@@ -2,10 +2,23 @@
  * Utility functions for subdomain and tenant handling
  */
 
+// Vercel platform domains that should be treated as root domains (no subdomain extraction)
+const VERCEL_PLATFORM_DOMAINS = ['.vercel.app', '.vercel.sh', '.now.sh']
+
+function isVercelPlatformDomain(hostname: string): boolean {
+    return VERCEL_PLATFORM_DOMAINS.some((domain) => hostname.endsWith(domain))
+}
+
 /**
  * Extract subdomain from hostname
  */
 export function extractSubdomain(hostname: string): string | null {
+    // Ignore Vercel platform domains - treat them as root domains
+    // e.g., project-name.vercel.app should NOT extract "project-name" as subdomain
+    if (isVercelPlatformDomain(hostname)) {
+        return null
+    }
+
     if (hostname.includes('localhost')) {
         const parts = hostname.split('.')
         if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
