@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useAcademicYearMutations } from "@/hooks/use-academic-year";
 import { getErrorMessage } from "@/lib/utils";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,

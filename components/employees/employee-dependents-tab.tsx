@@ -1,6 +1,6 @@
 "use client";
 
-import type { DependentDto } from "@/lib/api/employee-types";
+import type { DependentDto } from "@/lib/api2/employee-types";
 import {
   Table,
   TableBody,

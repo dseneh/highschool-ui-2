@@ -16,7 +16,7 @@ import {
 import {
   FileIcon,
 } from "@hugeicons/core-free-icons";
-import { GradeStatus } from "@/lib/api/grading-types";
+import { GradeStatus } from "@/lib/api2/grading-types";
 import RefreshButton from "@/components/shared/refresh-button";
 import { GradebookCard } from "@/components/grading/gradebook-card";
 

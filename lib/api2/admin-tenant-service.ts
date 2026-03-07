@@ -1,4 +1,3 @@
-import axios from "axios";
 import type {
   TenantDetail,
   CreateTenantDto,
@@ -6,28 +5,7 @@ import type {
   TenantListParams,
   PaginatedTenants,
 } from "./admin-tenant-types";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
-
-// Create axios instance for admin operations (public schema, no tenant header)
-const adminApiClient = axios.create({
-  baseURL: API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-});
-
-// Add auth token interceptor
-adminApiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  // Explicitly ensure no tenant header for admin operations
-  delete config.headers["X-Tenant"];
-  return config;
-});
+import { adminApiClient } from "./http-clients";
 
 /**
  * List all tenants with pagination and filtering

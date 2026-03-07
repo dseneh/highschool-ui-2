@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon, Delete02Icon } from "@hugeicons/core-free-icons"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 
 interface DeleteStudentDialogProps {
   open: boolean

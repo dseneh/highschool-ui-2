@@ -9,12 +9,12 @@ import {
   createMarkingPeriod,
   updateMarkingPeriod,
   deleteMarkingPeriod,
-} from "@/lib/api/marking-period-service";
+} from "@/lib/api2/marking-period-service";
 import type {
   MarkingPeriodDto,
   CreateMarkingPeriodCommand,
   UpdateMarkingPeriodCommand,
-} from "@/lib/api/marking-period-types";
+} from "@/lib/api2/marking-period-types";
 
 /* ------------------------------------------------------------------ */
 /*  Query key factory                                                  */

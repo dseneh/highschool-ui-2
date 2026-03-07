@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContactDto } from "@/lib/api/employee-types";
+import type { ContactDto } from "@/lib/api2/employee-types";
 import {
   Table,
   TableBody,

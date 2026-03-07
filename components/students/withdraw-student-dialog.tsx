@@ -10,7 +10,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { Textarea } from "@/components/ui/textarea"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert02Icon, UserRemove01Icon } from "@hugeicons/core-free-icons"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 
 interface WithdrawStudentDialogProps {
   open: boolean

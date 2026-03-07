@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { markGradeForCorrection } from "@/lib/api/grading-service";
+import { markGradeForCorrection } from "@/lib/api2/grading-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { getQueryClient } from "@/lib/query-client";
 

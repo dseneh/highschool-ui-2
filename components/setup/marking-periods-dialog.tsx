@@ -17,7 +17,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import type { SemesterDto } from "@/lib/api/academic-year-types";
+import type { SemesterDto } from "@/lib/api2/academic-year-types";
 
 interface MarkingPeriodsDialogProps {
   open: boolean;

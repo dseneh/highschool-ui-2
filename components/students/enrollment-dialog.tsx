@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { AlertTriangle } from "lucide-react"
 import { EnrollmentForm, type EnrollmentFormRef } from "./enrollment-form"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { AuthButton } from "../auth/auth-button"
 
 interface EnrollmentDialogProps {

@@ -10,7 +10,7 @@ import {
 import { DataTable } from "@/components/shared/data-table"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { RefreshIcon, Coins01Icon } from "@hugeicons/core-free-icons"
-import type { StudentConcessionDto } from "@/lib/api/billing-types"
+import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import { useBillingsApi } from "@/lib/api2/billing/api"
 import { getConcessionsColumns } from "./concession-columns"
 

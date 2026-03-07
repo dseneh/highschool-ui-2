@@ -14,7 +14,7 @@ import { EditFeeAmountDialog } from "@/components/finance/edit-fee-amount-dialog
 import { DialogBox } from "@/components/ui/dialog-box";
 import { toast } from "sonner";
 import {getErrorMessage, cn} from '@/lib/utils';
-import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api/finance-types";
+import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api2/finance-types";
 import {STUDENT_TARGET_LABELS, TARGET_COLORS} from '@/components/finance/utils';
 import { Pencil, Trash2 } from "lucide-react";
 

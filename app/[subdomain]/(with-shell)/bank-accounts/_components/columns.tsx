@@ -1,7 +1,7 @@
 import {Button} from '@/components/ui/button';
 import {Badge} from '@/components/ui/badge';
 import {formatCurrency, cn} from '@/lib/utils';
-import {BankAccountDto} from '@/lib/api/finance-types';
+import {BankAccountDto} from '@/lib/api2/finance-types';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '@/components/shared/data-table-column-header';
 import {getStatusBadgeClass} from '@/lib/status-colors';

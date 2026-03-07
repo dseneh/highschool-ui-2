@@ -13,7 +13,7 @@ import {
   reinstateStudent,
   addContact,
   addGuardian,
-} from "@/lib/api/student-service";
+} from "@/lib/api2/student-service";
 import type {
   StudentDto,
   CreateStudentCommand,
@@ -23,7 +23,7 @@ import type {
   AddGuardianCommand,
   ListStudentsParams,
   PaginatedResponse,
-} from "@/lib/api/student-types";
+} from "@/lib/api2/student-types";
 import {getQueryClient} from '@/lib/query-client';
 
 

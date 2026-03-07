@@ -11,9 +11,9 @@ import {
   changeAcademicYearStatus,
   closeAcademicYear,
   deleteAcademicYear,
-} from "@/lib/api/academic-year-service";
+} from "@/lib/api2/academic-year-service";
 import { getQueryClient } from "@/lib/query-client";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 
 /* ------------------------------------------------------------------ */
 /*  Query key factory                                                  */

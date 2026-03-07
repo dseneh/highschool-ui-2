@@ -48,7 +48,7 @@ import type {
   StudentGuardianDto,
   CreateStudentGuardianCommand,
   GuardianRelationship,
-} from "@/lib/api/contacts-types";
+} from "@/lib/api2/contacts-types";
 import { RefreshCcw } from "lucide-react";
 import { SelectField } from "@/components/ui/select-field";
 import { relationshipOptions } from "../util";

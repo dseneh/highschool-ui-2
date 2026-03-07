@@ -6,7 +6,7 @@ import { DialogBox } from "@/components/ui/dialog-box";
 import { Badge } from "@/components/ui/badge";
 import { useAcademicYearMutations } from "@/hooks/use-academic-year";
 import { getErrorMessage } from "@/lib/utils";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CheckmarkCircleIcon,

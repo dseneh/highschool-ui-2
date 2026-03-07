@@ -13,7 +13,7 @@ import { TerminateEmployeeDialog } from "@/components/employees/terminate-employ
 import { AddContactSheet } from "@/components/employees/add-contact-sheet";
 import { AddDependentSheet } from "@/components/employees/add-dependent-sheet";
 import { EmployeeFormModal } from "@/components/employees/employee-form";
-import type { UpdateEmployeeCommand } from "@/lib/api/employee-types";
+import type { UpdateEmployeeCommand } from "@/lib/api2/employee-types";
 import { useEmployeeDetail, useEmployeeMutations } from "@/hooks/use-employee";
 import { Skeleton } from "@/components/ui/skeleton";
 

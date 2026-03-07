@@ -25,7 +25,7 @@ import {
 import { useDeleteDefaultAssessmentTemplate } from "@/hooks/use-grading";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import type { DefaultAssessmentTemplateDto } from "@/lib/api/grading-types";
+import type { DefaultAssessmentTemplateDto } from "@/lib/api2/grading-types";
 import { getQueryClient } from "@/lib/query-client";
 
 interface DefaultAssessmentsTableProps {

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CreateTenantDto, UpdateTenantDto, TenantDetail } from "@/lib/api/admin-tenant-types";
+import { CreateTenantDto, UpdateTenantDto, TenantDetail } from "@/lib/api2/admin-tenant-types";
 
 const tenantFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

@@ -26,7 +26,7 @@ import type {
   SectionDto,
   CreateSectionCommand,
   UpdateSectionCommand,
-} from "@/lib/api/section-types";
+} from "@/lib/api2/section-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { z } from "zod";

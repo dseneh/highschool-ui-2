@@ -20,7 +20,7 @@ import type {
   TransactionTypeDto,
   PaymentMethodDto,
   BankAccountDto,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import {
   Upload04Icon,
   Download04Icon,

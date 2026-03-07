@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { TenantListItem } from "@/lib/api/admin-tenant-types";
+import { TenantListItem } from "@/lib/api2/admin-tenant-types";
 import TenantStatusBadge from "./tenant-status-badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Eye, Power } from "lucide-react";

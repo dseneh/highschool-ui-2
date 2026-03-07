@@ -29,7 +29,7 @@ import type {
   SubjectDto,
   CreateSubjectCommand,
   UpdateSubjectCommand,
-} from "@/lib/api/subject-types";
+} from "@/lib/api2/subject-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { z } from "zod";

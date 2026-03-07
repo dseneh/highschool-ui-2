@@ -17,7 +17,7 @@ import {
   Add01Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
-import { GradeStatus } from "@/lib/api/grading-types";
+import { GradeStatus } from "@/lib/api2/grading-types";
 
 export default function GradingOverviewPage() {
   const { data: currentYear, isLoading: yearLoading } = useCurrentAcademicYear();

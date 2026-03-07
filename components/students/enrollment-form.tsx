@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils"
 import { useEnrollments } from "@/lib/api2/enrollment"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { GradeLevelSelect, SectionSelect } from "../shared/data-reusable"
 
 /* ------------------------------------------------------------------ */

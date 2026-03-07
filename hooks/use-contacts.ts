@@ -12,7 +12,7 @@ import {
   updateStudentGuardian,
   deleteStudentGuardian,
   getSectionSchedule,
-} from "@/lib/api/contacts-service";
+} from "@/lib/api2/contacts-service";
 import type {
   StudentContactDto,
   CreateStudentContactCommand,
@@ -21,7 +21,7 @@ import type {
   CreateStudentGuardianCommand,
   UpdateStudentGuardianCommand,
   SectionScheduleDto,
-} from "@/lib/api/contacts-types";
+} from "@/lib/api2/contacts-types";
 import { getQueryClient } from "@/lib/query-client";
 
 /* ------------------------------------------------------------------ */

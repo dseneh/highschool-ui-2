@@ -5,7 +5,7 @@ import { useAuth } from "@/components/portable-auth/src/client";
 import { useAuthStore } from "@/store/auth-store";
 import { User } from "@/types/auth";
 import { useTenantStore } from "@/store/tenant-store";
-import { getTenantInfo } from "@/lib/api/tenant-service";
+import { getTenantInfo } from "@/lib/api2/tenant-service";
 import { Tenant } from "@/lib/tenant";
 
 export function AuthStoreSync() {

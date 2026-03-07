@@ -30,7 +30,7 @@ import {
   CreateTenantDto,
   UpdateTenantDto,
   TenantListParams,
-} from "@/lib/api/admin-tenant-types";
+} from "@/lib/api2/admin-tenant-types";
 import { toast } from "sonner";
 
 export default function TenantListPage() {

@@ -26,7 +26,7 @@ import type {
   TransactionStatus,
   TransactionTypeDto,
   BankAccountDto,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import {
   Search01Icon,
   FilterHorizontalIcon,

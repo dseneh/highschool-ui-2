@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { addDependent } from "@/lib/api/employee-service";
+import { addDependent } from "@/lib/api2/employee-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { getQueryClient } from "@/lib/query-client";
 

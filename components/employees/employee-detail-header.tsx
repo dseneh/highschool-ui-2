@@ -10,7 +10,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { getStatusPillClass } from "@/lib/status-colors";
-import type { EmployeeDto } from "@/lib/api/employee-types";
+import type { EmployeeDto } from "@/lib/api2/employee-types";
 
 interface EmployeeDetailHeaderProps {
   employee: EmployeeDto;

@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
-import * as tenantService from "@/lib/api/admin-tenant-service";
+import * as tenantService from "@/lib/api2/admin-tenant-service";
 import type {
   TenantDetail,
   CreateTenantDto,
   UpdateTenantDto,
   TenantListParams,
   PaginatedTenants,
-} from "@/lib/api/admin-tenant-types";
+} from "@/lib/api2/admin-tenant-types";
 
 // Query keys
 export const tenantKeys = {

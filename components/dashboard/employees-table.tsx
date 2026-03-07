@@ -32,7 +32,7 @@ import {
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 import { useDashboardStore } from "@/store/dashboard-store";
-import type { EmployeeDto } from "@/lib/api/employee-types";
+import type { EmployeeDto } from "@/lib/api2/employee-types";
 import { cn } from "@/lib/utils";
 import { getStatusPillClass } from "@/lib/status-colors";
 import { useRouter } from "next/navigation";

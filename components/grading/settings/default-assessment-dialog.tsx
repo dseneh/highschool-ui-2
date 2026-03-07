@@ -37,7 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import type { DefaultAssessmentTemplateDto } from "@/lib/api/grading-types";
+import type { DefaultAssessmentTemplateDto } from "@/lib/api2/grading-types";
 import { SelectField } from "@/components/ui/select-field";
 
 const defaultAssessmentSchema = z.object({

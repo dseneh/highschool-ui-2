@@ -25,7 +25,7 @@ import { AlertCircleIcon, BookOpen02Icon, Medal01Icon, ChartIcon } from "@hugeic
 import { CircularProgress } from "@/components/ui/circular-progress"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
-import type { GradeBookRecord } from "@/lib/api/grading-types"
+import type { GradeBookRecord } from "@/lib/api2/grading-types"
 import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 import PageLayout from "@/components/dashboard/page-layout"

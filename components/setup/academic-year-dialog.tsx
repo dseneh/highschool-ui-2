@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useAcademicYearMutations } from "@/hooks/use-academic-year";
 import { getErrorMessage } from "@/lib/utils";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 
 const formSchema = z.object({
   name: z.string().min(1, "Academic year name is required"),

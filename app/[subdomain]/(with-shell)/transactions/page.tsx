@@ -28,7 +28,7 @@ import type {
   CreateTransactionCommand,
   BulkTransactionType,
   BulkTransactionCommand,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import { getTransactionColumns } from "@/components/finance/transaction-columns";
 import { TransactionFormDialog } from "@/components/finance/transaction-form-dialog";
 import { TransactionDetailDialog } from "@/components/finance/transaction-detail-dialog";

@@ -59,7 +59,7 @@ import { cn } from "@/lib/utils";
 import { getStatusTextClass } from "@/lib/status-colors";
 import { exportStudentsToCSV } from "@/lib/export-utils";
 import { showToast } from "@/lib/toast";
-import { StudentDto } from "@/lib/api/student-types";
+import { StudentDto } from "@/lib/api2/student-types";
 import { studentColumns, type StudentTableMeta } from "./student-columns";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addContact } from "@/lib/api/employee-service";
+import { addContact } from "@/lib/api2/employee-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { getQueryClient } from "@/lib/query-client";
 

@@ -19,7 +19,7 @@ import type {
   GradeEntryStudent,
   GradeStatusType,
   SectionFinalGradesSubjectResponse,
-} from "@/lib/api/grading-types";
+} from "@/lib/api2/grading-types";
 import { getQueryClient } from "@/lib/query-client";
 import AlertDialogBox from "../shared/alert-dialogbox";
 import { GradeHistoryModal } from "./grade-history-modal";

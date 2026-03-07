@@ -44,7 +44,7 @@ import {
   deleteInstallment,
   getBillingSummary,
   getPaymentStatus,
-} from "@/lib/api/finance-service";
+} from "@/lib/api2/finance-service";
 import type {
   TransactionDto,
   TransactionListParams,
@@ -74,7 +74,7 @@ import type {
   BillingSummaryParams,
   StudentPaymentStatusDto,
   PaymentStatusParams,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import {getQueryClient} from '@/lib/query-client';
 
 /* ================================================================== */
@@ -239,7 +239,7 @@ export function useTransactionMutations(studentId?: string) {
   });
 
   const bulkCreate = useMutation({
-    mutationFn: ({ type, payload }: { type: string; payload: import("@/lib/api/finance-types").BulkTransactionCommand }) =>
+    mutationFn: ({ type, payload }: { type: string; payload: import("@/lib/api2/finance-types").BulkTransactionCommand }) =>
       createBulkTransaction(sub, type, payload),
     onSuccess: () => {
       void invalidate();

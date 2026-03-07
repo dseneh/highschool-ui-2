@@ -43,7 +43,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils"
-import { StudentContactDto, CreateStudentContactCommand, ContactRelationship } from '@/lib/api/contacts-types'
+import { StudentContactDto, CreateStudentContactCommand, ContactRelationship } from '@/lib/api2/contacts-types'
 import { getQueryClient } from "@/lib/query-client"
 import { SelectField } from '@/components/ui/select-field'
 import { relationshipOptions } from '@/app/[subdomain]/(with-shell)/students/[id_number]/util'

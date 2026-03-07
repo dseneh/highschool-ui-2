@@ -1,25 +1,5 @@
-import axios from "axios";
 import { ThemeConfig } from "@/contexts/theme-context";
-
-const PUBLIC_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
-
-const publicApiClient = axios.create({
-  baseURL: PUBLIC_API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-});
-
-// Add tenant header interceptor
-publicApiClient.interceptors.request.use((config) => {
-  const tenantId = localStorage.getItem("tenant_id");
-  if (tenantId) {
-    config.headers["X-Tenant"] = tenantId;
-  }
-  return config;
-});
+import { tenantScopedPublicApiClient as publicApiClient } from "./http-clients";
 
 export interface TenantDomain {
   id: number;

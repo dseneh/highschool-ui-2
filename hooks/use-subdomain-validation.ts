@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { getTenantInfo } from "@/lib/api/tenant-service";
+import { getTenantInfo } from "@/lib/api2/tenant-service";
 import { buildDomainUrlFromWindow } from "@/lib/tenant/index";
 
 interface UseSubdomainValidationOptions {

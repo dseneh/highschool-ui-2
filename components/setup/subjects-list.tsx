@@ -13,7 +13,7 @@ import {
   EmptyStateDescription,
 } from "@/components/ui/empty-state";
 import { useSectionSubjects, useRemoveSectionSubject } from "@/hooks/use-section-subjects";
-import type { SectionDto } from "@/lib/api/section-types";
+import type { SectionDto } from "@/lib/api2/section-types";
 import { toast } from "sonner";
 import { Trash2, Plus, BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";

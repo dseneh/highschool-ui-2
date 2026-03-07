@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Tick01Icon } from "@hugeicons/core-free-icons";
-import { fetchNotifications } from "@/lib/api/queries";
-import type { NotificationData, SummaryCardData } from "@/lib/api/queries";
+import { fetchNotifications } from "@/lib/api2/queries";
+import type { NotificationData, SummaryCardData } from "@/lib/api2/queries";
 import { getIconByKey } from "@/lib/icon-map";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 

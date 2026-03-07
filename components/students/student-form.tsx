@@ -48,7 +48,7 @@ import type {
   CreateStudentCommand,
   UpdateStudentCommand,
   StudentDto,
-} from "@/lib/api/student-types";
+} from "@/lib/api2/student-types";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */

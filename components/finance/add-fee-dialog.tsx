@@ -5,7 +5,7 @@ import { DialogBox } from "@/components/ui/dialog-box";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import type { GeneralFeeDto } from "@/lib/api/finance-types";
+import type { GeneralFeeDto } from "@/lib/api2/finance-types";
 import { formatCurrency } from "@/lib/utils";
 import {
   EmptyState,

@@ -14,9 +14,9 @@ import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
 import type {
   BillingSummaryItemDto,
   BillingSummaryParams,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import { getBillingSummaryColumns } from "@/components/finance/billing-summary-columns";
-import { downloadBillingSummary } from "@/lib/api/finance-service";
+import { downloadBillingSummary } from "@/lib/api2/finance-service";
 import { useRouter } from "next/navigation";
 import { ArrowLeft02Icon, FileExportIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";

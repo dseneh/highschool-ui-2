@@ -4,7 +4,7 @@ import { DialogBox2 as DialogBox } from "@/components/ui/dialog-box2";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { StudentConcessionDto } from "@/lib/api/billing-types";
+import type { StudentConcessionDto } from "@/lib/api2/billing-types";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Tag, Target, DollarSign, Info, CreditCard } from "lucide-react";

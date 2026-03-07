@@ -9,7 +9,7 @@ import {
   DollarCircleIcon,
   Calendar03Icon,
 } from "@hugeicons/core-free-icons"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { cn } from "@/lib/utils"
 
 interface StudentDashboardMetricsProps {

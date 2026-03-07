@@ -14,7 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import type { BankAccountAnalysis } from "@/lib/api/finance-types";
+import type { BankAccountAnalysis } from "@/lib/api2/finance-types";
 import { formatCurrency } from "@/lib/utils";
 
 interface AccountChartsProps {

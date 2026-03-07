@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api-client";
+import apiClient from "@/lib/api2/client";
 import type { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 
 /**

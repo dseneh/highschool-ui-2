@@ -33,7 +33,7 @@ import {
   getStudentFinalGrades,
   getStudentReportCardPdf,
   getSectionFinalGrades,
-} from "@/lib/api/grading-service";
+} from "@/lib/api2/grading-service";
 import type {
   GradebookListParams,
   CreateGradebookCommand,
@@ -53,7 +53,7 @@ import type {
   UpdateDefaultAssessmentTemplateCommand,
   StudentFinalGradesParams,
   GradeStatusType,
-} from "@/lib/api/grading-types";
+} from "@/lib/api2/grading-types";
 import { getQueryClient } from "@/lib/query-client";
 
 /* ============================= QUERY KEYS ============================= */

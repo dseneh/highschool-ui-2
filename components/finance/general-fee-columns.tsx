@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { GeneralFeeDto } from "@/lib/api/finance-types";
+import type { GeneralFeeDto } from "@/lib/api2/finance-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

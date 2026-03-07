@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import type { StudentConcessionDto } from "@/lib/api/billing-types"
+import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import { useBillingsApi } from "@/lib/api2/billing/api"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils"

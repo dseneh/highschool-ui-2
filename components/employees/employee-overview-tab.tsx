@@ -1,6 +1,6 @@
 "use client";
 
-import type { EmployeeDto } from "@/lib/api/employee-types";
+import type { EmployeeDto } from "@/lib/api2/employee-types";
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (

@@ -9,12 +9,12 @@ import type {
   SectionSubjectDto,
   CreateSectionSubjectPayload,
   SectionSubjectListParams,
-} from "@/lib/api/section-subject-types";
+} from "@/lib/api2/section-subject-types";
 import {
   getSectionSubjects,
   assignSubjectsToSection,
   removeSectionSubject,
-} from "@/lib/api/section-subject-service";
+} from "@/lib/api2/section-subject-service";
 import { getQueryClient } from "@/lib/query-client";
 
 /**

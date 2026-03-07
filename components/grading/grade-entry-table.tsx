@@ -26,7 +26,7 @@ import type {
   GradeEntryAssessment,
   GradeEntryStudent,
   SectionFinalGradesSubjectResponse,
-} from "@/lib/api/grading-types";
+} from "@/lib/api2/grading-types";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { showToast } from "@/lib/toast";
 import { getQueryClient } from "@/lib/query-client";

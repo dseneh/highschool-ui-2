@@ -3,7 +3,7 @@
  * API functions for managing section-subject relationships
  */
 
-import apiClient from "@/lib/api-client";
+import apiClient from "@/lib/api2/client";
 import type {
   SectionSubjectDto,
   CreateSectionSubjectPayload,

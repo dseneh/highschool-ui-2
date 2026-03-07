@@ -7,12 +7,12 @@ import {
   createEnrollment,
   updateEnrollment,
   deleteEnrollment,
-} from "@/lib/api/enrollment-service";
+} from "@/lib/api2/enrollment-service";
 import type {
   CreateEnrollmentCommand,
   UpdateEnrollmentCommand,
   EnrollmentDto,
-} from "@/lib/api/enrollment-types";
+} from "@/lib/api2/enrollment-types";
 import {getQueryClient} from '@/lib/query-client';
 
 /* ------------------------------------------------------------------ */

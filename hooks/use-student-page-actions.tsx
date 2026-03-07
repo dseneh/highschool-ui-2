@@ -16,7 +16,7 @@ import {
   IdIcon,
   Notification03Icon,
 } from "@hugeicons/core-free-icons"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { showToast } from "@/lib/toast"
 import { getErrorMessage } from "@/lib/utils"
 import { exportSingleStudentCSV } from "@/lib/export-utils"

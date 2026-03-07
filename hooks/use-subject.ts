@@ -7,12 +7,12 @@ import {
   createSubject,
   updateSubject,
   deleteSubject,
-} from "@/lib/api/subject-service";
+} from "@/lib/api2/subject-service";
 import type {
   SubjectDto,
   CreateSubjectCommand,
   UpdateSubjectCommand,
-} from "@/lib/api/subject-types";
+} from "@/lib/api2/subject-types";
 import { getQueryClient } from "@/lib/query-client";
 
 /* ------------------------------------------------------------------ */

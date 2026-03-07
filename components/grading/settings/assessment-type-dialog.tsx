@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import type { AssessmentTypeDto } from "@/lib/api/grading-types";
+import type { AssessmentTypeDto } from "@/lib/api2/grading-types";
 
 const assessmentTypeSchema = z.object({
   name: z.string().min(1, "Name is required"),

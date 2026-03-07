@@ -22,8 +22,8 @@ import type {
   MarkingPeriodDto,
   CreateMarkingPeriodCommand,
   UpdateMarkingPeriodCommand,
-} from "@/lib/api/marking-period-types";
-import type { SemesterDto } from "@/lib/api/semester-types";
+} from "@/lib/api2/marking-period-types";
+import type { SemesterDto } from "@/lib/api2/semester-types";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";

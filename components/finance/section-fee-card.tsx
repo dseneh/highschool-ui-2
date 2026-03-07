@@ -17,8 +17,8 @@ import { useSectionFees, useSectionFeeMutations } from "@/hooks/use-finance";
 import { AddFeeDialog } from "@/components/finance/add-fee-dialog";
 import { EditFeeAmountDialog } from "@/components/finance/edit-fee-amount-dialog";
 import { DialogBox } from "@/components/ui/dialog-box";
-import type { SectionDto } from "@/lib/api/grade-level-types";
-import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api/finance-types";
+import type { SectionDto } from "@/lib/api2/grade-level-types";
+import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api2/finance-types";
 import { formatCurrency, getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import {

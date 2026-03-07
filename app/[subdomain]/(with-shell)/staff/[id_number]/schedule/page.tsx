@@ -17,7 +17,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { AlertCircleIcon, SchoolIcon, Calendar03Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type { SectionScheduleDto } from "@/lib/api/contacts-types"
+import type { SectionScheduleDto } from "@/lib/api2/contacts-types"
 import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 import PageLayout from "@/components/dashboard/page-layout"

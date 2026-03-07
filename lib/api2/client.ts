@@ -1,18 +1,12 @@
 import axios from "axios";
 import type { AxiosError } from "axios";
 import { getSubdomainFromWindow, extractWorkspaceFromPath } from "@/lib/utils/get-subdomain";
+import { API_URL } from "@/config/utils";
 
 /**
  * Key used to persist the current tenant subdomain in localStorage.
  */
 export const TENANT_STORAGE_KEY = "ezy:tenant";
-
-/**
- * Base URL for the Django API.
- * Defaults to local development server.
- */
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 /**
  * Fetch access token from Next.js API route.
@@ -46,7 +40,7 @@ async function getAccessToken(): Promise<string | null> {
  *  - credentials included
  */
 const apiClient = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_URL,
   timeout: 60000,
   headers: {
     "Content-Type": "application/json",

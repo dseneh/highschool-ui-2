@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/portable-auth/src/client";
-import { TENANT_STORAGE_KEY } from "@/lib/api-client";
+import { TENANT_STORAGE_KEY } from "@/lib/api2/client";
 import { getErrorMessage } from "@/lib/utils/error-handler";
 
 const EMAIL_KEY = "ezyschool:lastEmail";

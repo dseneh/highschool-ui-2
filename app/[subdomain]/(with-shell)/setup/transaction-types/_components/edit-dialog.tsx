@@ -32,7 +32,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTransactionTypeMutations } from "@/hooks/use-finance";
 import { showToast } from "@/lib/toast";
-import type { TransactionTypeDto } from "@/lib/api/finance-types";
+import type { TransactionTypeDto } from "@/lib/api2/finance-types";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").min(3, "Name must be at least 3 characters"),

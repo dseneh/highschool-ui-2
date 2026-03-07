@@ -9,7 +9,7 @@ import {
   getStudentConcessions,
   createStudentConcession,
   updateStudentConcession,
-} from "@/lib/api/billing-service";
+} from "@/lib/api2/billing-service";
 import type {
   StudentBillsResponse,
   StudentAttendanceDto,
@@ -17,7 +17,7 @@ import type {
   StudentConcessionListResponse,
   CreateStudentConcessionCommand,
   UpdateStudentConcessionCommand,
-} from "@/lib/api/billing-types";
+} from "@/lib/api2/billing-types";
 
 const billingKeys = {
   studentBills: (sub: string, studentId: string) =>

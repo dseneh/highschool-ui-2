@@ -10,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { InvoiceData, SummaryCardData } from "@/lib/api/queries";
-import { fetchInvoices } from "@/lib/api/queries";
+import type { InvoiceData, SummaryCardData } from "@/lib/api2/queries";
+import { fetchInvoices } from "@/lib/api2/queries";
 import { getIconByKey } from "@/lib/icon-map";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 

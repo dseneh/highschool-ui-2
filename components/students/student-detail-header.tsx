@@ -10,7 +10,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { getStatusBadgeClass, getStatusDotClass } from "@/lib/status-colors"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import moment from "moment"
 import AvatarImg from "../shared/avatar-img"
 

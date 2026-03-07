@@ -30,7 +30,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { AcademicYearSelect } from "@/components/shared/data-reusable";
 import { RefreshCcw } from "lucide-react";
-import type { SemesterDto } from "@/lib/api/academic-year-types";
+import type { SemesterDto } from "@/lib/api2/academic-year-types";
 import { useAuthStore } from "@/store/auth-store";
 import { useQueryState, parseAsString } from "nuqs";
 

@@ -6,7 +6,7 @@ import { UserRemove01Icon, UserAdd01Icon } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { DialogBox } from "@/components/ui/dialog-box"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { AuthButton } from "../auth/auth-button"
 
 /** Statuses where the student is considered inactive / read-only. */

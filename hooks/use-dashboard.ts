@@ -8,7 +8,7 @@ import {
   getFinancialSummary,
   type DashboardStats,
   type FinanceDataPoint,
-} from "@/lib/api/dashboard-service";
+} from "@/lib/api2/dashboard-service";
 
 const dashboardKeys = {
   all: (sub: string) => ["dashboard", sub] as const,

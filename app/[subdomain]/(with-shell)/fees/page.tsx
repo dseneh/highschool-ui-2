@@ -10,7 +10,7 @@ import type {
   GeneralFeeDto,
   CreateGeneralFeeCommand,
   UpdateGeneralFeeCommand,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import { getGeneralFeeColumns } from "@/components/finance/general-fee-columns";
 import { GeneralFeeFormDialog } from "@/components/finance/general-fee-form-dialog";
 import { DialogBox } from "@/components/ui/dialog-box";

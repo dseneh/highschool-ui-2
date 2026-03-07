@@ -16,7 +16,7 @@ import type {
   AccountTransferCommand,
   BankAccountDto,
   PaymentMethodDto,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import { format } from "date-fns";
 
 interface AccountTransferDialogProps {

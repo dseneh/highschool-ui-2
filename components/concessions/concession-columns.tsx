@@ -1,7 +1,7 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import type { StudentConcessionDto } from "@/lib/api/billing-types"
+import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header"

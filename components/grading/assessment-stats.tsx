@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { AssessmentStatistics } from "@/lib/api/grading-types";
+import type { AssessmentStatistics } from "@/lib/api2/grading-types";
 
 interface StatsBasicProps {
   maxScore: string;

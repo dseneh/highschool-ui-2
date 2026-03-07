@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { TransactionTypeDto } from "@/lib/api/finance-types";
+import type { TransactionTypeDto } from "@/lib/api2/finance-types";
 
 interface DeleteDialogProps {
   open: boolean;

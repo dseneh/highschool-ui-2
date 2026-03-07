@@ -28,7 +28,7 @@ import {
 import { Add01Icon, MoreVerticalIcon, Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateAction } from "@/components/ui/empty-state";
 import { AssessmentTypeDialog } from "./assessment-type-dialog";
-import type { AssessmentTypeDto } from "@/lib/api/grading-types";
+import type { AssessmentTypeDto } from "@/lib/api2/grading-types";
 
 export function AssessmentTypesTab() {
   const { data: assessmentTypes, isLoading } = useAssessmentTypes();

@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit2, Trash2 } from "lucide-react";
-import type { PaymentMethodDto } from "@/lib/api/finance-types";
+import type { PaymentMethodDto } from "@/lib/api2/finance-types";
 
 export function columns(
   onEdit: (method: PaymentMethodDto) => void,

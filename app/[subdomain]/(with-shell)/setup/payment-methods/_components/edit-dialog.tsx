@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { usePaymentMethodMutations } from "@/hooks/use-finance";
 import { showToast } from "@/lib/toast";
-import type { PaymentMethodDto } from "@/lib/api/finance-types";
+import type { PaymentMethodDto } from "@/lib/api2/finance-types";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").min(3, "Name must be at least 3 characters"),

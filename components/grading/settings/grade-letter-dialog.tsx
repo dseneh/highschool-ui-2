@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import type { GradeLetterDto } from "@/lib/api/grading-types";
+import type { GradeLetterDto } from "@/lib/api2/grading-types";
 
 const gradeLetterSchema = z.object({
   letter: z.string().min(1, "Letter is required").max(3),

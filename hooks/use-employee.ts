@@ -11,7 +11,7 @@ import {
   terminateEmployee,
   addContact,
   addDependent,
-} from "@/lib/api/employee-service";
+} from "@/lib/api2/employee-service";
 import type {
   EmployeeDto,
   CreateEmployeeCommand,
@@ -20,7 +20,7 @@ import type {
   AddContactCommand,
   AddDependentCommand,
   ListEmployeesParams,
-} from "@/lib/api/employee-types";
+} from "@/lib/api2/employee-types";
 import {getQueryClient} from '@/lib/query-client';
 
 /* ------------------------------------------------------------------ */

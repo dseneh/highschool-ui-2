@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit02Icon, Delete02Icon, Add01Icon } from "@hugeicons/core-free-icons";
-import type { AssessmentDto } from "@/lib/api/grading-types";
+import type { AssessmentDto } from "@/lib/api2/grading-types";
 import { StatsBasic, StatsProgress } from "./assessment-stats";
 import { cn } from "@/lib/utils";
 

@@ -2,7 +2,7 @@
 /*  CSV / data export utilities                                        */
 /* ------------------------------------------------------------------ */
 
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 
 /**
  * Escapes a CSV cell value by wrapping in quotes if it contains commas,
@@ -136,7 +136,7 @@ export function exportSingleStudentCSV(student: StudentDto) {
 /*  Transaction-specific exports                                       */
 /* ------------------------------------------------------------------ */
 
-import type { TransactionDto } from "@/lib/api/finance-types"
+import type { TransactionDto } from "@/lib/api2/finance-types"
 
 /** Column definitions for the transaction CSV export */
 const transactionExportColumns: {

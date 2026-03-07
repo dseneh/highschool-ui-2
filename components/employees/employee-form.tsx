@@ -40,7 +40,7 @@ import type {
   CreateEmployeeCommand,
   UpdateEmployeeCommand,
   EmployeeDto,
-} from "@/lib/api/employee-types";
+} from "@/lib/api2/employee-types";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */

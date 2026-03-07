@@ -17,7 +17,7 @@ import {
   Add01Icon,
   FileIcon,
 } from "@hugeicons/core-free-icons";
-import { GradeStatus, SectionStudentGrade } from "@/lib/api/grading-types";
+import { GradeStatus, SectionStudentGrade } from "@/lib/api2/grading-types";
 import { CreateAssessmentDialog } from "@/components/grading/create-assessment-dialog";
 import { GradeEntryTable } from "@/components/grading/grade-entry-table";
 import { AssessmentsList } from "@/components/grading/assessments-list";

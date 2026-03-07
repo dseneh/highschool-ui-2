@@ -28,7 +28,7 @@ import type {
   GeneralFeeDto,
   CreateGeneralFeeCommand,
   UpdateGeneralFeeCommand,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import {SelectField} from '@/components/ui/select-field';
 
 /* ------------------------------------------------------------------ */

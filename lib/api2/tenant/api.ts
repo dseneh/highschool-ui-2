@@ -1,29 +1,5 @@
-import axios from "axios";
 import type { Tenant } from "@/lib/tenant";
-
-/**
- * Server-safe HTTP client for tenant API calls.
- * Uses plain axios without auth interceptors since tenant endpoints are public.
- * Safe to use in both client and server components.
- */
-const apiBase = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1",
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-});
-
-// Ensure trailing slashes for Django
-apiBase.interceptors.request.use((config) => {
-  if (config.url) {
-    const [path, query] = config.url.split("?");
-    const normalizedPath = path.endsWith("/") ? path : `${path}/`;
-    config.url = query ? `${normalizedPath}?${query}` : normalizedPath;
-  }
-  return config;
-});
+import { djangoPublicApiClient as apiBase } from "@/lib/api2/http-clients";
 
 /**
  * Fetch tenant by schema name (subdomain).

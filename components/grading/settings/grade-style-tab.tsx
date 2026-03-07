@@ -24,7 +24,7 @@ import { DefaultAssessmentsTable } from "./default-assessments-table";
 import { DefaultAssessmentDialog } from "./default-assessment-dialog";
 import { SelectSetting, TextSetting } from "./setting-row";
 import { SettingsSection } from "./settings-section";
-import type { DefaultAssessmentTemplateDto } from "@/lib/api/grading-types";
+import type { DefaultAssessmentTemplateDto } from "@/lib/api2/grading-types";
 import { getQueryClient } from "@/lib/query-client";
 
 interface GradeStyleSettings {

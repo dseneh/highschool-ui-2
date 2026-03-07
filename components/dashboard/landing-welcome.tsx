@@ -29,7 +29,7 @@ import { StudentFormModal } from "@/components/students/student-form";
 import { useStudents } from "@/lib/api2/student";
 import { getErrorMessage } from "@/lib/utils";
 import { useHasRole } from "@/hooks/use-authorization";
-import type { CreateStudentCommand } from "@/lib/api/student-types";
+import type { CreateStudentCommand } from "@/lib/api2/student-types";
 
 export function LandingWelcome() {
   const { user } = useAuth();

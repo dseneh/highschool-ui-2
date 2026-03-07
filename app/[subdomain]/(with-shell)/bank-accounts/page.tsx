@@ -20,7 +20,7 @@ import type {
   BankAccountDto,
   CreateBankAccountCommand,
   UpdateBankAccountCommand,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { getStatusBadgeClass } from "@/lib/status-colors";

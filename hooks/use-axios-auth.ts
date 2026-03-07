@@ -8,7 +8,8 @@
  */
 
 import { useCallback } from "react"
-import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from "axios"
+import { type AxiosRequestConfig, type AxiosResponse } from "axios"
+import { authenticatedApiClient } from "@/lib/api2/http-clients"
 import { useTenantStore } from "@/store/tenant-store"
 import { useAuth } from "@/components/portable-auth/src/client"
 
@@ -64,70 +65,6 @@ async function getAccessToken(): Promise<string | null> {
 }
 
 /**
- * Ensure URL has trailing slash (but preserve query params)
- * Examples:
- *  /api/users -> /api/users/
- *  /api/users?page=1 -> /api/users/?page=1
- *  /api/users/ -> /api/users/ (no change)
- *  /api/users/#section -> /api/users/#section (no change)
- */
-const ensureTrailingSlash = (url: string): string => {
-  // Don't modify URLs that already have a trailing slash
-  if (url.endsWith('/')) {
-    return url
-  }
-
-  // Handle URLs with query parameters or fragments
-  const questionMarkIndex = url.indexOf('?')
-  const hashIndex = url.indexOf('#')
-
-  if (questionMarkIndex > -1 || hashIndex > -1) {
-    // Find the path part (before ? or #)
-    const splitIndex = questionMarkIndex > -1 
-      ? questionMarkIndex 
-      : hashIndex
-
-    const path = url.substring(0, splitIndex)
-    const suffix = url.substring(splitIndex)
-
-    // Add trailing slash to path if not already there
-    if (!path.endsWith('/')) {
-      return path + '/' + suffix
-    }
-    return url
-  }
-
-  // Simple case: no query params or fragments
-  return url + '/'
-}
-
-// Create base axios instance
-const createAxiosInstance = (): AxiosInstance => {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000"
-  
-  const instance = axios.create({
-    baseURL: `${backendUrl}/api/v1`,
-    timeout: 120000, // 2 minutes for file uploads
-    withCredentials: true,
-    // Don't set default Content-Type to allow automatic detection for FormData
-    // headers: { "Content-Type": "application/json" },
-  })
-
-  // Add request interceptor to append trailing slashes
-  instance.interceptors.request.use(
-    (config) => {
-      if (config.url) {
-        config.url = ensureTrailingSlash(config.url)
-      }
-      return config
-    },
-    (error) => Promise.reject(error)
-  )
-
-  return instance
-}
-
-/**
  * NextAuth-compatible useAxiosAuth hook
  * 
  * @returns Object with HTTP methods (get, post, put, patch, delete)
@@ -138,8 +75,6 @@ export function useAxiosAuth() {
 
   const request = useCallback(
     async <T = unknown>(config: AxiosRequestConfig & { skipAuth?: boolean }): Promise<AxiosResponse<T>> => {
-      const axiosInstance = createAxiosInstance()
-
       // Prepare headers
       const headers: Record<string, string> = {
         ...config.headers as Record<string, string>,
@@ -177,7 +112,8 @@ export function useAxiosAuth() {
         headers['Content-Type'] = 'application/json'
       }
 
-      return axiosInstance.request<T>({
+      // Use centralized authenticated client from lib/api2/http-clients
+      return authenticatedApiClient.request<T>({
         ...config,
         headers,
       })

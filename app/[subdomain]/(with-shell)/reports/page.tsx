@@ -21,7 +21,7 @@ import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
 import type {
   StudentPaymentStatusDto,
   PaymentStatusParams,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { useRouter } from "next/navigation";

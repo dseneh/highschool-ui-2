@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CalculationMethod } from "@/lib/api/grading-types";
+import { CalculationMethod } from "@/lib/api2/grading-types";
 
 const createGradebookSchema = z.object({
   subject: z.string().min(1, "Subject is required"),

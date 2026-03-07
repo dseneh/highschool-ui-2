@@ -14,7 +14,7 @@ import { columns } from "./columns";
 import { CreateDialog } from "./create-dialog";
 import { EditDialog } from "./edit-dialog";
 import { DeleteDialog } from "./delete-dialog";
-import type { TransactionTypeDto } from "@/lib/api/finance-types";
+import type { TransactionTypeDto } from "@/lib/api2/finance-types";
 import PageLayout from "@/components/dashboard/page-layout";
 import { SelectField } from "@/components/ui/select-field";
 

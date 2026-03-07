@@ -4,7 +4,7 @@ import * as React from "react"
 import { AlertTriangle } from "lucide-react"
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year"
 import { EnrollmentDialog } from "./enrollment-dialog"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 import { AuthButton } from "../auth/auth-button"
 
 interface EnrollmentAlertProps {

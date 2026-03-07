@@ -25,7 +25,7 @@ import {
 import type {
   TransactionDto,
   UpdateBankAccountCommand,
-} from "@/lib/api/finance-types";
+} from "@/lib/api2/finance-types";
 import {
   ArrowLeft02Icon,
   Edit02Icon,

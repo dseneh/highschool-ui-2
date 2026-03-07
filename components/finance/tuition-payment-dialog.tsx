@@ -13,8 +13,8 @@ import type {
   TransactionTypeDto,
   PaymentMethodDto,
   BankAccountDto,
-} from "@/lib/api/finance-types";
-import type { StudentDto } from "@/lib/api/student-types";
+} from "@/lib/api2/finance-types";
+import type { StudentDto } from "@/lib/api2/student-types";
 import { useStudents } from "@/lib/api2/student";
 import { format } from "date-fns";
 import { toast } from "sonner";

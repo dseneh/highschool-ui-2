@@ -24,8 +24,8 @@ import { useMemo, useCallback } from "react";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { useHasRole } from "@/hooks/use-authorization";
-import type { StudentDto } from "@/lib/api/student-types";
-import type { CreateStudentCommand } from "@/lib/api/student-types";
+import type { StudentDto } from "@/lib/api2/student-types";
+import type { CreateStudentCommand } from "@/lib/api2/student-types";
 import PageLayout from "@/components/dashboard/page-layout";
 
 export default function StudentsPage() {

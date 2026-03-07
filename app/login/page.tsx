@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { SSOButton } from "@/components/auth/sso-button";
 import { TenantSelectionDialog } from "@/components/auth/tenant-selection-dialog";
-import { TENANT_STORAGE_KEY } from "@/lib/api-client";
+import { TENANT_STORAGE_KEY } from "@/lib/api2/client";
 import { getRootDomain } from "@/lib/tenant";
-import { searchUser } from "@/lib/api/public-service";
-import type { UserSearchResult } from "@/lib/api/public-types";
+import { searchUser } from "@/lib/api2/public-service";
+import type { UserSearchResult } from "@/lib/api2/public-types";
 import { ChevronRight } from "lucide-react";
 
 const SEARCH_KEY = "ezy:lastSearch";

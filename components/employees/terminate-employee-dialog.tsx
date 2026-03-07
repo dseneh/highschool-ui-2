@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
-import { terminateEmployee } from "@/lib/api/employee-service";
+import { terminateEmployee } from "@/lib/api2/employee-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
-import type { EmployeeDto } from "@/lib/api/employee-types";
+import type { EmployeeDto } from "@/lib/api2/employee-types";
 import { getQueryClient } from "@/lib/query-client";
 
 interface TerminateEmployeeDialogProps {

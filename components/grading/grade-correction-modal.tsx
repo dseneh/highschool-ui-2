@@ -4,7 +4,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { showToast } from "@/lib/toast"
-import { correctGrade } from "@/lib/api/grading-service"
+import { correctGrade } from "@/lib/api2/grading-service"
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain"
 import { getErrorMessage } from "@/lib/utils"
 import { DialogBox } from "../ui/dialog-box"

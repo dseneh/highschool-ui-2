@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Building02Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import type { UserSearchResult } from "@/lib/api/public-types";
+import type { UserSearchResult } from "@/lib/api2/public-types";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 

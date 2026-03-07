@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
-import { listSemesters } from "@/lib/api/semester-service";
-import type { SemesterDto } from "@/lib/api/semester-types";
+import { listSemesters } from "@/lib/api2/semester-service";
+import type { SemesterDto } from "@/lib/api2/semester-types";
 
 /* ------------------------------------------------------------------ */
 /*  Query key factory                                                  */

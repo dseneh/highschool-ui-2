@@ -1,22 +1,5 @@
-import axios from "axios";
 import type { UserSearchParams, UserSearchResponse } from "./public-types";
-
-/**
- * Base URL for public API endpoints (no authentication required)
- */
-const PUBLIC_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
-
-/**
- * Public API client - no authentication, no tenant headers
- */
-const publicApiClient = axios.create({
-  baseURL: PUBLIC_API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-});
+import { publicApiClient } from "./http-clients";
 
 /**
  * Search for user across all tenants by email, phone, or ID number

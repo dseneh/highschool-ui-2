@@ -19,7 +19,7 @@ import type {
   GradeLevelDto,
   CreateGradeLevelCommand,
   UpdateGradeLevelCommand,
-} from "@/lib/api/grade-level-types";
+} from "@/lib/api2/grade-level-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import {

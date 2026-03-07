@@ -9,13 +9,13 @@ import {
   updateGradeLevel,
   deleteGradeLevel,
   updateGradeLevelTuitions,
-} from "@/lib/api/grade-level-service";
+} from "@/lib/api2/grade-level-service";
 import {
   type GradeLevelDto,
   type CreateGradeLevelCommand,
   type UpdateGradeLevelCommand,
   type UpdateGradeLevelTuitionsCommand,
-} from "@/lib/api/grade-level-types";
+} from "@/lib/api2/grade-level-types";
 import { getQueryClient } from "@/lib/query-client";
 
 /* ------------------------------------------------------------------ */

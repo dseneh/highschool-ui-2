@@ -1,4 +1,4 @@
-import { BankAccountDto } from "@/lib/api/finance-types";
+import { BankAccountDto } from "@/lib/api2/finance-types";
 import { getIconByKey } from "@/lib/icon-map";
 import { formatCurrency } from "@/lib/utils";
 

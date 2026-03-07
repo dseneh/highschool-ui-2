@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { AlertCircleIcon, Calendar03Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type { SectionScheduleDto } from "@/lib/api/contacts-types"
+import type { SectionScheduleDto } from "@/lib/api2/contacts-types"
 import PageLayout from "@/components/dashboard/page-layout"
 
 const DAY_NAMES: Record<number, string> = {

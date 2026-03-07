@@ -3,7 +3,7 @@
 import BaseDataSelect from "./base-data-select";
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
 import type { DataSelectWithCurrentProps } from "./types";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 
 type SemesterSelectProps = DataSelectWithCurrentProps;
 

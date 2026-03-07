@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { TenantStatus } from "@/lib/api/admin-tenant-types";
+import { TenantStatus } from "@/lib/api2/admin-tenant-types";
 import { cn } from "@/lib/utils";
 
 interface TenantStatusBadgeProps {

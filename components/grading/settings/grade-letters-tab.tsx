@@ -26,7 +26,7 @@ import {
 import { Add01Icon, MoreVerticalIcon, Edit02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateAction } from "@/components/ui/empty-state";
 import { GradeLetterDialog } from "./grade-letter-dialog";
-import type { GradeLetterDto } from "@/lib/api/grading-types";
+import type { GradeLetterDto } from "@/lib/api2/grading-types";
 
 export function GradeLettersTab() {
   const { data: gradeLetters, isLoading } = useGradeLetters();

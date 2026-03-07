@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { MarkingPeriodSelect } from "../shared/data-reusable";
 import { SelectField } from "../ui/select-field";
-import type { AssessmentTypeDto } from "@/lib/api/grading-types";
+import type { AssessmentTypeDto } from "@/lib/api2/grading-types";
 
 const createAssessmentSchema = z.object({
   name: z.string().min(1, "Name is required"),

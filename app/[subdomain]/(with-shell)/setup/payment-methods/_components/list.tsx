@@ -11,7 +11,7 @@ import { columns } from "./columns";
 import { CreateDialog } from "./create-dialog";
 import { EditDialog } from "./edit-dialog";
 import { DeleteDialog } from "./delete-dialog";
-import type { PaymentMethodDto } from "@/lib/api/finance-types";
+import type { PaymentMethodDto } from "@/lib/api2/finance-types";
 import PageLayout from '@/components/dashboard/page-layout';
 
 export function PaymentMethodsList() {

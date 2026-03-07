@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-import type { TransactionDto } from "@/lib/api/finance-types";
+import type { TransactionDto } from "@/lib/api2/finance-types";
 import { getStatusBadgeClass } from "@/lib/status-colors";
 import { formatCurrency, cn, getErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";

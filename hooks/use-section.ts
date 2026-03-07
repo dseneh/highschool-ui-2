@@ -7,12 +7,12 @@ import {
   createSection,
   updateSection,
   deleteSection,
-} from "@/lib/api/section-service";
+} from "@/lib/api2/section-service";
 import type {
   SectionDto,
   CreateSectionCommand,
   UpdateSectionCommand,
-} from "@/lib/api/section-types";
+} from "@/lib/api2/section-types";
 import { getQueryClient } from "@/lib/query-client";
 
 /* ------------------------------------------------------------------ */

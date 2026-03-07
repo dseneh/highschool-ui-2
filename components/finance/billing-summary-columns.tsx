@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { BillingSummaryItemDto } from "@/lib/api/finance-types";
+import type { BillingSummaryItemDto } from "@/lib/api2/finance-types";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";

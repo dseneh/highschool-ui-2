@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { PrinterIcon } from "@hugeicons/core-free-icons"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import type { StudentDto } from "@/lib/api/student-types"
+import type { StudentDto } from "@/lib/api2/student-types"
 
 interface StudentIdCardDialogProps {
   open: boolean

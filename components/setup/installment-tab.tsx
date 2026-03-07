@@ -33,8 +33,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type {
   CreateInstallmentCommand,
   PaymentInstallmentDto,
-} from "@/lib/api/finance-types";
-import type { AcademicYearDto } from "@/lib/api/academic-year-types";
+} from "@/lib/api2/finance-types";
+import type { AcademicYearDto } from "@/lib/api2/academic-year-types";
 import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, parseISO } from "date-fns";

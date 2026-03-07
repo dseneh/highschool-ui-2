@@ -6,7 +6,7 @@ import {
   useAcademicYears,
   useCurrentAcademicYear,
 } from "@/hooks/use-academic-year";
-import { getStudentReportCardPdf } from "@/lib/api/grading-service";
+import { getStudentReportCardPdf } from "@/lib/api2/grading-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { PageContent } from "@/components/dashboard/page-content";
 import { Skeleton } from "@/components/ui/skeleton";

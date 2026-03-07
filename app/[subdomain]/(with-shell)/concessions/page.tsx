@@ -6,7 +6,7 @@ import PageLayout from "@/components/dashboard/page-layout";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon } from "@hugeicons/core-free-icons";
-import type { StudentConcessionDto } from "@/lib/api/billing-types";
+import type { StudentConcessionDto } from "@/lib/api2/billing-types";
 import { useBillingsApi } from "@/lib/api2/billing/api";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
