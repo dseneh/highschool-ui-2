@@ -1,0 +1,333 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription,
+} from "@/components/ui/empty-state"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Coins01Icon } from "@hugeicons/core-free-icons"
+import type { StudentConcessionDto } from "@/lib/api/billing-types"
+import apiClient from "@/lib/api-client"
+import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/utils"
+import { Pencil, Trash } from "lucide-react"
+import { AuthButton } from "../auth/auth-button"
+
+interface ConcessionsTabProps {
+  concessions: StudentConcessionDto[]
+  loading?: boolean
+  currencySymbol?: string
+  onEdit?: (concession: StudentConcessionDto) => void
+  onDelete?: (concession: StudentConcessionDto) => void
+  onDeleteSuccess?: () => void
+}
+
+// Mobile card component
+function ConcessionMobileCard({
+  concession,
+  currencySymbol,
+  onEdit,
+  onDelete,
+}: {
+  concession: StudentConcessionDto
+  currencySymbol: string
+  onEdit?: (concession: StudentConcessionDto) => void
+  onDelete?: (concession: StudentConcessionDto) => void
+}) {
+  return (
+    <div className="p-4 border rounded-lg space-y-3 bg-card">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1 flex-1">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="capitalize text-xs">
+              {concession.concession_type}
+            </Badge>
+            <Badge
+              variant={concession.active ? "default" : "secondary"}
+              className="capitalize text-xs"
+            >
+              {concession.active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {concession.target.replace(/_/g, " ")} • Target
+          </p>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Pencil className="size-4" />}
+            onClick={() => onEdit?.(concession)}
+            className="h-8 w-8"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+            icon={<Trash className="size-4" />}
+            onClick={() => onDelete?.(concession)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Value</p>
+          <p className="font-semibold text-sm">
+            {concession.concession_type === "percentage"
+              ? `${concession.value}%`
+              : `${currencySymbol}${Number(concession.value).toLocaleString()}`}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Amount</p>
+          <p className="font-bold text-sm text-purple-600">
+            {currencySymbol}{Number(concession.amount).toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {concession.notes && (
+        <div className="pt-2 border-t">
+          <p className="text-xs text-muted-foreground mb-1">Notes</p>
+          <p className="text-sm text-foreground">{concession.notes}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function ConcessionsTab({
+  concessions,
+  loading = false,
+  currencySymbol = "$",
+  onEdit,
+  onDelete,
+  onDeleteSuccess,
+}: ConcessionsTabProps) {
+  const [selectedForDelete, setSelectedForDelete] = useState<StudentConcessionDto | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDeleteClick = (concession: StudentConcessionDto) => {
+    setSelectedForDelete(concession)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedForDelete) return
+
+    setIsDeleting(true)
+    try {
+      await apiClient.delete(`concessions/${selectedForDelete.id}/`)
+      toast.success("Concession deleted successfully")
+      setIsDeleteDialogOpen(false)
+      setSelectedForDelete(null)
+      onDeleteSuccess?.()
+      onDelete?.(selectedForDelete)
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (concessions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <EmptyState className="h-64 border-none p-0">
+            <EmptyStateIcon>
+              <HugeiconsIcon icon={Coins01Icon} />
+            </EmptyStateIcon>
+            <EmptyStateTitle className="text-sm font-medium">
+              No concessions applied
+            </EmptyStateTitle>
+            <EmptyStateDescription className="text-xs">
+              Start by adding a concession for this student.
+            </EmptyStateDescription>
+          </EmptyState>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Applied Concessions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Desktop view - Table */}
+          <div className="overflow-x-auto hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Target</TableHead>
+                  <TableHead>Value</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {concessions.map((concession) => (
+                  <TableRow key={concession.id}>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {concession.concession_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="capitalize text-sm">
+                      {concession.target.replace(/_/g, " ")}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {concession.concession_type === "percentage"
+                        ? `${concession.value}%`
+                        : `${currencySymbol}${Number(concession.value).toLocaleString()}`}
+                    </TableCell>
+                    <TableCell className="font-semibold text-purple-600">
+                      {currencySymbol}{Number(concession.amount).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={concession.active ? "default" : "secondary"}
+                        className="capitalize"
+                      >
+                        {concession.active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {concession.notes || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <AuthButton
+                          disable
+                          variant="ghost"
+                          size="sm"
+                          icon={<Pencil className="size-4" />}
+                          onClick={() => onEdit?.(concession)}
+                          roles={["finance", "registrar", "accountant"]}
+                        />
+                        <AuthButton
+                        disable
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          icon={<Trash className="size-4" />}
+                          onClick={() => handleDeleteClick(concession)}
+                          roles={["finance", "registrar", "accountant"]}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile view - Card list */}
+          <div className="sm:hidden space-y-3">
+            {concessions.map((concession) => (
+              <ConcessionMobileCard
+                key={concession.id}
+                concession={concession}
+                currencySymbol={currencySymbol}
+                onEdit={onEdit}
+                onDelete={() => handleDeleteClick(concession)}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Concession?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You are about to delete the concession for{" "}
+              <span className="font-medium">{selectedForDelete?.target.replace(/_/g, " ")}</span>.
+              This action cannot be undone.
+            </p>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg space-y-2">
+              <p className="text-sm font-medium text-red-900 dark:text-red-300">
+                Concession Details
+              </p>
+              <p className="text-sm text-red-800 dark:text-red-400">
+                <span className="font-medium">Type:</span>{" "}
+                <span className="capitalize">{selectedForDelete?.concession_type}</span>
+              </p>
+              <p className="text-sm text-red-800 dark:text-red-400">
+                <span className="font-medium">Amount:</span>{" "}
+                {currencySymbol}
+                {selectedForDelete?.amount ? Number(selectedForDelete.amount).toLocaleString() : "0"}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false)
+                  setSelectedForDelete(null)
+                }}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                loading={isDeleting}
+                loadingText="Deleting..."
+              >
+                Delete Concession
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

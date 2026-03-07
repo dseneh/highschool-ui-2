@@ -1,0 +1,270 @@
+{
+  "$schema": "./menu.schema.json",
+  "menus": {
+    "main": {
+      "id": "main",
+      "label": "Main Menu",
+      "type": "accordion",
+      "description": "Primary navigation menu with collapsible sections",
+      "sections": [
+        {
+          "id": "academic",
+          "title": "ACADEMIC",
+          "items": [
+            {
+              "id": "students",
+              "label": "Students",
+              "path": "/students",
+              "icon": "UserGroupIcon",
+              "description": "Student records and enrollment"
+            },
+            {
+              "id": "grading",
+              "label": "Grading",
+              "path": "/grading",
+              "icon": "BookOpen02Icon",
+              "description": "Gradebooks and assessments"
+            },
+            {
+              "id": "attendance",
+              "label": "Attendance",
+              "path": "/attendance",
+              "icon": "Calendar03Icon",
+              "description": "Student attendance tracking"
+            },
+            {
+              "id": "classes",
+              "label": "Classes",
+              "path": "/classes",
+              "icon": "Course01Icon",
+              "description": "Class management"
+            },
+            {
+              "id": "academic-year",
+              "label": "Academic Setup",
+              "path": "/setup/academic-years",
+              "icon": "Calendar03Icon",
+              "description": "Years, terms, and setup"
+            }
+          ]
+        },
+        {
+          "id": "administration",
+          "title": "ADMINISTRATION",
+          "items": [
+            {
+              "id": "staff",
+              "label": "Staff",
+              "path": "/staff",
+              "icon": "Building02Icon",
+              "description": "Staff management"
+            }
+          ]
+        },
+        {
+          "id": "financial",
+          "title": "FINANCIAL",
+          "items": [
+            {
+              "id": "transactions",
+              "label": "Transactions",
+              "path": "/transactions",
+              "icon": "Coins01Icon",
+              "description": "Fee collection and payments"
+            },
+            {
+              "id": "billing",
+              "label": "Billing",
+              "path": "/billing",
+              "icon": "Invoice01Icon",
+              "description": "Student billing summary"
+            },
+            {
+              "id": "bank-accounts",
+              "label": "Bank Accounts",
+              "path": "/bank-accounts",
+              "icon": "BankIcon",
+              "description": "Manage bank accounts"
+            },
+            {
+              "id": "payment-methods",
+              "label": "Payment Methods",
+              "path": "/setup/payment-methods",
+              "icon": "CreditCardIcon",
+              "description": "Manage payment methods"
+            },
+            {
+              "id": "transaction-types",
+              "label": "Transaction Types",
+              "path": "/setup/transaction-types",
+              "icon": "Coins01Icon",
+              "description": "Manage transaction types"
+            },
+            {
+              "id": "reports",
+              "label": "Reports",
+              "path": "/reports",
+              "icon": "FileExportIcon",
+              "description": "Financial and academic reports"
+            }
+          ]
+        },
+        {
+          "id": "system",
+          "title": "SYSTEM",
+          "items": [
+            {
+              "id": "notifications",
+              "label": "Notifications",
+              "path": "/notifications",
+              "icon": "Notification01Icon",
+              "badge": "9+",
+              "description": "System notifications"
+            }
+          ]
+        }
+      ]
+    },
+    "student": {
+      "id": "student",
+      "label": "Student Menu",
+      "type": "list",
+      "contextType": "student",
+      "description": "Navigation menu for student detail pages",
+      "items": [
+        {
+          "id": "student-overview",
+          "label": "Overview",
+          "path": "/students/{id}",
+          "icon": "DashboardSquare01Icon",
+          "description": "Student overview and quick stats"
+        },
+        {
+          "id": "student-details",
+          "label": "Details",
+          "path": "/students/{id}/details",
+          "icon": "UserIcon",
+          "description": "Personal information and contacts"
+        },
+        {
+          "id": "student-grades",
+          "label": "Grades",
+          "path": "/students/{id}/grades",
+          "icon": "FileTextIcon",
+          "description": "Academic performance and grades"
+        },
+        {
+          "id": "student-billing",
+          "label": "Billing",
+          "path": "/students/{id}/billing",
+          "icon": "Invoice01Icon",
+          "description": "Fee payments and billing history"
+        },
+        {
+          "id": "student-attendance",
+          "label": "Attendance",
+          "path": "/students/{id}/attendance",
+          "icon": "Calendar03Icon",
+          "description": "Attendance records"
+        },
+        {
+          "id": "student-schedule",
+          "label": "Schedule",
+          "path": "/students/{id}/schedule",
+          "icon": "CalendarCheckIn01Icon",
+          "description": "Class schedule and timetable"
+        },
+        {
+          "id": "student-reports",
+          "label": "Reports",
+          "path": "/students/{id}/reports",
+          "icon": "FileExportIcon",
+          "description": "Student reports and transcripts"
+        },
+        {
+          "id": "student-settings",
+          "label": "Settings",
+          "path": "/students/{id}/settings",
+          "icon": "Settings01Icon",
+          "description": "Student account settings"
+        }
+      ]
+    },
+    "staff": {
+      "id": "staff",
+      "label": "Staff Menu",
+      "type": "list",
+      "contextType": "staff",
+      "description": "Navigation menu for staff detail pages",
+      "items": [
+        {
+          "id": "staff-overview",
+          "label": "Overview",
+          "path": "/staff/{id}",
+          "icon": "DashboardSquare01Icon",
+          "description": "Staff overview and quick stats"
+        },
+        {
+          "id": "staff-details",
+          "label": "Details",
+          "path": "/staff/{id}/details",
+          "icon": "UserIcon",
+          "description": "Personal information"
+        },
+        {
+          "id": "staff-classes",
+          "label": "Classes",
+          "path": "/staff/{id}/classes",
+          "icon": "Course01Icon",
+          "description": "Assigned classes and subjects"
+        },
+        {
+          "id": "staff-schedule",
+          "label": "Schedule",
+          "path": "/staff/{id}/schedule",
+          "icon": "CalendarCheckIn01Icon",
+          "description": "Teaching schedule"
+        },
+        {
+          "id": "staff-payroll",
+          "label": "Payroll",
+          "path": "/staff/{id}/payroll",
+          "icon": "Coins01Icon",
+          "description": "Salary and payment history"
+        },
+        {
+          "id": "staff-settings",
+          "label": "Settings",
+          "path": "/staff/{id}/settings",
+          "icon": "Settings01Icon",
+          "description": "Staff account settings"
+        }
+      ]
+    }
+  },
+  "toggleButtons": {
+    "toMain": {
+      "label": "Back to Main Menu",
+      "icon": "ArrowRight01Icon",
+      "iconRotate": "rotate-180",
+      "iconPosition": "left"
+    },
+    "toStudent": {
+      "label": "Student Menu",
+      "icon": "ArrowRight01Icon",
+      "iconRotate": "",
+      "iconPosition": "right"
+    },
+    "toStaff": {
+      "label": "Staff Menu",
+      "icon": "ArrowRight01Icon",
+      "iconRotate": "",
+      "iconPosition": "right"
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-02-10",
+    "description": "EzySchool navigation menu configuration"
+  }
+}

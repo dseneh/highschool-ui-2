@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ezyschool.com/schemas/menu.config.json",
+  "title": "Menu Configuration",
+  "description": "Schema for EzySchool navigation menu configuration",
+  "type": "object",
+  "required": ["menus", "toggleButtons", "metadata"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "menus": {
+      "type": "object",
+      "description": "Collection of all menu configurations",
+      "required": ["main", "student", "staff"],
+      "properties": {
+        "main": {
+          "$ref": "#/definitions/accordionMenu"
+        },
+        "student": {
+          "$ref": "#/definitions/listMenu"
+        },
+        "staff": {
+          "$ref": "#/definitions/listMenu"
+        }
+      }
+    },
+    "toggleButtons": {
+      "type": "object",
+      "description": "Toggle button configurations",
+      "required": ["toMain", "toStudent", "toStaff"],
+      "properties": {
+        "toMain": {
+          "$ref": "#/definitions/toggleButton"
+        },
+        "toStudent": {
+          "$ref": "#/definitions/toggleButton"
+        },
+        "toStaff": {
+          "$ref": "#/definitions/toggleButton"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["version", "lastUpdated", "description"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "menuItem": {
+      "type": "object",
+      "required": ["id", "label", "path", "icon"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the menu item"
+        },
+        "label": {
+          "type": "string",
+          "description": "Display label for the menu item"
+        },
+        "path": {
+          "type": "string",
+          "description": "Navigation path (use {id} for dynamic segments)"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon component name from @hugeicons"
+        },
+        "badge": {
+          "type": "string",
+          "description": "Optional badge text (e.g., notification count)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description or tooltip text"
+        }
+      }
+    },
+    "menuSection": {
+      "type": "object",
+      "required": ["id", "title", "items"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "description": "Section header title"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/menuItem"
+          }
+        }
+      }
+    },
+    "accordionMenu": {
+      "type": "object",
+      "required": ["id", "label", "type", "description", "sections"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "accordion"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/menuSection"
+          }
+        }
+      }
+    },
+    "listMenu": {
+      "type": "object",
+      "required": ["id", "label", "type", "description", "items"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "list"
+        },
+        "contextType": {
+          "type": "string",
+          "enum": ["student", "staff"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/menuItem"
+          }
+        }
+      }
+    },
+    "toggleButton": {
+      "type": "object",
+      "required": ["label", "icon", "iconRotate", "iconPosition"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Button label text"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon component name"
+        },
+        "iconRotate": {
+          "type": "string",
+          "description": "Tailwind rotation class (e.g., 'rotate-180')"
+        },
+        "iconPosition": {
+          "type": "string",
+          "enum": ["left", "right"],
+          "description": "Icon position relative to label"
+        }
+      }
+    }
+  }
+}

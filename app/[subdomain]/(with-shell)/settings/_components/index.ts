@@ -1,0 +1,6 @@
+export { IdentitySection } from './IdentitySection'
+export { GeneralInfoSection } from './GeneralInfoSection'
+export { ContactSection } from './ContactSection'
+export { AddressSection } from './AddressSection'
+export { BrandingSection } from './BrandingSection'
+export { ThemeSection } from './ThemeSection'
