@@ -3,9 +3,16 @@ import { NextResponse, type NextRequest } from "next/server";
 const RESERVED_SUBDOMAINS = new Set(["www", "app", "api", "cdn"]);
 const PUBLIC_FILE = /\.[^/]+$/;
 
+// Vercel platform domains that should be treated as root domains (no subdomain extraction)
+const VERCEL_PLATFORM_DOMAINS = [".vercel.app", ".vercel.sh", ".now.sh"];
+
 function splitHost(host: string) {
   const [hostname, port] = host.split(":");
   return { hostname: hostname.toLowerCase(), port };
+}
+
+function isVercelPlatformDomain(hostname: string) {
+  return VERCEL_PLATFORM_DOMAINS.some((domain) => hostname.endsWith(domain));
 }
 
 function getSubdomain(hostname: string) {
@@ -15,6 +22,13 @@ function getSubdomain(hostname: string) {
     const parts = hostname.split(".");
     return parts.length > 1 ? parts[0] : null;
   }
+  
+  // Ignore Vercel platform domains - treat them as root domains
+  // e.g., project-name.vercel.app should NOT extract "project-name" as subdomain
+  if (isVercelPlatformDomain(hostname)) {
+    return null;
+  }
+  
   const parts = hostname.split(".");
   if (parts.length <= 2) return null;
   const subdomain = parts[0];
@@ -25,6 +39,12 @@ function getRootDomain(hostname: string) {
   if (!hostname) return "";
   if (hostname === "localhost" || hostname === "127.0.0.1") return hostname;
   if (hostname.endsWith(".localhost")) return "localhost";
+  
+  // For Vercel platform domains, return the full hostname as root
+  if (isVercelPlatformDomain(hostname)) {
+    return hostname;
+  }
+  
   const parts = hostname.split(".");
   if (parts.length <= 2) return hostname;
   return parts.slice(1).join(".");
