@@ -1,3 +1,10 @@
+// Vercel platform domains that should be treated as root domains (no subdomain extraction)
+const VERCEL_PLATFORM_DOMAINS = [".vercel.app", ".vercel.sh", ".now.sh"];
+
+function isVercelPlatformDomain(hostname: string): boolean {
+  return VERCEL_PLATFORM_DOMAINS.some((domain) => hostname.endsWith(domain));
+}
+
 /**
  * Client-side utility to extract subdomain from the browser window.
  * Works with both localhost and production domains.
@@ -7,11 +14,19 @@
  * - schoolname.ezyschool.com → "schoolname"
  * - localhost:3000 → null
  * - ezyschool.com → null
+ * - project-name.vercel.app → null (Vercel platform domains are ignored)
  */
 export function getSubdomainFromWindow(): string | null {
   if (typeof window === "undefined") return null;
 
   const hostname = window.location.hostname;
+  
+  // Ignore Vercel platform domains - treat them as root domains
+  // e.g., project-name.vercel.app should NOT extract "project-name" as subdomain
+  if (isVercelPlatformDomain(hostname)) {
+    return null;
+  }
+  
   const isLocalhost =
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
