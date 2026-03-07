@@ -10,6 +10,19 @@ export const useGradeBooksApi = () => {
     const { get, post, put, patch, delete: del } = useAxiosAuth()
     const baseUrl = '/students/gradebooks'
 
+    const normalizeListData = <T,>(data: unknown): T[] => {
+        if (Array.isArray(data)) {
+            return data as T[]
+        }
+
+        if (data && typeof data === 'object' && 'results' in data) {
+            const results = (data as { results?: unknown }).results
+            return Array.isArray(results) ? (results as T[]) : []
+        }
+
+        return []
+    }
+
     // List grade books with query parameters
     const getGradeBooksApi = async (query?: any) => {
         return get(`${baseUrl}/`, { params: query })
@@ -55,7 +68,7 @@ export const useGradeBooksApi = () => {
         const enrollmentsResponse = await get('/students/enrollments/', {
             params: { student_id: studentId }
         })
-        const enrollments = enrollmentsResponse.data?.results || enrollmentsResponse.data || []
+        const enrollments = normalizeListData<any>(enrollmentsResponse.data)
         
         if (!Array.isArray(enrollments)) {
             return { data: [] }
@@ -96,7 +109,7 @@ export const useGradeBooksApi = () => {
                 academic_year: yearId 
             }
         })
-        const enrollments = enrollmentsResponse.data?.results || enrollmentsResponse.data || []
+        const enrollments = normalizeListData<any>(enrollmentsResponse.data)
         
         if (!Array.isArray(enrollments) || enrollments.length === 0) {
             return { data: [] }
@@ -117,7 +130,7 @@ export const useGradeBooksApi = () => {
                     ...(status && { status }),
                 }
             })
-            const gradeBooks = gradeBooksResponse.data?.results || gradeBooksResponse.data || []
+            const gradeBooks = normalizeListData<any>(gradeBooksResponse.data)
             if (Array.isArray(gradeBooks)) {
                 allGradeBooks.push(...gradeBooks)
             }

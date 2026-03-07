@@ -25,10 +25,10 @@ const Slot = React.forwardRef<HTMLElement, SlotProps>(
       return null;
     }
 
-    return React.cloneElement(children as React.ReactElement, {
+    return React.cloneElement(children as React.ReactElement<any>, {
       ...props,
       ref,
-    });
+    } as any);
   }
 );
 Slot.displayName = "Slot";

@@ -1,2 +1,2 @@
-export { decryptServerPayload } from './decrypt-server';
-export { decryptClientPayload } from './decrypt-client';
+export { decryptAESServer as decryptServerPayload } from './decrypt-server';
+export { decryptAESClient as decryptClientPayload } from './decrypt-client';

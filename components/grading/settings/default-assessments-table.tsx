@@ -148,7 +148,7 @@ export function DefaultAssessmentsTable({
                       </span>
                     </TableCell>
                     <TableCell className="text-center text-sm font-medium">
-                      {assessment.default_weight}
+                      {assessment.weight ?? 0}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">

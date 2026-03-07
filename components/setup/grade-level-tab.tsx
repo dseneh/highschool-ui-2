@@ -354,7 +354,7 @@ export function GradeLevelTab() {
       error={error}
     >
       <div className="space-y-4">
-        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <Tabs value={statusFilter} onValueChange={(value) => void setStatusFilter(value)}>
           <TabsList>
             <TabsTrigger value="active">
               Active ({activeLevels.length})

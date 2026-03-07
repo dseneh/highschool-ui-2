@@ -36,7 +36,8 @@ const assessmentTypeSchema = z.object({
   is_active: z.boolean().default(true),
 });
 
-type AssessmentTypeForm = z.infer<typeof assessmentTypeSchema>;
+type AssessmentTypeFormInput = z.input<typeof assessmentTypeSchema>;
+type AssessmentTypeForm = z.output<typeof assessmentTypeSchema>;
 
 interface AssessmentTypeDialogProps {
   open: boolean;
@@ -52,7 +53,7 @@ export function AssessmentTypeDialog({
   const createMutation = useCreateAssessmentType();
   const updateMutation = useUpdateAssessmentType();
 
-  const form = useForm<AssessmentTypeForm>({
+  const form = useForm<AssessmentTypeFormInput, unknown, AssessmentTypeForm>({
     resolver: zodResolver(assessmentTypeSchema),
     defaultValues: {
       name: "",

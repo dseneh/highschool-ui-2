@@ -15,8 +15,8 @@ export default function PositionSelect(props: PositionSelectProps) {
       useDataHook={usePositions}
       title={props.title ?? "Position"}
       autoSelectFirst={props.autoSelectFirst ?? false}
-      mapOptions={(data: Position[]) =>
-        data.map((position) => ({
+      mapOptions={(data: Position | Position[]) =>
+        (Array.isArray(data) ? data : [data]).map((position) => ({
           value: position.id,
           label: position.title || "Untitled",
         }))

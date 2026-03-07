@@ -142,7 +142,7 @@ function getPaymentStatusColumns({
       ),
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-right block">
-          {formatCurrency(row.original.billing_summary?.total_bill, currency)}
+          {formatCurrency(Number(row.original.billing_summary?.total_bill ?? 0), currency)}
         </span>
       ),
       size: 110,
@@ -158,7 +158,7 @@ function getPaymentStatusColumns({
       ),
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-green-600 dark:text-green-400 text-right block">
-          {formatCurrency(row.original.billing_summary?.paid, currency)}
+          {formatCurrency(Number(row.original.billing_summary?.paid ?? 0), currency)}
         </span>
       ),
       size: 110,

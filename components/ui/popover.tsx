@@ -21,11 +21,11 @@ function PopoverTrigger({
         data-slot="popover-trigger" 
         render={(triggerProps) => {
           // Clone the child element and merge props (triggerProps includes ref handling)
-          const child = React.Children.only(children) as React.ReactElement;
+          const child = React.Children.only(children) as React.ReactElement<any>;
           return React.cloneElement(child, {
             ...child.props,
             ...triggerProps,
-          });
+          } as any);
         }}
         {...props}
       />

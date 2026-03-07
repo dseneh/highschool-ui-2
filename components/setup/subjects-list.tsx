@@ -41,7 +41,7 @@ export function SubjectsList({ section, onAddSubject }: SubjectsListProps) {
     removeSubject.mutate(
       {
         sectionId: section.id,
-        subjectId: deletingSubject.id,
+        sectionSubjectId: deletingSubject.id,
       },
       {
         onSuccess: () => {

@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { MarkingPeriodSelect } from "../shared/data-reusable";
 import { SelectField } from "../ui/select-field";
+import type { AssessmentTypeDto } from "@/lib/api/grading-types";
 
 const createAssessmentSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -47,7 +48,7 @@ export function CreateAssessmentDialog({
 }: CreateAssessmentDialogProps) {
   const grading = useGrading();
   const { data: assessmentTypes } = grading.getAssessmentTypes();
-  const createMutation = grading.createAssessment();
+  const createMutation = grading.createAssessment(gradebookId);
   const formId = React.useId();
 
   const form = useForm<CreateAssessmentForm>({
@@ -63,16 +64,13 @@ export function CreateAssessmentDialog({
     },
   });
 
-  const assessmentTypeOptions = assessmentTypes?.map((type) => ({
+  const assessmentTypeOptions = (assessmentTypes as AssessmentTypeDto[] | undefined)?.map((type: AssessmentTypeDto) => ({
     label: type.name,
     value: type.id,
   })) || [];
 
   const onSubmit = async (values: CreateAssessmentForm) => {
-    await createMutation.mutateAsync({
-      gradebook_id: gradebookId,
-      ...values,
-    });
+    await createMutation.mutateAsync(values);
     onOpenChange(false);
     form.reset({
       name: "",

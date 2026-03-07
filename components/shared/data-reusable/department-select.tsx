@@ -15,8 +15,8 @@ export default function DepartmentSelect(props: DepartmentSelectProps) {
       useDataHook={useDepartments}
       title={props.title ?? "Department"}
       autoSelectFirst={props.autoSelectFirst ?? false}
-      mapOptions={(data: Department[]) =>
-        data.map((department) => ({
+      mapOptions={(data: Department | Department[]) =>
+        (Array.isArray(data) ? data : [data]).map((department) => ({
           value: department.id,
           label: department.name || "Untitled",
         }))

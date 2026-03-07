@@ -24,7 +24,7 @@ type User = {
 const columnHelper = createColumnHelper<User>()
 
 // 3. Define columns
-const columns: ColumnDef<User>[] = [
+const columns = [
   // Selection column
   columnHelper.display({
     id: "select",
@@ -183,7 +183,7 @@ export default function UsersDataTable() {
 
   return (
     <DataTable
-      columns={columns}
+      columns={columns as ColumnDef<User>[]}
       data={data}
       pageSize={20}
       // Filter configurations

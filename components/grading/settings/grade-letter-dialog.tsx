@@ -42,7 +42,8 @@ const gradeLetterSchema = z.object({
   path: ["max_score"],
 });
 
-type GradeLetterForm = z.infer<typeof gradeLetterSchema>;
+type GradeLetterFormInput = z.input<typeof gradeLetterSchema>;
+type GradeLetterForm = z.output<typeof gradeLetterSchema>;
 
 interface GradeLetterDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function GradeLetterDialog({
   const createMutation = useCreateGradeLetter();
   const updateMutation = useUpdateGradeLetter();
 
-  const form = useForm<GradeLetterForm>({
+  const form = useForm<GradeLetterFormInput, unknown, GradeLetterForm>({
     resolver: zodResolver(gradeLetterSchema),
     defaultValues: {
       letter: "",
@@ -165,23 +166,27 @@ export function GradeLetterDialog({
             <FormField
               control={form.control}
               name="gpa_value"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>GPA Value (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g., 4.0"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Grade point average value for this letter
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const { value, ...fieldProps } = field;
+                return (
+                  <FormItem>
+                    <FormLabel>GPA Value (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="e.g., 4.0"
+                        {...fieldProps}
+                        value={typeof value === "number" || typeof value === "string" ? value : ""}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Grade point average value for this letter
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField

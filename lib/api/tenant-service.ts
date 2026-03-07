@@ -190,6 +190,10 @@ export async function getTenantSettings(
           "medium") as any,
         spacingScale: (themeConfig.theme_config?.spacingScale ||
           "comfortable") as any,
+        animationSpeed: (themeConfig.theme_config?.animationSpeed ||
+          "normal") as any,
+        backgroundStyle: (themeConfig.theme_config?.backgroundStyle ||
+          "clean") as any,
         accentColor: themeConfig.theme_config?.accentColor,
         customLogo: themeConfig.theme_config?.customLogo,
       },

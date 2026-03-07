@@ -108,7 +108,7 @@ export function getBillingSummaryColumns({
       header: "Tuition",
       cell: ({ row }) => (
         <span className="tabular-nums text-sm">
-          {formatCurrency(row.original.detailed_billing?.tuition_fees, currency)}
+          {formatCurrency(Number(row.original.detailed_billing?.tuition_fees ?? 0), currency)}
         </span>
       ),
       size: 110,
@@ -118,7 +118,7 @@ export function getBillingSummaryColumns({
       header: "Others",
       cell: ({ row }) => (
         <span className="tabular-nums text-sm">
-          {formatCurrency(row.original.detailed_billing?.other_fees, currency)}
+          {formatCurrency(Number(row.original.detailed_billing?.other_fees ?? 0), currency)}
         </span>
       ),
       size: 110,
@@ -137,7 +137,7 @@ export function getBillingSummaryColumns({
     ),
     cell: ({ row }) => (
       <span className="tabular-nums text-sm text-right block">
-        {formatCurrency(row.original.total_bills, currency)}
+        {formatCurrency(Number(row.original.total_bills ?? 0), currency)}
       </span>
     ),
     size: 120,
@@ -155,7 +155,7 @@ export function getBillingSummaryColumns({
     ),
     cell: ({ row }) => (
       <span className="tabular-nums text-sm text-right block text-green-600 dark:text-green-400">
-        {formatCurrency(row.original.total_paid, currency)}
+        {formatCurrency(Number(row.original.total_paid ?? 0), currency)}
       </span>
     ),
     size: 120,
@@ -228,7 +228,7 @@ export function getBillingSummaryColumns({
       header: "Avg/Student",
       cell: ({ row }) => (
         <span className="tabular-nums text-sm text-muted-foreground">
-          {formatCurrency(row.original.avg_bill_per_student, currency)}
+          {formatCurrency(Number(row.original.avg_bill_per_student ?? 0), currency)}
         </span>
       ),
       size: 110,

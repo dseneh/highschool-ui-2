@@ -169,7 +169,7 @@ export default function BankAccountDetailPage() {
     },
     {
       title: "Current Balance",
-      value: formatCurrency(ba.totals.balance, currency),
+      value: formatCurrency(ba?.totals.balance ?? 0, currency),
       subtitle: account.active ? "Active" : "Inactive",
       icon: getIconByKey("balance"),
     },

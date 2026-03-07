@@ -49,7 +49,8 @@ const defaultAssessmentSchema = z.object({
   is_active: z.boolean().default(true),
 });
 
-type DefaultAssessmentForm = z.infer<typeof defaultAssessmentSchema>;
+type DefaultAssessmentFormInput = z.input<typeof defaultAssessmentSchema>;
+type DefaultAssessmentForm = z.output<typeof defaultAssessmentSchema>;
 
 interface DefaultAssessmentDialogProps {
   open: boolean;
@@ -70,7 +71,7 @@ export function DefaultAssessmentDialog({
 
   const isEdit = Boolean(assessment);
 
-  const form = useForm<DefaultAssessmentForm>({
+  const form = useForm<DefaultAssessmentFormInput, unknown, DefaultAssessmentForm>({
     resolver: zodResolver(defaultAssessmentSchema),
     defaultValues: {
       assessment_type: "",
@@ -110,9 +111,9 @@ export function DefaultAssessmentDialog({
         await updateMutation.mutateAsync({
           id: assessment.id,
           command: {
-            name: values.name,
-            max_score: values.max_score,
-            weight: values.weight,
+            name_template: values.name,
+            default_max_score: values.max_score,
+            default_weight: values.weight,
             description: values.description,
             is_active: values.is_active,
           },
@@ -123,9 +124,9 @@ export function DefaultAssessmentDialog({
       } else {
         await createMutation.mutateAsync({
           assessment_type: values.assessment_type,
-          name: values.name,
-          max_score: values.max_score,
-          weight: values.weight,
+          name_template: values.name,
+          default_max_score: values.max_score,
+          default_weight: values.weight,
           description: values.description,
           is_active: values.is_active,
         });

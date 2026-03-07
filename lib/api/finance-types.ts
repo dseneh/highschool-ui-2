@@ -29,6 +29,14 @@ type BankAccountTotals = {
   net_balance: number;
   balance: number;
 }
+
+export interface BankAccountTransactionCounts {
+  transaction_count: number;
+  approved_count?: number;
+  pending_count?: number;
+  canceled_count?: number;
+}
+
 export interface BankAccountBasicAnalysis {
   total_income: number;
   total_expenses: number;
@@ -57,6 +65,8 @@ export interface PaymentMethodBreakdown {
 }
 
 export interface BankAccountAnalysis {
+  totals: BankAccountTotals;
+  transaction_counts?: BankAccountTransactionCounts;
   monthly_trends: MonthlyTrend[];
   type_breakdown: TypeBreakdown[];
   payment_method_breakdown: PaymentMethodBreakdown[];

@@ -37,6 +37,7 @@ export interface ThemeConfig {
   backgroundStyle: BackgroundStyle;
 
   // Additional customizations
+  accentColor?: string;
   customLogo?: string;
 }
 
@@ -65,6 +66,7 @@ const defaultTheme: ThemeConfig = {
   spacingScale: "comfortable",
   animationSpeed: "normal",
   backgroundStyle: "clean",
+  accentColor: undefined,
   customLogo: undefined,
 };
 

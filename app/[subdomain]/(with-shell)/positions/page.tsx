@@ -27,6 +27,14 @@ import RefreshButton from "@/components/shared/refresh-button";
 import EmptyStateComponent from "@/components/shared/empty-state";
 import { Plus } from "lucide-react";
 
+type PositionFormPayload = {
+  title: string;
+  description?: string;
+  department?: string;
+  category?: string;
+  teaching_role?: boolean;
+};
+
 export default function PositionsPage() {
   const staffApi = useStaff();
   const { data, isLoading, error, isFetching, refetch } = staffApi.getPositions({});
@@ -38,10 +46,10 @@ export default function PositionsPage() {
     refetch();
   }, [refetch]);
 
-  const handleCreateSubmit = async (formData: Partial<Position>) => {
+  const handleCreateSubmit = async (formData: PositionFormPayload) => {
     setIsSubmitting(true);
     try {
-      await createMutation.mutateAsync(formData as any);
+      await createMutation.mutateAsync(formData);
       showToast.success(
         "Position created",
         "The position has been added to the system",

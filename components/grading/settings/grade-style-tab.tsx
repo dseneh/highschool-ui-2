@@ -41,6 +41,7 @@ interface GradeStyleTabProps {
 
 type GradingTaskStatus = {
   task?: {
+    id?: string;
     status?: "completed" | "failed" | "pending" | "processing";
     detail?: string;
     progress?: number;

@@ -14,13 +14,14 @@ const BASE64_KEY = process.env.NEXT_PUBLIC_AES_KEY || "";
 let warnedMissingKeyClient = false;
 let cachedCryptoKey: CryptoKey | null = null;
 
-function b64ToBytes(b64: string): Uint8Array {
+function b64ToBytes(b64: string): ArrayBuffer {
   // tolerant to URL-safe base64 and missing padding
   const norm = b64.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(b64.length / 4) * 4, '=');
   const bin = atob(norm);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
+  const buffer = new ArrayBuffer(bin.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return buffer;
 }
 
 async function getClientKey(): Promise<CryptoKey | null> {
