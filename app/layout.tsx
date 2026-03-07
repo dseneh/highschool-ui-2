@@ -3,7 +3,22 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/app-providers";
 
+import type { Viewport } from 'next';
+import pageMetaConfig from "@/config/page-meta.config";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+
+
+export const metadata = {
+    ...pageMetaConfig,
+}
+
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+};
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,11 +29,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "EzySchool",
-  description: "EzySchool dashboard for finance operations and people teams",
-};
 
 export default function RootLayout({
   children,
