@@ -522,6 +522,7 @@ function ShowcasePanel() {
           src={s.bg}
           alt=""
           fill
+          sizes="55vw"
           className={cn(
             "object-cover transition-all duration-[1600ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
             i === current
