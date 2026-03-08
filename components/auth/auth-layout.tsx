@@ -1,133 +1,42 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { BrandWordmark } from "@/components/brand/brand-logo";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-/* ── Advanced animations ── */
+/* ── Minimal animations ── */
 const styleSheet = `
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  @keyframes slide-right {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes slide-up-bounce {
-    0% { opacity: 0; transform: translateY(40px) scale(0.95); }
-    60% { opacity: 1; transform: translateY(-8px) scale(1.02); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
-    50% { box-shadow: 0 0 30px 8px hsl(var(--primary) / 0.3); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    33% { transform: translateY(-12px) rotate(1deg); }
-    66% { transform: translateY(-6px) rotate(-1deg); }
-  }
-  @keyframes float-slow {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-  @keyframes orbit {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes line-draw {
+  @keyframes draw-line {
+    from { stroke-dashoffset: 1000; }
     to { stroke-dashoffset: 0; }
   }
-  @keyframes bar-rise {
-    from { transform: scaleY(0); opacity: 0; }
-    to { transform: scaleY(1); opacity: 1; }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
   }
-  @keyframes wave {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(0.5); }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
   }
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-  @keyframes gradient-rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  @keyframes ring-pulse {
-    0% { transform: scale(1); opacity: 0.3; }
-    50% { transform: scale(1.08); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 0.3; }
-  }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  @keyframes notification-slide {
-    0% { opacity: 0; transform: translateX(40px) scale(0.9); }
-    10% { opacity: 1; transform: translateX(0) scale(1); }
-    90% { opacity: 1; transform: translateX(0) scale(1); }
-    100% { opacity: 0; transform: translateX(-40px) scale(0.9); }
-  }
-  @keyframes progress-fill {
-    from { width: 0%; }
-    to { width: var(--progress); }
-  }
-  @keyframes bounce-in {
-    0% { opacity: 0; transform: scale(0.3); }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  @keyframes morph {
-    0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-    50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
-  }
-  @keyframes counter-roll {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-100%); }
-  }
-  @keyframes sparkle {
-    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
-    50% { opacity: 1; transform: scale(1) rotate(180deg); }
-  }
-  @keyframes slide-cards {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+  @keyframes counter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
-  .animate-fade-up { animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-  .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-slide-right { animation: slide-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-slide-up-bounce { animation: slide-up-bounce 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-  .animate-float { animation: float 6s ease-in-out infinite; }
-  .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
-  .animate-bar-rise { animation: bar-rise 0.8s ease-out forwards; transform-origin: bottom; }
-  .animate-gradient-shift { 
-    animation: gradient-shift 8s ease infinite;
-    background-size: 200% 200%;
-  }
-  .animate-gradient-rotate { animation: gradient-rotate 20s linear infinite; }
-  .animate-ring-pulse { animation: ring-pulse 4s ease-in-out infinite; }
-  .animate-shimmer {
-    animation: shimmer 2s infinite;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    background-size: 200% 100%;
-  }
-  .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
-  .animate-morph { animation: morph 8s ease-in-out infinite; }
+  .animate-fade-up { animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+  .animate-draw-line { animation: draw-line 2s ease-out forwards; }
+  .animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+  .animate-float { animation: float 4s ease-in-out infinite; }
+  .animate-counter { animation: counter 0.5s ease-out forwards; }
 `;
 
 type AuthLayoutProps = {
@@ -137,289 +46,45 @@ type AuthLayoutProps = {
   footer?: React.ReactNode;
 };
 
-/* ── Animated Counter Component ── */
-function AnimatedCounter({ 
-  end, 
-  duration = 2000, 
-  suffix = "", 
-  prefix = "",
-  delay = 0 
-}: { 
-  end: number; 
-  duration?: number; 
-  suffix?: string;
-  prefix?: string;
-  delay?: number;
-}) {
+/* ── Animated Counter ── */
+function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const [count, setCount] = useState(0);
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setStarted(true), delay);
+    const timer = setTimeout(() => setStarted(true), 500);
     return () => clearTimeout(timer);
-  }, [delay]);
+  }, []);
 
   useEffect(() => {
     if (!started) return;
+    const duration = 1500;
+    const startTime = Date.now();
     
-    let startTime: number;
-    let animationFrame: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(easeOut * end));
+      setCount(Math.floor(easeOut * value));
       
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      }
+      if (progress < 1) requestAnimationFrame(animate);
     };
+    
+    requestAnimationFrame(animate);
+  }, [started, value]);
 
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [started, end, duration]);
-
-  return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
+  return <span>{count.toLocaleString()}{suffix}</span>;
 }
 
-/* ── Interactive Slider Component ── */
-function AnimatedSlider({ 
-  label, 
-  value, 
-  maxValue, 
-  color, 
-  icon,
-  delay 
-}: { 
-  label: string; 
-  value: number; 
-  maxValue: number;
-  color: string;
-  icon: React.ReactNode;
-  delay: number;
-}) {
+/* ── Simple Animated Chart ── */
+function SimpleChart() {
   const [show, setShow] = useState(false);
-  const [currentValue, setCurrentValue] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!show) return;
-    const timer = setTimeout(() => setCurrentValue(value), 100);
-    return () => clearTimeout(timer);
-  }, [show, value]);
-
-  const percentage = (currentValue / maxValue) * 100;
-
-  return (
-    <div 
-      className={cn(
-        "p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0 cursor-pointer transition-all duration-300",
-        show && "animate-slide-up-bounce",
-        isHovered && "bg-white/10 border-white/20 scale-[1.02]"
-      )}
-      style={{ animationDelay: `${delay}ms` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className={cn("w-6 h-6 rounded-md flex items-center justify-center", color)}>
-            {icon}
-          </div>
-          <span className="text-xs font-medium text-white">{label}</span>
-        </div>
-        <span className="text-sm font-bold text-white">
-          <AnimatedCounter end={currentValue} delay={delay + 200} />
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div 
-          className={cn("h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden", color)}
-          style={{ width: `${percentage}%` }}
-        >
-          <div className="absolute inset-0 animate-shimmer" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Live Bar Chart with Hover ── */
-function LiveBarChart({ delay }: { delay: number }) {
-  const [show, setShow] = useState(false);
-  const [bars, setBars] = useState([65, 72, 58, 85, 62, 78, 90]);
-  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!show) return;
-    const interval = setInterval(() => {
-      setBars(prev => prev.map(bar => {
-        const change = (Math.random() - 0.5) * 12;
-        return Math.max(35, Math.min(95, bar + change));
-      }));
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [show]);
-
-  return (
-    <div className="relative h-full flex flex-col">
-      <div className="flex items-end gap-1.5 flex-1 min-h-[60px]">
-        {bars.map((height, i) => (
-          <div
-            key={i}
-            className="relative flex-1 flex items-end h-full"
-            onMouseEnter={() => setHoveredBar(i)}
-            onMouseLeave={() => setHoveredBar(null)}
-          >
-            <div
-              className={cn(
-                "w-full rounded-t-sm transition-all duration-500 ease-out cursor-pointer",
-                i % 2 === 0 ? "bg-gradient-to-t from-primary to-primary/70" : 
-                "bg-gradient-to-t from-violet-500 to-violet-400",
-                show ? "opacity-100" : "opacity-0",
-                hoveredBar === i && "brightness-125 scale-x-110"
-              )}
-              style={{ 
-                height: show ? `${height}%` : '0%',
-                transition: show ? 'all 0.5s ease-out' : 'none',
-                transitionDelay: `${i * 60}ms`,
-              }}
-            />
-            {hoveredBar === i && (
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-white rounded text-[10px] font-bold text-slate-900 whitespace-nowrap animate-bounce-in z-10">
-                {Math.round(height)}%
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between mt-2 text-[9px] text-white/40">
-        {days.map((day, i) => (
-          <span key={i} className={hoveredBar === i ? "text-white" : ""}>{day}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Animated Donut Chart ── */
-function DonutChart({ delay }: { delay: number }) {
-  const [show, setShow] = useState(false);
-  const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
+  const points = [35, 42, 38, 55, 48, 62, 58, 72, 68, 85];
   
-  const segments = [
-    { value: 35, color: 'hsl(var(--primary))', label: 'A' },
-    { value: 28, color: 'hsl(142 76% 36%)', label: 'B' },
-    { value: 22, color: 'hsl(262 83% 58%)', label: 'C' },
-    { value: 15, color: 'hsl(38 92% 50%)', label: 'D' },
-  ];
-
   useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
+    const timer = setTimeout(() => setShow(true), 800);
     return () => clearTimeout(timer);
-  }, [delay]);
-
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  let cumulativeOffset = 0;
-
-  return (
-    <div className={cn(
-      "flex items-center gap-4 opacity-0",
-      show && "animate-scale-in"
-    )}>
-      <div className="relative w-20 h-20">
-        <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-          {segments.map((segment, i) => {
-            const segmentLength = (segment.value / 100) * circumference;
-            const offset = cumulativeOffset;
-            cumulativeOffset += segmentLength;
-            
-            return (
-              <circle
-                key={i}
-                cx="40"
-                cy="40"
-                r={radius}
-                fill="none"
-                stroke={segment.color}
-                strokeWidth={hoveredSegment === i ? "10" : "7"}
-                strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
-                strokeDashoffset={-offset}
-                className="transition-all duration-300 cursor-pointer"
-                style={{
-                  opacity: hoveredSegment !== null && hoveredSegment !== i ? 0.4 : 1,
-                  filter: hoveredSegment === i ? 'brightness(1.2)' : 'none'
-                }}
-                onMouseEnter={() => setHoveredSegment(i)}
-                onMouseLeave={() => setHoveredSegment(null)}
-              />
-            );
-          })}
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-lg font-bold text-white">
-            {hoveredSegment !== null ? segments[hoveredSegment].value : '100'}%
-          </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-        {segments.map((segment, i) => (
-          <div 
-            key={i} 
-            className={cn(
-              "flex items-center gap-1.5 cursor-pointer transition-all duration-200",
-              hoveredSegment === i && "scale-105"
-            )}
-            onMouseEnter={() => setHoveredSegment(i)}
-            onMouseLeave={() => setHoveredSegment(null)}
-          >
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: segment.color }} />
-            <span className="text-[10px] text-white/70">{segment.label}</span>
-            <span className="text-[10px] font-bold text-white">{segment.value}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Animated Line Graph with Glow ── */
-function AnimatedLineGraph({ delay }: { delay: number }) {
-  const [show, setShow] = useState(false);
-  const [points, setPoints] = useState([30, 45, 35, 55, 48, 65, 58, 75, 68, 85, 78, 92]);
-  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!show) return;
-    const interval = setInterval(() => {
-      setPoints(prev => {
-        const newPoints = [...prev];
-        newPoints.shift();
-        const last = newPoints[newPoints.length - 1];
-        newPoints.push(Math.max(25, Math.min(95, last + (Math.random() - 0.4) * 12)));
-        return newPoints;
-      });
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [show]);
+  }, []);
 
   const pathD = points.map((p, i) => {
     const x = (i / (points.length - 1)) * 100;
@@ -427,275 +92,37 @@ function AnimatedLineGraph({ delay }: { delay: number }) {
     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
   }).join(' ');
 
-  const areaD = pathD + ` L 100 100 L 0 100 Z`;
-
   return (
-    <div className="relative">
-      <svg className="w-full h-24" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" />
-            <stop offset="50%" stopColor="hsl(262 83% 58%)" />
-            <stop offset="100%" stopColor="hsl(142 76% 36%)" />
-          </linearGradient>
-          <linearGradient id="areaGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary) / 0.4)" />
-            <stop offset="100%" stopColor="hsl(var(--primary) / 0)" />
-          </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <path
-          d={areaD}
-          fill="url(#areaGradient2)"
-          className={cn(
-            "transition-all duration-700",
-            show ? "opacity-100" : "opacity-0"
-          )}
-        />
-        <path
-          d={pathD}
-          fill="none"
-          stroke="url(#lineGradient2)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter="url(#glow)"
-          className={cn(
-            "transition-all duration-700",
-            show ? "opacity-100" : "opacity-0"
-          )}
-          style={{
-            strokeDasharray: 400,
-            strokeDashoffset: show ? 0 : 400,
-            transition: 'stroke-dashoffset 2s ease-out, opacity 0.5s'
-          }}
-        />
-        {/* Data points */}
-        {show && points.map((p, i) => {
-          const x = (i / (points.length - 1)) * 100;
-          const y = 100 - p;
-          return (
-            <g key={i}>
-              <circle
-                cx={x}
-                cy={y}
-                r={hoveredPoint === i ? 5 : 3}
-                fill="white"
-                className="transition-all duration-200 cursor-pointer"
-                onMouseEnter={() => setHoveredPoint(i)}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-              {hoveredPoint === i && (
-                <g>
-                  <circle cx={x} cy={y} r="8" fill="hsl(var(--primary))" opacity="0.3" />
-                </g>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-      {hoveredPoint !== null && (
-        <div 
-          className="absolute -top-8 px-2 py-1 bg-white rounded text-xs font-bold text-slate-900 animate-bounce-in pointer-events-none"
-          style={{ left: `${(hoveredPoint / (points.length - 1)) * 100}%`, transform: 'translateX(-50%)' }}
-        >
-          {Math.round(points[hoveredPoint])}%
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Circular Progress Ring ── */
-function CircularProgress({ 
-  value, 
-  label, 
-  color, 
-  delay,
-}: { 
-  value: number; 
-  label: string; 
-  color: string;
-  delay: number;
-}) {
-  const [show, setShow] = useState(false);
-  const [currentValue, setCurrentValue] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const radius = 24;
-  const circumference = 2 * Math.PI * radius;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!show) return;
-    const timer = setTimeout(() => setCurrentValue(value), 100);
-    return () => clearTimeout(timer);
-  }, [show, value]);
-
-  const strokeDashoffset = circumference - (currentValue / 100) * circumference;
-
-  return (
-    <div 
-      className={cn(
-        "flex flex-col items-center gap-1 opacity-0 cursor-pointer transition-transform duration-300",
-        show && "animate-bounce-in",
-        isHovered && "scale-110"
-      )}
-      style={{ animationDelay: `${delay}ms` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <svg 
+      className="w-full h-full" 
+      viewBox="0 0 100 100" 
+      preserveAspectRatio="none"
     >
-      <div className="relative w-14 h-14">
-        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-          <circle
-            cx="28"
-            cy="28"
-            r={radius}
-            fill="none"
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth="4"
+      <defs>
+        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--primary) / 0.3)" />
+          <stop offset="100%" stopColor="hsl(var(--primary) / 0)" />
+        </linearGradient>
+      </defs>
+      {show && (
+        <>
+          <path
+            d={pathD + ' L 100 100 L 0 100 Z'}
+            fill="url(#chartGradient)"
+            className="animate-fade-in"
           />
-          <circle
-            cx="28"
-            cy="28"
-            r={radius}
+          <path
+            d={pathD}
             fill="none"
-            stroke={color}
-            strokeWidth="4"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
             strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-out"
-            style={{
-              filter: isHovered ? 'drop-shadow(0 0 6px currentColor)' : 'none'
-            }}
+            className="animate-draw-line"
+            style={{ strokeDasharray: 1000 }}
           />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-white">{currentValue}%</span>
-        </div>
-      </div>
-      <span className="text-[10px] text-white/60">{label}</span>
-    </div>
-  );
-}
-
-/* ── Floating Stat Cards ── */
-function FloatingStatCards() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  
-  const cards = [
-    { value: 2847, label: "Active Students", change: "+12%", color: "from-primary to-violet-500", icon: "users" },
-    { value: 156, label: "Teachers", change: "+8%", color: "from-emerald-500 to-teal-500", icon: "teacher" },
-    { value: 98.5, suffix: "%", label: "Attendance", change: "+2.3%", color: "from-amber-500 to-orange-500", icon: "check" },
-    { value: 42, label: "Classes", change: "+5", color: "from-pink-500 to-rose-500", icon: "book" },
-  ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % cards.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [cards.length]);
-
-  return (
-    <div className="relative h-20 overflow-hidden">
-      {cards.map((card, i) => (
-        <div
-          key={i}
-          className={cn(
-            "absolute inset-0 p-3 rounded-xl bg-gradient-to-r transition-all duration-700",
-            card.color,
-            activeIndex === i 
-              ? "opacity-100 translate-y-0 scale-100" 
-              : "opacity-0 translate-y-6 scale-95 pointer-events-none"
-          )}
-        >
-          <div className="flex items-center justify-between h-full">
-            <div>
-              <p className="text-white/80 text-xs">{card.label}</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-white">
-                  {activeIndex === i && <AnimatedCounter end={card.value} delay={0} suffix={card.suffix} />}
-                </span>
-                <span className="text-xs text-white/80 bg-white/20 px-1.5 py-0.5 rounded-full">{card.change}</span>
-              </div>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              {card.icon === "users" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>}
-              {card.icon === "teacher" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
-              {card.icon === "check" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
-              {card.icon === "book" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
-            </div>
-          </div>
-        </div>
-      ))}
-      {/* Progress dots */}
-      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {cards.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveIndex(i)}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              activeIndex === i ? "w-4 bg-white" : "w-1.5 bg-white/40"
-            )}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Feature Carousel ── */
-function FeatureCarousel() {
-  const features = [
-    { title: "Analytics", icon: "chart" },
-    { title: "Attendance", icon: "check" },
-    { title: "Gradebook", icon: "grade" },
-    { title: "Messages", icon: "message" },
-    { title: "Schedule", icon: "calendar" },
-    { title: "Reports", icon: "report" },
-  ];
-
-  const doubled = [...features, ...features];
-
-  return (
-    <div className="overflow-hidden">
-      <div 
-        className="flex gap-2"
-        style={{
-          animation: 'slide-cards 25s linear infinite',
-          width: 'fit-content'
-        }}
-      >
-        {doubled.map((feature, i) => (
-          <div
-            key={i}
-            className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
-          >
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary/50 to-violet-500/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-              {feature.icon === "chart" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
-              {feature.icon === "check" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
-              {feature.icon === "grade" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>}
-              {feature.icon === "message" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
-              {feature.icon === "calendar" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
-              {feature.icon === "report" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
-            </div>
-            <span className="text-xs font-medium text-white">{feature.title}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -714,192 +141,103 @@ function ShowcasePanel() {
   }, []);
 
   return (
-    <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Animated gradient orbs */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-primary/20 rounded-full blur-3xl animate-morph animate-float-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-violet-500/20 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-4s' }} />
-        <div className="absolute top-1/2 left-1/2 w-[250px] h-[250px] bg-emerald-500/10 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-2s' }} />
-      </div>
+    <div className="relative hidden w-[55%] lg:flex lg:flex-col bg-slate-950 overflow-hidden">
+      {/* Subtle gradient accent */}
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-primary/10 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-primary/5 to-transparent" />
       
-      {/* Animated grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
-        }}
-      />
-
-      {/* Rotating gradient ring */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none">
-        <div 
-          className="w-full h-full rounded-full animate-gradient-rotate"
-          style={{
-            background: 'conic-gradient(from 0deg, transparent, hsl(var(--primary) / 0.1), transparent, hsl(262 83% 58% / 0.1), transparent)',
-          }}
-        />
-      </div>
-
-      {/* Content - No ScrollArea, fits to viewport */}
-      <div className="relative z-10 flex flex-col h-full p-6 lg:p-8">
-          
-          {/* Header */}
-          <div className={cn(
-            "flex items-center justify-between mb-4 opacity-0",
-            mounted && "animate-fade-up"
-          )}>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <span className="text-xs font-medium text-white">Live Dashboard Preview</span>
-            </div>
-            <div className="flex gap-2">
-              {[
-                { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "Secure" },
-                { icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>, label: "99.9%" },
-              ].map((badge, i) => (
-                <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 text-white/50 text-xs">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    {badge.icon}
-                  </svg>
-                  <span>{badge.label}</span>
-                </div>
-              ))}
-            </div>
+      {/* Content */}
+      <div className="relative z-10 flex flex-col justify-between h-full p-12 lg:p-16">
+        {/* Top - Badge */}
+        <div className={cn(
+          "opacity-0",
+          mounted && "animate-fade-up"
+        )}>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-xs text-white/70">Trusted by 500+ schools</span>
           </div>
+        </div>
 
-          {/* Headline - Compact */}
+        {/* Center - Main content */}
+        <div className="flex-1 flex flex-col justify-center -mt-12">
+          {/* Headline */}
           <div className={cn(
-            "mb-4 opacity-0",
+            "mb-12 opacity-0",
             mounted && "animate-fade-up"
           )} style={{ animationDelay: "100ms" }}>
-            <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight tracking-tight">
-              Everything you need,{" "}
-              <span className="bg-gradient-to-r from-primary via-violet-400 to-emerald-400 bg-clip-text text-transparent animate-gradient-shift">
-                one platform
-              </span>
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-[1.1] tracking-tight">
+              The modern way
+              <br />
+              <span className="text-white/40">to manage schools</span>
             </h1>
           </div>
 
-          {/* Floating Stat Cards Slider - Compact */}
+          {/* Stats - Clean and simple */}
           <div className={cn(
-            "mb-4 opacity-0",
-            mounted && "animate-slide-right"
-          )} style={{ animationDelay: "150ms" }}>
-            {mounted && <FloatingStatCards />}
-          </div>
-
-          {/* Main Content Grid - Optimized for viewport */}
-          <div className="flex-1 grid grid-cols-2 gap-3">
-            {/* Left Column */}
-            <div className="flex flex-col gap-3">
-              {/* Progress Rings - Compact */}
-              <div className={cn(
-                "flex items-center justify-around p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "200ms" }}>
-                <CircularProgress 
-                  value={96} 
-                  label="Attendance" 
-                  color="hsl(var(--primary))" 
-                  delay={300}
-                />
-                <CircularProgress 
-                  value={82} 
-                  label="Grades" 
-                  color="hsl(142 76% 36%)" 
-                  delay={400}
-                />
-                <CircularProgress 
-                  value={94} 
-                  label="Happy" 
-                  color="hsl(262 83% 58%)" 
-                  delay={500}
-                />
-              </div>
-
-              {/* Bar Chart - Compact */}
-              <div className={cn(
-                "flex-1 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "250ms" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-semibold text-white">Weekly Performance</h3>
-                  <div className="flex gap-2 text-[10px]">
-                    <span className="flex items-center gap-1 text-white/50">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Attend
-                    </span>
-                    <span className="flex items-center gap-1 text-white/50">
-                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" /> Grade
-                    </span>
-                  </div>
-                </div>
-                {mounted && <LiveBarChart delay={400} />}
-              </div>
-
-              {/* Slider 1 */}
-              <AnimatedSlider 
-                label="Students" 
-                value={2847} 
-                maxValue={3500} 
-                color="bg-gradient-to-r from-primary to-violet-500" 
-                delay={350}
-                icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
-              />
-            </div>
-
-            {/* Right Column */}
-            <div className="flex flex-col gap-3">
-              {/* Donut Chart - Compact */}
-              <div className={cn(
-                "p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "300ms" }}>
-                <h3 className="text-xs font-semibold text-white mb-2">Grade Distribution</h3>
-                {mounted && <DonutChart delay={500} />}
-              </div>
-
-              {/* Line Chart - Compact */}
-              <div className={cn(
-                "flex-1 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "350ms" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-white">Growth Trend</h3>
-                  <span className="text-[10px] text-emerald-400 font-medium bg-emerald-500/20 px-1.5 py-0.5 rounded">+24%</span>
-                </div>
-                {mounted && <AnimatedLineGraph delay={600} />}
-              </div>
-
-              {/* Slider 2 */}
-              <AnimatedSlider 
-                label="Classes" 
-                value={42} 
-                maxValue={50} 
-                color="bg-gradient-to-r from-emerald-500 to-teal-500" 
-                delay={400}
-                icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
-              />
-            </div>
-          </div>
-
-          {/* Feature Carousel - Bottom */}
-          <div className={cn(
-            "mt-4 opacity-0",
+            "grid grid-cols-3 gap-8 mb-12 opacity-0",
             mounted && "animate-fade-up"
-          )} style={{ animationDelay: "450ms" }}>
-            {mounted && <FeatureCarousel />}
+          )} style={{ animationDelay: "200ms" }}>
+            {[
+              { value: 50000, suffix: "+", label: "Students" },
+              { value: 99.9, suffix: "%", label: "Uptime" },
+              { value: 4.9, suffix: "", label: "Rating" },
+            ].map((stat, i) => (
+              <div key={i} className="text-left">
+                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">
+                  <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                </div>
+                <div className="text-sm text-white/50">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Simple chart */}
+          <div className={cn(
+            "h-24 opacity-0",
+            mounted && "animate-fade-up"
+          )} style={{ animationDelay: "300ms" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-white/50">Growth this year</span>
+              <span className="text-sm font-medium text-emerald-400">+127%</span>
+            </div>
+            <SimpleChart />
           </div>
         </div>
+
+        {/* Bottom - Features */}
+        <div className={cn(
+          "flex items-center gap-8 pt-8 border-t border-white/10 opacity-0",
+          mounted && "animate-fade-in"
+        )} style={{ animationDelay: "500ms" }}>
+          {[
+            { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "Secure" },
+            { icon: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>, label: "Real-time" },
+            { icon: <><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></>, label: "Scalable" },
+          ].map((feature, i) => (
+            <div key={i} className="flex items-center gap-2 text-white/50">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {feature.icon}
+              </svg>
+              <span className="text-sm">{feature.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Main AuthLayout ── */
-export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+/* ── Right Form Panel ── */
+function FormPanel({
+  title,
+  subtitle,
+  children,
+  footer,
+}: AuthLayoutProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -907,91 +245,66 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
   }, []);
 
   return (
-    <div className="flex h-svh w-full bg-background flex-col-reverse lg:flex-row-reverse overflow-hidden">
-      {/* Right: Form panel */}
-      <ScrollArea className="w-full h-svh! lg:w-[45%]" orientation="vertical">
-        <div className="relative flex min-h-full flex-col px-6 py-8 sm:px-10 lg:px-12 xl:px-16">
-          
-          {/* Subtle background pattern */}
-          <div 
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 1px, transparent 0)`,
-              backgroundSize: '32px 32px'
-            }}
-          />
+    <div className="relative flex w-full flex-col lg:w-[45%] bg-background">
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
+        {/* Logo */}
+        <div className={cn(
+          "mb-12 opacity-0",
+          mounted && "animate-fade-up"
+        )}>
+          <BrandWordmark className="h-8 w-auto" />
+        </div>
 
-          {/* Logo header */}
+        {/* Header */}
+        <div className={cn(
+          "mb-8 opacity-0",
+          mounted && "animate-fade-up"
+        )} style={{ animationDelay: "100ms" }}>
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-2 text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+        </div>
+
+        {/* Form */}
+        <div className={cn(
+          "opacity-0",
+          mounted && "animate-fade-up"
+        )} style={{ animationDelay: "200ms" }}>
+          {children}
+        </div>
+
+        {/* Footer */}
+        {footer && (
           <div className={cn(
-            "relative z-10 flex items-center justify-between mb-auto opacity-0",
-            mounted && "animate-fade-up"
-          )}>
-            <BrandWordmark className="w-auto h-7" />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-              </span>
-              <span className="text-xs text-muted-foreground">Secure</span>
-            </div>
-          </div>
-
-          {/* Center: Form */}
-          <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
-            <div className="mx-auto w-full max-w-[360px]">
-              {/* Title */}
-              <div className={cn(
-                "mb-8 opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "100ms" }}>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                  {title}
-                </h1>
-                {subtitle && (
-                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Form */}
-              <div className={cn(
-                "opacity-0",
-                mounted && "animate-fade-up"
-              )} style={{ animationDelay: "200ms" }}>
-                {children}
-              </div>
-
-              {/* Footer */}
-              {footer && (
-                <div className={cn(
-                  "mt-6 opacity-0",
-                  mounted && "animate-fade-up"
-                )} style={{ animationDelay: "300ms" }}>
-                  {footer}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom footer */}
-          <div className={cn(
-            "relative z-10 mt-auto pt-6 opacity-0",
+            "mt-8 pt-6 border-t border-border opacity-0",
             mounted && "animate-fade-in"
           )} style={{ animationDelay: "400ms" }}>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <p>&copy; {new Date().getFullYear()} EzySchool</p>
-              <div className="flex items-center gap-4">
-                <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-                <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-                <a href="#" className="hover:text-foreground transition-colors">Help</a>
-              </div>
-            </div>
+            {footer}
           </div>
-        </div>
-      </ScrollArea>
+        )}
+      </div>
+    </div>
+  );
+}
 
+/* ── Main Layout ── */
+export function AuthLayout({
+  title,
+  subtitle,
+  children,
+  footer,
+}: AuthLayoutProps) {
+  return (
+    <div className="flex min-h-screen w-full">
       <ShowcasePanel />
+      <FormPanel title={title} subtitle={subtitle} footer={footer}>
+        {children}
+      </FormPanel>
     </div>
   );
 }
