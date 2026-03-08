@@ -121,14 +121,14 @@ export function stripTenantFromPath(pathname: string, subdomain: string): string
  * This is a server-side function for getting tenant info during server-side rendering.
  */
 export async function ensureTenant(subdomain: string | null): Promise<Tenant> {
-  if (!subdomain) {
-    return getDefaultTenant();
-  }
+  // if (!subdomain) {
+  //   return getDefaultTenant();
+  // }
 
   try {
-    const { fetchTenantBySchema } = await import("@/lib/api2/tenant/api");
-    const tenant = await fetchTenantBySchema(subdomain);
-    return tenant || getDefaultTenant();
+    const { getTenantApi } = await import("@/lib/api2/tenant/api");
+    const tenant = await getTenantApi(subdomain!);
+    return tenant.data
   } catch (error) {
     console.debug("Failed to fetch tenant:", error);
     return getDefaultTenant();
@@ -145,7 +145,7 @@ export async function resolveTenantFromEmail(email: string): Promise<Tenant | nu
   }
 
   try {
-    const { searchTenantByEmail } = await import("@/lib/api2/tenant/api");
+    const { searchTenantByEmail } = await import("@/lib/api2/tenant/apis");
     const tenant = await searchTenantByEmail(email);
     return tenant || null;
   } catch (error) {
@@ -161,7 +161,7 @@ function getDefaultTenant(): Tenant {
   return {
     id: "default",
     name: "EzySchool",
-    schema_name: "public",
+    schema_name: "public0",
     short_name: "EZY",
   };
 }

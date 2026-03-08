@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { getTenantInfo } from "@/lib/api2/tenant-service";
 import { buildDomainUrlFromWindow } from "@/lib/tenant/index";
+import { getErrorMessage } from "@/lib/utils";
 
 interface UseSubdomainValidationOptions {
   subdomain: string | undefined;
@@ -11,12 +12,14 @@ interface UseSubdomainValidationReturn {
   resolvedSubdomain: string;
   isValidating: boolean;
   tenantName: string | null;
+  validationError: string | null;
   redirectToRoot: () => void;
 }
 
 /**
  * Hook to validate subdomain and handle invalid/inactive tenants
- * Ensures subdomain is valid before allowing login
+ * Returns validation error instead of redirecting - lets UI disable the login button
+ * Only redirects if no subdomain is detected (missing subdomain).
  */
 export function useSubdomainValidation({
   subdomain,
@@ -24,6 +27,7 @@ export function useSubdomainValidation({
 }: UseSubdomainValidationOptions): UseSubdomainValidationReturn {
   const [isValidating, setIsValidating] = useState(true);
   const [tenantName, setTenantName] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const isRedirectingRef = useRef(false);
 
   // Resolve subdomain from param or window.location
@@ -38,7 +42,7 @@ export function useSubdomainValidation({
     return "";
   }, [subdomain]);
 
-  // Redirect to root login page
+  // Redirect to root login page (only for missing subdomain)
   const redirectToRoot = useCallback(() => {
     if (typeof window === "undefined" || isRedirectingRef.current) return;
     
@@ -50,6 +54,7 @@ export function useSubdomainValidation({
   // Validate subdomain on mount
   useEffect(() => {
     if (!resolvedSubdomain) {
+      // No subdomain at all - redirect to root
       redirectToRoot();
       return;
     }
@@ -58,6 +63,7 @@ export function useSubdomainValidation({
 
     const validateSubdomain = async () => {
       setIsValidating(true);
+      setValidationError(null);
       
       try {
         const tenantInfo = await getTenantInfo(resolvedSubdomain);
@@ -66,16 +72,19 @@ export function useSubdomainValidation({
 
         // Check if tenant is inactive or deleted
         if (tenantInfo?.active === false || tenantInfo?.status === "deleted") {
+          const errorMsg = "This workspace is no longer active. Please switch to your active workspace.";
+          setValidationError(errorMsg);
           onInvalidSubdomain?.();
-          redirectToRoot();
           return;
         }
 
         setTenantName(tenantInfo?.name || null);
-      } catch {
+      } catch (error) {
         if (!active) return;
+        // Tenant not found or API error
+        const errorMsg = `Workspace "${resolvedSubdomain}" not found. Please check and try again.`;
+        setValidationError(getErrorMessage(error));
         onInvalidSubdomain?.();
-        redirectToRoot();
       } finally {
         if (active) {
           setIsValidating(false);
@@ -94,6 +103,7 @@ export function useSubdomainValidation({
     resolvedSubdomain,
     isValidating,
     tenantName,
+    validationError,
     redirectToRoot,
   };
 }

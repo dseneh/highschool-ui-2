@@ -12,7 +12,9 @@ import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { useSubdomainValidation } from "@/hooks/use-subdomain-validation";
 import { useTenantLoginForm } from "@/hooks/use-tenant-login-form";
 import { buildDomainUrlFromWindow } from "@/lib/tenant/index";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, Triangle, TriangleAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingSkeleton } from "./_components/loading-skeleton";
 
 export default function TenantLoginPage() {
   return (
@@ -42,7 +44,7 @@ function TenantLoginContent() {
   );
 
   // Validate subdomain and handle redirects
-  const { resolvedSubdomain, isValidating } = useSubdomainValidation({
+  const { resolvedSubdomain, isValidating, validationError } = useSubdomainValidation({
     subdomain,
   });
 
@@ -86,7 +88,9 @@ function TenantLoginContent() {
     <AuthLayout
       title="Welcome back!"
       subtitle={
-        resolvedSubdomain ? (
+        validationError ? (
+          "Unable to access workspace"
+        ) : resolvedSubdomain ? (
           <span>
             Sign in to your{" "}
             <span className="text-primary font-semibold">{resolvedSubdomain}</span> account
@@ -108,77 +112,156 @@ function TenantLoginContent() {
         </p>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="username" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Email, School ID or Username
-          </Label>
-          <Input
-            // ref={usernameRef}
-            autoFocus
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="you@school.com, ID123, or your username"
-            required
-            autoComplete="username"
-            className="h-11"
+      {validationError ? (
+        <WorkspaceErrorState 
+          error={validationError}
+          subdomain={resolvedSubdomain}
+          onSwitchWorkspace={handleChangeWorkspace}
+        />
+      ) : isValidating ? (
+        <LoadingSkeleton />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="username" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Email, School ID or Username
+            </Label>
+            <Input
+              // ref={usernameRef}
+              autoFocus
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="you@school.com, ID123, or your username"
+              required
+              autoComplete="username"
+              className="h-11"
+              disabled={isValidating}
+            />
+          </div>
+
+          <PasswordInput
+            // ref={passwordRef}
+            // autoFocus={!isValidating && !!username}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            showPassword={showPassword}
+            onToggleVisibility={toggleShowPassword}
             disabled={isValidating}
           />
-        </div>
 
-        <PasswordInput
-          // ref={passwordRef}
-          // autoFocus={!isValidating && !!username}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          showPassword={showPassword}
-          onToggleVisibility={toggleShowPassword}
-          disabled={isValidating}
-        />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none group">
+              <Checkbox
+                checked={remember}
+                onCheckedChange={(v) => setRemember(v === true)}
+                disabled={isValidating}
+              />
+              <span className="group-hover:text-foreground transition-colors">
+                Remember for 30 days
+              </span>
+            </label>
+            <button
+              type="button"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              disabled={isValidating}
+            >
+              Forgot password?
+            </button>
+          </div>
 
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none group">
-            <Checkbox
-              checked={remember}
-              onCheckedChange={(v) => setRemember(v === true)}
-            />
-            <span className="group-hover:text-foreground transition-colors">
-              Remember for 30 days
-            </span>
-          </label>
-          <button
-            type="button"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          {error && <ErrorAlert message={error} />}
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            loading={isSubmitting || loading}
+            loadingText={"Signing in..."}
+            disabled={isValidating}
           >
-            Forgot password?
-          </button>
-        </div>
+            Sign in
+          </Button>
 
-        {error && <ErrorAlert message={error} />}
-
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          loading={isValidating || isSubmitting || loading}
-          loadingText={isValidating ? "Validating workspace..." : "Signing in..."}
-          disabled={isValidating}
-        >
-          Sign in
-        </Button>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
     </AuthLayout>
+  );
+}
+
+// Loading Skeleton Component
+
+
+// Workspace Error State Component
+interface WorkspaceErrorStateProps {
+  error: string;
+  subdomain: string;
+  onSwitchWorkspace: () => void;
+}
+
+function WorkspaceErrorState({ error, subdomain, onSwitchWorkspace }: WorkspaceErrorStateProps) {
+  return (
+    <div className="space-y-3">
+      {/* Error Icon and Message */}
+      <div className="flex flex-col items-center text-center space-y-4 py-2">
+        <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
+          <TriangleAlert className="size-8 text-destructive" />
+        </div>
+        
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-foreground">
+            Workspace Not Available
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            {error}
+          </p>
+        </div>
+      </div>
+
+      {/* Subdomain Info Card */}
+      {subdomain && (
+        <div className="rounded-lg border bg-muted/30 px-4 py-3 space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Attempted Workspace
+          </p>
+          <p className="text-sm font-mono text-foreground">
+            {subdomain}
+          </p>
+        </div>
+      )}
+
+      {/* Action Button */}
+      <Button
+        onClick={onSwitchWorkspace}
+        className="w-full"
+        size="lg"
+        variant="default"
+      >
+        Switch to Available Workspace
+      </Button>
+
+      {/* Help Text */}
+      <div className="text-center">
+        <p className="text-xs text-muted-foreground">
+          Need help?{" "}
+          <a 
+            href="#" 
+            className="text-primary hover:underline font-medium"
+          >
+            Contact support
+          </a>
+        </p>
+      </div>
+    </div>
   );
 }
 
