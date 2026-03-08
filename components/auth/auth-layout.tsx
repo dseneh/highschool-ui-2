@@ -4,47 +4,39 @@ import { useEffect, useState } from "react";
 import { BrandWordmark } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
 
-/* ── Elegant animations ── */
+/* ── Minimal animations ── */
 const styleSheet = `
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+  @keyframes draw-line {
+    from { stroke-dashoffset: 1000; }
+    to { stroke-dashoffset: 0; }
   }
-  @keyframes slide-up {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(2deg); }
-  }
-  @keyframes glow {
+  @keyframes pulse-soft {
     0%, 100% { opacity: 0.4; }
     50% { opacity: 0.8; }
   }
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes counter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
-  .animate-fade-up { animation: fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
-  .animate-scale-in { animation: scale-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-slide-up { animation: slide-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-float { animation: float 6s ease-in-out infinite; }
-  .animate-glow { animation: glow 3s ease-in-out infinite; }
-  .animate-gradient { 
-    background-size: 200% 200%;
-    animation: gradient-shift 8s ease infinite; 
-  }
+  .animate-fade-up { animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+  .animate-draw-line { animation: draw-line 2s ease-out forwards; }
+  .animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+  .animate-float { animation: float 4s ease-in-out infinite; }
+  .animate-counter { animation: counter 0.5s ease-out forwards; }
 `;
 
 type AuthLayoutProps = {
@@ -54,78 +46,83 @@ type AuthLayoutProps = {
   footer?: React.ReactNode;
 };
 
-/* ── Floating Dashboard Card ── */
-function FloatingDashboard() {
-  const [mounted, setMounted] = useState(false);
+/* ── Animated Counter ── */
+function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 600);
+    const timer = setTimeout(() => setStarted(true), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  return (
-    <div 
-      className={cn(
-        "relative w-full max-w-md opacity-0",
-        mounted && "animate-scale-in animate-float"
-      )}
-      style={{ animationDelay: "200ms" }}
-    >
-      {/* Glow effect behind */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-violet-500/20 to-primary/30 blur-3xl animate-glow" />
+  useEffect(() => {
+    if (!started) return;
+    const duration = 1500;
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * value));
       
-      {/* Main card */}
-      <div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white">Dashboard</div>
-              <div className="text-xs text-white/40">Live overview</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-xs text-emerald-400">Live</span>
-          </div>
-        </div>
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    
+    requestAnimationFrame(animate);
+  }, [started, value]);
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {[
-            { label: "Students", value: "2,847", change: "+12%" },
-            { label: "Classes", value: "42", change: "+5" },
-            { label: "Attendance", value: "96%", change: "+2.3%" },
-          ].map((stat, i) => (
-            <div key={i} className="text-center">
-              <div className="text-xl font-bold text-white">{stat.value}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wider">{stat.label}</div>
-              <div className="text-[10px] text-emerald-400 mt-1">{stat.change}</div>
-            </div>
-          ))}
-        </div>
+  return <span>{count.toLocaleString()}{suffix}</span>;
+}
 
-        {/* Mini chart */}
-        <div className="h-16 flex items-end gap-1">
-          {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
-            <div
-              key={i}
-              className="flex-1 bg-gradient-to-t from-primary/60 to-primary rounded-t transition-all duration-500 hover:from-primary hover:to-violet-400"
-              style={{ height: `${h}%` }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+/* ── Simple Animated Chart ── */
+function SimpleChart() {
+  const [show, setShow] = useState(false);
+  const points = [35, 42, 38, 55, 48, 62, 58, 72, 68, 85];
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const pathD = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * 100;
+    const y = 100 - p;
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
+  return (
+    <svg 
+      className="w-full h-full" 
+      viewBox="0 0 100 100" 
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--primary) / 0.3)" />
+          <stop offset="100%" stopColor="hsl(var(--primary) / 0)" />
+        </linearGradient>
+      </defs>
+      {show && (
+        <>
+          <path
+            d={pathD + ' L 100 100 L 0 100 Z'}
+            fill="url(#chartGradient)"
+            className="animate-fade-in"
+          />
+          <path
+            d={pathD}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="animate-draw-line"
+            style={{ strokeDasharray: 1000 }}
+          />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -145,82 +142,87 @@ function ShowcasePanel() {
 
   return (
     <div className="relative hidden w-[55%] lg:flex lg:flex-col bg-slate-950 overflow-hidden">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-      
-      {/* Subtle grid pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
-
-      {/* Gradient orbs */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-glow" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-violet-500/15 rounded-full blur-3xl animate-glow" style={{ animationDelay: "1.5s" }} />
+      {/* Subtle gradient accent */}
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-primary/10 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-primary/5 to-transparent" />
       
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full p-12 lg:p-16">
-        {/* Top badge */}
+      <div className="relative z-10 flex flex-col justify-between h-full p-12 lg:p-16">
+        {/* Top - Badge */}
         <div className={cn(
           "opacity-0",
           mounted && "animate-fade-up"
         )}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span className="text-sm text-white/70">500+ schools trust us</span>
+            <span className="text-xs text-white/70">Trusted by 500+ schools</span>
           </div>
         </div>
 
-        {/* Center content */}
-        <div className="flex-1 flex flex-col justify-center">
-          {/* Bold headline */}
+        {/* Center - Main content */}
+        <div className="flex-1 flex flex-col justify-center -mt-12">
+          {/* Headline */}
           <div className={cn(
-            "mb-8 opacity-0",
+            "mb-12 opacity-0",
             mounted && "animate-fade-up"
           )} style={{ animationDelay: "100ms" }}>
-            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[0.95] tracking-tight">
-              School
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-[1.1] tracking-tight">
+              The modern way
               <br />
-              management
-              <br />
-              <span className="bg-gradient-to-r from-primary via-violet-400 to-primary bg-clip-text text-transparent animate-gradient">
-                reimagined
-              </span>
+              <span className="text-white/40">to manage schools</span>
             </h1>
           </div>
 
-          {/* Subtitle */}
-          <p className={cn(
-            "text-lg text-white/50 max-w-md mb-12 opacity-0",
+          {/* Stats - Clean and simple */}
+          <div className={cn(
+            "grid grid-cols-3 gap-8 mb-12 opacity-0",
             mounted && "animate-fade-up"
           )} style={{ animationDelay: "200ms" }}>
-            The all-in-one platform for modern schools. 
-            Manage students, grades, and communication effortlessly.
-          </p>
+            {[
+              { value: 50000, suffix: "+", label: "Students" },
+              { value: 99.9, suffix: "%", label: "Uptime" },
+              { value: 4.9, suffix: "", label: "Rating" },
+            ].map((stat, i) => (
+              <div key={i} className="text-left">
+                <div className="text-3xl lg:text-4xl font-bold text-white mb-1">
+                  <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                </div>
+                <div className="text-sm text-white/50">{stat.label}</div>
+              </div>
+            ))}
+          </div>
 
-          {/* Floating dashboard preview */}
-          <FloatingDashboard />
+          {/* Simple chart */}
+          <div className={cn(
+            "h-24 opacity-0",
+            mounted && "animate-fade-up"
+          )} style={{ animationDelay: "300ms" }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-white/50">Growth this year</span>
+              <span className="text-sm font-medium text-emerald-400">+127%</span>
+            </div>
+            <SimpleChart />
+          </div>
         </div>
 
-        {/* Bottom features */}
+        {/* Bottom - Features */}
         <div className={cn(
-          "flex items-center gap-8 pt-8 border-t border-white/5 opacity-0",
+          "flex items-center gap-8 pt-8 border-t border-white/10 opacity-0",
           mounted && "animate-fade-in"
-        )} style={{ animationDelay: "800ms" }}>
+        )} style={{ animationDelay: "500ms" }}>
           {[
-            { label: "Enterprise security" },
-            { label: "99.9% uptime" },
-            { label: "24/7 support" },
+            { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "Secure" },
+            { icon: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>, label: "Real-time" },
+            { icon: <><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></>, label: "Scalable" },
           ].map((feature, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              <span className="text-sm text-white/40">{feature.label}</span>
+            <div key={i} className="flex items-center gap-2 text-white/50">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {feature.icon}
+              </svg>
+              <span className="text-sm">{feature.label}</span>
             </div>
           ))}
         </div>
@@ -244,10 +246,10 @@ function FormPanel({
 
   return (
     <div className="relative flex w-full flex-col lg:w-[45%] bg-background">
-      <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:px-16">
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         {/* Logo */}
         <div className={cn(
-          "mb-16 opacity-0",
+          "mb-12 opacity-0",
           mounted && "animate-fade-up"
         )}>
           <BrandWordmark className="h-8 w-auto" />
@@ -258,11 +260,11 @@ function FormPanel({
           "mb-8 opacity-0",
           mounted && "animate-fade-up"
         )} style={{ animationDelay: "100ms" }}>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight">
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight">
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-2 text-muted-foreground">
               {subtitle}
             </p>
           )}
@@ -279,16 +281,13 @@ function FormPanel({
         {/* Footer */}
         {footer && (
           <div className={cn(
-            "mt-10 pt-8 border-t border-border opacity-0",
+            "mt-8 pt-6 border-t border-border opacity-0",
             mounted && "animate-fade-in"
           )} style={{ animationDelay: "400ms" }}>
             {footer}
           </div>
         )}
       </div>
-
-      {/* Subtle corner accent */}
-      <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-primary/5 to-transparent pointer-events-none" />
     </div>
   );
 }
