@@ -1,56 +1,88 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BrandWordmark } from "@/components/brand/brand-logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-/* ── Clean modern animations ── */
+/* ── Advanced animations ── */
 const styleSheet = `
   @keyframes fade-up {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
   }
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  @keyframes scale-up {
-    from { opacity: 0; transform: scale(0.96); }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
   }
-  @keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(-20px); }
+  @keyframes slide-right {
+    from { opacity: 0; transform: translateX(-30px); }
     to { opacity: 1; transform: translateX(0); }
   }
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.2); }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+    50% { box-shadow: 0 0 20px 4px hsl(var(--primary) / 0.2); }
   }
-  @keyframes count-up {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
   }
-  @keyframes bar-grow {
-    from { transform: scaleY(0); }
-    to { transform: scaleY(1); }
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
   }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+  @keyframes line-draw {
+    to { stroke-dashoffset: 0; }
   }
-  .animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  @keyframes counter-tick {
+    0% { transform: translateY(0); }
+    10% { transform: translateY(-100%); }
+    100% { transform: translateY(-100%); }
+  }
+  @keyframes bar-rise {
+    from { transform: scaleY(0); opacity: 0; }
+    to { transform: scaleY(1); opacity: 1; }
+  }
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.6); }
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes ring-pulse {
+    0% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.05); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 0.3; }
+  }
+  @keyframes dot-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+  }
+  @keyframes notification-slide {
+    0% { opacity: 0; transform: translateX(40px) scale(0.9); }
+    10% { opacity: 1; transform: translateX(0) scale(1); }
+    90% { opacity: 1; transform: translateX(0) scale(1); }
+    100% { opacity: 0; transform: translateX(-40px) scale(0.9); }
+  }
+  
+  .animate-fade-up { animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
   .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-  .animate-scale-up { animation: scale-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-slide-in-right { animation: slide-in-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-  .animate-count-up { animation: count-up 0.5s ease-out forwards; }
-  .animate-bar-grow { animation: bar-grow 0.8s ease-out forwards; transform-origin: bottom; }
-  .animate-shimmer { 
-    animation: shimmer 2s infinite; 
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    background-size: 200% 100%;
+  .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-slide-right { animation: slide-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+  .animate-float { animation: float 4s ease-in-out infinite; }
+  .animate-bar-rise { animation: bar-rise 0.8s ease-out forwards; transform-origin: bottom; }
+  .animate-gradient-shift { 
+    animation: gradient-shift 8s ease infinite;
+    background-size: 200% 200%;
   }
+  .animate-ring-pulse { animation: ring-pulse 4s ease-in-out infinite; }
 `;
 
 type AuthLayoutProps = {
@@ -60,83 +92,366 @@ type AuthLayoutProps = {
   footer?: React.ReactNode;
 };
 
-/* ── Bento Card Component ── */
-function BentoCard({ 
-  children, 
-  className, 
+/* ── Animated Counter Component ── */
+function AnimatedCounter({ 
+  end, 
+  duration = 2000, 
+  suffix = "", 
+  prefix = "",
   delay = 0 
 }: { 
-  children: React.ReactNode; 
-  className?: string;
+  end: number; 
+  duration?: number; 
+  suffix?: string;
+  prefix?: string;
   delay?: number;
 }) {
-  const [mounted, setMounted] = useState(false);
-  
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), delay);
+    const timer = setTimeout(() => setStarted(true), delay);
     return () => clearTimeout(timer);
   }, [delay]);
 
-  return (
-    <div 
-      className={cn(
-        "rounded-2xl bg-card border border-border/60 p-5 opacity-0 transition-all duration-300 hover:border-border hover:shadow-lg",
-        mounted && "animate-scale-up",
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  useEffect(() => {
+    if (!started) return;
+    
+    let startTime: number;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * end));
+      
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [started, end, duration]);
+
+  return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
 }
 
-/* ── Stat Display ── */
-function StatDisplay({ value, label, delay }: { value: string; label: string; delay: number }) {
+/* ── Live Bar Chart ── */
+function LiveBarChart({ delay }: { delay: number }) {
   const [show, setShow] = useState(false);
-  
+  const [bars, setBars] = useState([45, 62, 38, 75, 52, 68, 85, 48, 72, 58, 80, 65]);
+
   useEffect(() => {
     const timer = setTimeout(() => setShow(true), delay);
     return () => clearTimeout(timer);
   }, [delay]);
 
-  return (
-    <div className="text-center">
-      <p className={cn(
-        "text-2xl font-semibold text-foreground opacity-0",
-        show && "animate-count-up"
-      )}>
-        {value}
-      </p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
-    </div>
-  );
-}
-
-/* ── Mini Chart ── */
-function MiniChart({ delay }: { delay: number }) {
-  const [show, setShow] = useState(false);
-  const bars = [40, 65, 45, 80, 55, 70, 90];
-  
   useEffect(() => {
-    const timer = setTimeout(() => setShow(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
+    if (!show) return;
+    const interval = setInterval(() => {
+      setBars(prev => prev.map(bar => {
+        const change = (Math.random() - 0.5) * 20;
+        return Math.max(25, Math.min(95, bar + change));
+      }));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [show]);
 
   return (
-    <div className="flex items-end gap-1 h-12">
+    <div className="flex items-end gap-1.5 h-20">
       {bars.map((height, i) => (
         <div
           key={i}
           className={cn(
-            "w-2 rounded-sm bg-primary/80 opacity-0",
-            show && "animate-bar-grow"
+            "flex-1 rounded-t-sm transition-all duration-700 ease-out opacity-0",
+            i % 3 === 0 ? "bg-primary" : i % 3 === 1 ? "bg-primary/70" : "bg-primary/40",
+            show && "animate-bar-rise"
           )}
           style={{ 
             height: `${height}%`,
-            animationDelay: `${i * 80}ms`
+            animationDelay: `${i * 60}ms`,
+            transitionProperty: 'height'
           }}
         />
       ))}
+    </div>
+  );
+}
+
+/* ── Animated Line Graph ── */
+function AnimatedLineGraph({ delay }: { delay: number }) {
+  const [show, setShow] = useState(false);
+  const [points, setPoints] = useState([20, 35, 25, 45, 35, 55, 50, 70, 60, 80, 75, 90]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!show) return;
+    const interval = setInterval(() => {
+      setPoints(prev => {
+        const newPoints = [...prev];
+        newPoints.shift();
+        newPoints.push(Math.max(20, Math.min(95, newPoints[newPoints.length - 1] + (Math.random() - 0.4) * 15)));
+        return newPoints;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [show]);
+
+  const pathD = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * 100;
+    const y = 100 - p;
+    return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
+  const areaD = pathD + ` L 100 100 L 0 100 Z`;
+
+  return (
+    <svg className="w-full h-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="hsl(var(--primary))" />
+          <stop offset="100%" stopColor="hsl(var(--primary) / 0.6)" />
+        </linearGradient>
+        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="hsl(var(--primary) / 0.3)" />
+          <stop offset="100%" stopColor="hsl(var(--primary) / 0)" />
+        </linearGradient>
+      </defs>
+      <path
+        d={areaD}
+        fill="url(#areaGradient)"
+        className={cn(
+          "transition-all duration-700",
+          show ? "opacity-100" : "opacity-0"
+        )}
+      />
+      <path
+        d={pathD}
+        fill="none"
+        stroke="url(#lineGradient)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={cn(
+          "transition-all duration-700",
+          show ? "opacity-100" : "opacity-0"
+        )}
+        style={{
+          strokeDasharray: 300,
+          strokeDashoffset: show ? 0 : 300,
+          transition: 'stroke-dashoffset 1.5s ease-out, opacity 0.5s'
+        }}
+      />
+      {show && (
+        <circle
+          cx="100"
+          cy={100 - points[points.length - 1]}
+          r="3"
+          fill="hsl(var(--primary))"
+          className="animate-pulse"
+        />
+      )}
+    </svg>
+  );
+}
+
+/* ── Circular Progress Ring ── */
+function CircularProgress({ 
+  value, 
+  label, 
+  color, 
+  delay 
+}: { 
+  value: number; 
+  label: string; 
+  color: string;
+  delay: number;
+}) {
+  const [show, setShow] = useState(false);
+  const [currentValue, setCurrentValue] = useState(0);
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!show) return;
+    const timer = setTimeout(() => setCurrentValue(value), 100);
+    return () => clearTimeout(timer);
+  }, [show, value]);
+
+  const strokeDashoffset = circumference - (currentValue / 100) * circumference;
+
+  return (
+    <div className={cn(
+      "flex flex-col items-center gap-2 opacity-0",
+      show && "animate-scale-in"
+    )}>
+      <div className="relative w-20 h-20">
+        <svg className="w-20 h-20 -rotate-90">
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--muted))"
+            strokeWidth="6"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-bold text-foreground">{currentValue}%</span>
+        </div>
+      </div>
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+/* ── Floating Notification Cards ── */
+function FloatingNotifications() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const notifications = [
+    { icon: "student", title: "New Enrollment", desc: "Sarah Johnson joined Grade 10", time: "Just now", color: "bg-emerald-500" },
+    { icon: "grade", title: "Grade Updated", desc: "Mathematics exam results posted", time: "2 min ago", color: "bg-primary" },
+    { icon: "attendance", title: "Attendance Alert", desc: "98.5% attendance this week", time: "5 min ago", color: "bg-amber-500" },
+    { icon: "message", title: "Parent Message", desc: "Meeting scheduled for Friday", time: "10 min ago", color: "bg-violet-500" },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % notifications.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [notifications.length]);
+
+  const notification = notifications[activeIndex];
+
+  return (
+    <div 
+      key={activeIndex}
+      className="absolute top-8 right-8 w-64 p-4 rounded-xl bg-card/95 backdrop-blur-sm border border-border shadow-xl"
+      style={{
+        animation: 'notification-slide 3.5s ease-in-out forwards'
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-white", notification.color)}>
+          {notification.icon === "student" && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          )}
+          {notification.icon === "grade" && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          )}
+          {notification.icon === "attendance" && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          )}
+          {notification.icon === "message" && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">{notification.title}</p>
+          <p className="text-xs text-muted-foreground truncate">{notification.desc}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{notification.time}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Dashboard Preview Mockup ── */
+function DashboardMockup({ delay }: { delay: number }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div className={cn(
+      "rounded-2xl bg-card border border-border shadow-2xl overflow-hidden opacity-0",
+      show && "animate-scale-in"
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 bg-muted/50 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-amber-400" />
+            <div className="w-3 h-3 rounded-full bg-emerald-400" />
+          </div>
+          <span className="text-xs text-muted-foreground font-medium">Dashboard Overview</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs text-emerald-600 font-medium">Live</span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5 space-y-5">
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: "Total Students", value: 2847, change: "+12%", color: "text-emerald-600" },
+            { label: "Attendance", value: 96.8, suffix: "%", change: "+2.3%", color: "text-emerald-600" },
+            { label: "Avg Grade", value: 78.5, suffix: "%", change: "+5.1%", color: "text-emerald-600" },
+          ].map((stat, i) => (
+            <div key={i} className="p-3 rounded-xl bg-muted/50">
+              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold text-foreground">
+                  <AnimatedCounter end={stat.value} delay={delay + 300 + i * 200} suffix={stat.suffix} />
+                </span>
+                <span className={cn("text-xs font-medium", stat.color)}>{stat.change}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart */}
+        <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-foreground">Weekly Performance</span>
+            <div className="flex gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary" /> Attendance</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary/50" /> Grades</span>
+            </div>
+          </div>
+          <LiveBarChart delay={delay + 600} />
+        </div>
+
+        {/* Trend Line */}
+        <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-foreground">Enrollment Trend</span>
+            <span className="text-xs text-emerald-600 font-medium">+24% this month</span>
+          </div>
+          <AnimatedLineGraph delay={delay + 800} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -156,168 +471,96 @@ function ShowcasePanel() {
   }, []);
 
   return (
-    <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-muted/40">
-      {/* Subtle dot pattern */}
+    <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Animated gradient orbs */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-gradient-shift" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/15 rounded-full blur-3xl animate-gradient-shift" style={{ animationDelay: '-4s' }} />
+      
+      {/* Grid pattern */}
       <div 
-        className="absolute inset-0 opacity-[0.4]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.15) 1px, transparent 0)`,
-          backgroundSize: '24px 24px'
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '40px 40px'
         }}
       />
-      
-      {/* Gradient overlays */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background/80 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background/80 to-transparent" />
-      <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-background/50 to-transparent" />
+
+      {/* Animated rings */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="w-[500px] h-[500px] rounded-full border border-white/5 animate-ring-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-white/5 animate-ring-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full border border-white/5 animate-ring-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      {/* Floating notifications */}
+      {mounted && <FloatingNotifications />}
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full p-8 lg:p-10 xl:p-12">
+      <div className="relative z-10 flex flex-col h-full p-8 lg:p-10">
         
         {/* Header */}
         <div className={cn(
-          "flex items-center gap-3 mb-10 opacity-0",
+          "flex items-center gap-4 mb-8 opacity-0",
           mounted && "animate-fade-up"
         )}>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot" />
-            <span className="text-xs font-medium text-primary">Live Platform</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-sm font-medium text-white">Live Dashboard Preview</span>
           </div>
-          <span className="text-xs text-muted-foreground">500+ schools active</span>
         </div>
 
-        {/* Main headline */}
+        {/* Headline */}
         <div className={cn(
-          "mb-10 opacity-0",
+          "mb-8 opacity-0",
           mounted && "animate-fade-up"
         )} style={{ animationDelay: "100ms" }}>
-          <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-[1.1] tracking-tight">
-            School management,{" "}
-            <span className="text-primary">simplified.</span>
+          <h1 className="text-4xl lg:text-5xl font-bold text-white leading-[1.15] tracking-tight">
+            Powerful insights,
+            <br />
+            <span className="bg-gradient-to-r from-primary via-violet-400 to-primary bg-clip-text text-transparent animate-gradient-shift">
+              real-time analytics
+            </span>
           </h1>
-          <p className="mt-5 text-base text-muted-foreground max-w-md leading-relaxed">
-            Everything you need to manage students, grades, attendance, and communication in one powerful platform.
+          <p className="mt-4 text-base text-white/60 max-w-md leading-relaxed">
+            Track performance, monitor attendance, and make data-driven decisions with our comprehensive dashboard.
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="flex-1 grid grid-cols-2 grid-rows-3 gap-4 max-h-[480px]">
-          
-          {/* Stats Card - Large */}
-          <BentoCard className="row-span-1 col-span-2 flex items-center justify-between" delay={200}>
-            <div className="flex items-center gap-8">
-              <StatDisplay value="2M+" label="Students" delay={400} />
-              <div className="w-px h-10 bg-border" />
-              <StatDisplay value="99.9%" label="Uptime" delay={500} />
-              <div className="w-px h-10 bg-border" />
-              <StatDisplay value="4.9" label="Rating" delay={600} />
-            </div>
-            <MiniChart delay={700} />
-          </BentoCard>
-
-          {/* Feature Card 1 */}
-          <BentoCard delay={300}>
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">Student Management</h3>
-                <p className="text-xs text-muted-foreground mt-1">Complete student profiles and records</p>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Feature Card 2 */}
-          <BentoCard delay={400}>
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">Grade Analytics</h3>
-                <p className="text-xs text-muted-foreground mt-1">Real-time performance tracking</p>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Feature Card 3 */}
-          <BentoCard delay={500}>
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">Smart Scheduling</h3>
-                <p className="text-xs text-muted-foreground mt-1">AI-powered timetable creation</p>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Feature Card 4 */}
-          <BentoCard delay={600}>
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">Communication</h3>
-                <p className="text-xs text-muted-foreground mt-1">Connect parents and teachers</p>
-              </div>
-            </div>
-          </BentoCard>
-
-          {/* Trust & Security - Wide */}
-          <BentoCard className="col-span-2 flex items-center justify-between" delay={700}>
-            <div className="flex items-center gap-6">
-              {[
-                { label: "SOC 2", icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /> },
-                { label: "GDPR", icon: <path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" /> },
-                { label: "256-bit SSL", icon: <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /> },
-              ].map((badge, i) => (
-                <div key={i} className="flex items-center gap-2 text-muted-foreground">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    {badge.icon}
-                  </svg>
-                  <span className="text-xs font-medium">{badge.label}</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">Enterprise-grade security</p>
-          </BentoCard>
-        </div>
-
-        {/* Testimonial */}
+        {/* Progress Rings */}
         <div className={cn(
-          "mt-8 pt-6 border-t border-border/50 opacity-0",
+          "flex items-center gap-8 mb-8 opacity-0",
+          mounted && "animate-slide-right"
+        )} style={{ animationDelay: "200ms" }}>
+          <CircularProgress value={96} label="Attendance" color="hsl(var(--primary))" delay={400} />
+          <CircularProgress value={82} label="Performance" color="hsl(142 76% 36%)" delay={500} />
+          <CircularProgress value={94} label="Satisfaction" color="hsl(262 83% 58%)" delay={600} />
+        </div>
+
+        {/* Dashboard Mockup */}
+        <div className="flex-1 flex items-center">
+          <DashboardMockup delay={300} />
+        </div>
+
+        {/* Trust badges */}
+        <div className={cn(
+          "flex items-center gap-6 mt-8 pt-6 border-t border-white/10 opacity-0",
           mounted && "animate-fade-in"
-        )} style={{ animationDelay: "800ms" }}>
-          <p className="text-sm text-muted-foreground italic leading-relaxed">
-            &ldquo;EzySchool transformed how we manage our institution. The time savings are incredible.&rdquo;
-          </p>
-          <div className="flex items-center gap-3 mt-4">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-              JD
+        )} style={{ animationDelay: "600ms" }}>
+          {[
+            { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "Enterprise Security" },
+            { icon: <circle cx="12" cy="12" r="10" />, label: "99.9% Uptime" },
+            { icon: <path d="M12 2v20M2 12h20" />, label: "24/7 Support" },
+          ].map((badge, i) => (
+            <div key={i} className="flex items-center gap-2 text-white/50">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {badge.icon}
+              </svg>
+              <span className="text-xs font-medium">{badge.label}</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">James Donovan</p>
-              <p className="text-xs text-muted-foreground">Principal, Lincoln High School</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -338,20 +581,32 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
       <ScrollArea className="w-full h-svh! lg:w-[45%]" orientation="vertical">
         <div className="relative flex min-h-full flex-col px-6 py-8 sm:px-10 lg:px-12 xl:px-16">
           
+          {/* Subtle background pattern */}
+          <div 
+            className="absolute inset-0 opacity-[0.02]"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--foreground)) 1px, transparent 0)`,
+              backgroundSize: '32px 32px'
+            }}
+          />
+
           {/* Logo header */}
           <div className={cn(
-            "flex items-center justify-between mb-auto opacity-0",
+            "relative z-10 flex items-center justify-between mb-auto opacity-0",
             mounted && "animate-fade-up"
           )}>
             <BrandWordmark className="w-auto h-7" />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-muted-foreground">Secure</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              <span className="text-xs text-muted-foreground">Secure Login</span>
             </div>
           </div>
 
           {/* Center: Form */}
-          <div className="flex-1 flex flex-col justify-center py-12">
+          <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
             <div className="mx-auto w-full max-w-[360px]">
               {/* Title */}
               <div className={cn(
@@ -390,7 +645,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
 
           {/* Bottom footer */}
           <div className={cn(
-            "mt-auto pt-6 opacity-0",
+            "relative z-10 mt-auto pt-6 opacity-0",
             mounted && "animate-fade-in"
           )} style={{ animationDelay: "400ms" }}>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
