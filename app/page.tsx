@@ -24,80 +24,111 @@ import {
   Moon,
   Menu,
   X,
+  GraduationCap,
+  Bell,
+  FileText,
+  TrendingUp,
+  Award,
+  ChevronRight,
+  Star,
+  Quote,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DialogBox } from "@/components/ui/dialog-box";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BrandWordmark } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
-
-const highlights = [
-  "Student management made simple",
-  "Real-time attendance and billing insights",
-  "Secure multi-tenant architecture",
-];
-
-const valuePills = ["Admissions", "Attendance", "Academics", "Billing", "Reports", "Multi-tenant"];
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const features = [
   {
     icon: Users,
     title: "Student Management",
-    description: "Complete student lifecycle management from admissions to graduation with profiles, documents, and history.",
+    description: "Complete student lifecycle from admissions to graduation with profiles and history.",
+    stat: "50K+",
+    statLabel: "Students managed",
   },
   {
     icon: Calendar,
-    title: "Attendance Tracking",
-    description: "Real-time attendance monitoring with automated reports, notifications, and parent communication.",
+    title: "Smart Attendance",
+    description: "Real-time tracking with automated reports and instant parent notifications.",
+    stat: "99.9%",
+    statLabel: "Accuracy rate",
   },
   {
     icon: BookOpen,
-    title: "Academic Management",
-    description: "Comprehensive grade books, assignments, assessments, and transcript generation tools.",
+    title: "Academic Excellence",
+    description: "Grade books, assignments, assessments, and transcript generation tools.",
+    stat: "40%",
+    statLabel: "Time saved",
   },
   {
     icon: DollarSign,
     title: "Finance & Billing",
-    description: "Automated fee collection, invoicing, payment tracking, and financial reporting in one place.",
+    description: "Automated fee collection, invoicing, and comprehensive financial reporting.",
+    stat: "3x",
+    statLabel: "Faster processing",
   },
   {
     icon: BarChart3,
-    title: "Analytics & Reports",
-    description: "Data-driven insights with customizable dashboards, charts, and exportable reports.",
+    title: "Analytics Dashboard",
+    description: "Data-driven insights with customizable dashboards and exportable reports.",
+    stat: "100+",
+    statLabel: "Report templates",
   },
   {
     icon: Building2,
-    title: "Multi-Campus Support",
-    description: "Manage multiple campuses, departments, and branches from a unified platform.",
+    title: "Multi-Campus",
+    description: "Manage multiple campuses and branches from a unified platform.",
+    stat: "500+",
+    statLabel: "Schools worldwide",
+  },
+];
+
+const stats = [
+  { value: "500+", label: "Schools", icon: School },
+  { value: "50K+", label: "Students", icon: GraduationCap },
+  { value: "99.9%", label: "Uptime", icon: TrendingUp },
+  { value: "24/7", label: "Support", icon: Bell },
+];
+
+const testimonials = [
+  {
+    quote: "EzySchool transformed how we manage our institution. The automation alone saved us 20 hours per week.",
+    author: "Dr. Sarah Mitchell",
+    role: "Principal, Lincoln Academy",
+    rating: 5,
+  },
+  {
+    quote: "The analytics dashboard gives us insights we never had before. Parent satisfaction increased by 40%.",
+    author: "Michael Chen",
+    role: "Administrator, Brighton School",
+    rating: 5,
+  },
+  {
+    quote: "Finally, a system that actually works. Our staff adoption was 100% within the first month.",
+    author: "Emily Rodriguez",
+    role: "IT Director, Summit Schools",
+    rating: 5,
   },
 ];
 
 const benefits = [
-  {
-    icon: Clock,
-    title: "Save Time",
-    description: "Automate repetitive tasks and reduce administrative workload by up to 70%.",
-  },
-  {
-    icon: Shield,
-    title: "Secure Data",
-    description: "Enterprise-grade security with role-based access control and data encryption.",
-  },
-  {
-    icon: Zap,
-    title: "Boost Efficiency",
-    description: "Streamlined workflows and integrations that work seamlessly together.",
-  },
-  {
-    icon: Globe,
-    title: "Access Anywhere",
-    description: "Cloud-based platform accessible from any device, anywhere, anytime.",
-  },
+  { icon: Clock, title: "Save 20+ Hours/Week", description: "Automate repetitive administrative tasks" },
+  { icon: Shield, title: "Enterprise Security", description: "SOC 2 compliant with end-to-end encryption" },
+  { icon: Zap, title: "Lightning Fast", description: "Sub-second response times across all features" },
+  { icon: Globe, title: "Access Anywhere", description: "Cloud-based platform on any device" },
 ];
 
 export default function Page() {
@@ -107,6 +138,7 @@ export default function Page() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   // Demo form state
   const [demoForm, setDemoForm] = useState({
@@ -130,11 +162,18 @@ export default function Page() {
 
   const isDark = theme === "dark";
 
-  // Prevent hydration mismatch by only rendering theme-dependent content after mount
   useEffect(() => {
     startTransition(() => {
       setMounted(true);
     });
+  }, []);
+
+  // Auto-rotate testimonials
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Validation helpers
@@ -155,121 +194,73 @@ export default function Page() {
   // Demo form handlers
   const validateDemoForm = () => {
     const errors: Record<string, string> = {};
-
-    if (!demoForm.name.trim()) {
-      errors.name = "Name is required";
-    }
-
-    if (!demoForm.email.trim()) {
-      errors.email = "Email is required";
-    } else if (!validateEmail(demoForm.email)) {
-      errors.email = "Please enter a valid email address";
-    }
-
-    if (!demoForm.school.trim()) {
-      errors.school = "School name is required";
-    }
-
-    if (demoForm.phone && !/^[\d\s\-\+\(\)]+$/.test(demoForm.phone)) {
-      errors.phone = "Please enter a valid phone number";
-    }
-
+    if (!demoForm.name.trim()) errors.name = "Name is required";
+    if (!demoForm.email.trim()) errors.email = "Email is required";
+    else if (!validateEmail(demoForm.email)) errors.email = "Please enter a valid email address";
+    if (!demoForm.school.trim()) errors.school = "School name is required";
+    if (demoForm.phone && !/^[\d\s\-\+\(\)]+$/.test(demoForm.phone)) errors.phone = "Please enter a valid phone number";
     setDemoErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleDemoSubmit = async () => {
     if (!validateDemoForm()) return;
-
     setIsSubmitting(true);
-    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsSubmitting(false);
     setDemoOpen(false);
-    // Reset form
     setDemoForm({ name: "", email: "", school: "", phone: "", message: "" });
     setDemoErrors({});
-    // In production, add actual API call here
   };
 
   // Signup form handlers
   const validateSignupForm = () => {
     const errors: Record<string, string> = {};
-
-    if (!signupForm.name.trim()) {
-      errors.name = "Name is required";
-    }
-
-    if (!signupForm.email.trim()) {
-      errors.email = "Email is required";
-    } else if (!validateEmail(signupForm.email)) {
-      errors.email = "Please enter a valid email address";
-    }
-
-    if (!signupForm.school.trim()) {
-      errors.school = "School name is required";
-    }
-
-    if (!signupForm.subdomain.trim()) {
-      errors.subdomain = "Workspace URL is required";
-    } else if (!validateSubdomain(signupForm.subdomain)) {
-      errors.subdomain = "Only lowercase letters, numbers, and hyphens (3-30 chars)";
-    }
-
-    if (!signupForm.password) {
-      errors.password = "Password is required";
-    } else if (!validatePassword(signupForm.password)) {
-      errors.password = "Password must be at least 8 characters";
-    }
-
+    if (!signupForm.name.trim()) errors.name = "Name is required";
+    if (!signupForm.email.trim()) errors.email = "Email is required";
+    else if (!validateEmail(signupForm.email)) errors.email = "Please enter a valid email address";
+    if (!signupForm.school.trim()) errors.school = "School name is required";
+    if (!signupForm.subdomain.trim()) errors.subdomain = "Workspace URL is required";
+    else if (!validateSubdomain(signupForm.subdomain)) errors.subdomain = "Only lowercase letters, numbers, and hyphens (3-30 chars)";
+    if (!signupForm.password) errors.password = "Password is required";
+    else if (!validatePassword(signupForm.password)) errors.password = "Password must be at least 8 characters";
     setSignupErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSignupSubmit = async () => {
     if (!validateSignupForm()) return;
-
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsSubmitting(false);
     setSignupOpen(false);
-    // Reset form
     setSignupForm({ name: "", email: "", school: "", subdomain: "", password: "" });
     setSignupErrors({});
   };
 
   return (
-    <main className="relative min-h-dvh bg-background text-foreground">
-      {/* Animated background effects */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {/* Gradient blobs */}
-        <div className="absolute -left-32 -top-20 h-96 w-96 rounded-full bg-linear-to-br from-primary/20 via-primary/10 to-transparent blur-3xl motion-safe:animate-pulse" />
-        <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-linear-to-bl from-secondary/25 via-secondary/15 to-transparent blur-3xl motion-safe:animate-pulse [animation-delay:1s]" />
-        <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-linear-to-tr from-primary/15 via-accent/10 to-transparent blur-3xl motion-safe:animate-pulse [animation-delay:2s]" />
-        
-        {/* Floating particles */}
-        <div className="absolute left-1/4 top-1/3 h-2 w-2 rounded-full bg-primary/40 motion-safe:animate-[float_6s_ease-in-out_infinite]" />
-        <div className="absolute right-1/3 top-1/2 h-3 w-3 rounded-full bg-secondary/30 motion-safe:animate-[float_8s_ease-in-out_infinite_1s]" />
-        <div className="absolute bottom-1/4 left-1/2 h-2 w-2 rounded-full bg-accent/40 motion-safe:animate-[float_7s_ease-in-out_infinite_2s]" />
-        
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[64px_64px] opacity-20" />
+    <main className="relative min-h-dvh bg-background text-foreground overflow-x-hidden">
+      {/* Animated Background */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--muted))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--muted))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-40" />
+        <div className="absolute left-1/4 top-0 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
+        <div className="absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-secondary/10 blur-[100px] animate-pulse [animation-delay:2s]" />
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 animate-fade-in" style={{ opacity: 0 }}>
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105">
             <BrandWordmark className="h-8 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav className="hidden items-center gap-8 md:flex">
             <Link href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               Features
             </Link>
-            <Link href="#benefits" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Benefits
+            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              Testimonials
             </Link>
             <Link href="#pricing" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               Pricing
@@ -277,23 +268,26 @@ export default function Page() {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setTheme(isDark ? "light" : "dark")}
               aria-label="Toggle theme"
               disabled={!mounted}
+              className="rounded-full"
             >
               {mounted && (isDark ? <Sun className="size-5" /> : <Moon className="size-5" />)}
             </Button>
-            <Button variant="ghost" onClick={() => setDemoOpen(true)}>
-              Request Demo
-            </Button>
-            <Button onClick={() => setSignupOpen(true)}>Sign Up</Button>
-            <Link href="/login" className={cn(buttonVariants({ variant: "outline" }))}>
-              Sign In
+            <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "font-medium")}>
+              Log in
             </Link>
+            <Button onClick={() => setDemoOpen(true)} variant="outline" className="font-medium">
+              Get a demo
+            </Button>
+            <Button onClick={() => setSignupOpen(true)} className="font-medium bg-foreground text-background hover:bg-foreground/90">
+              Start free trial
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -310,27 +304,15 @@ export default function Page() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="border-t bg-background p-4 md:hidden">
+          <div className="border-t bg-background/95 backdrop-blur-xl p-6 md:hidden animate-in slide-in-from-top-2 duration-200">
             <nav className="flex flex-col gap-4">
-              <Link href="#features" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                Features
-              </Link>
-              <Link href="#benefits" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                Benefits
-              </Link>
-              <Link href="#pricing" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                Pricing
-              </Link>
-              <div className="flex flex-col gap-2 pt-2">
-                <Button variant="ghost" onClick={() => { setDemoOpen(true); setMobileMenuOpen(false); }}>
-                  Request Demo
-                </Button>
-                <Button onClick={() => { setSignupOpen(true); setMobileMenuOpen(false); }}>
-                  Sign Up
-                </Button>
-                <Link href="/login" className={cn(buttonVariants({ variant: "outline" }))} onClick={() => setMobileMenuOpen(false)}>
-                  Sign In
-                </Link>
+              <Link href="#features" className="text-sm font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+              <Link href="#testimonials" className="text-sm font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Testimonials</Link>
+              <Link href="#pricing" className="text-sm font-medium py-2" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+              <div className="flex flex-col gap-3 pt-4 border-t">
+                <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))} onClick={() => setMobileMenuOpen(false)}>Log in</Link>
+                <Button onClick={() => { setDemoOpen(true); setMobileMenuOpen(false); }} variant="outline">Get a demo</Button>
+                <Button onClick={() => { setSignupOpen(true); setMobileMenuOpen(false); }} className="bg-foreground text-background">Start free trial</Button>
               </div>
             </nav>
           </div>
@@ -338,653 +320,600 @@ export default function Page() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative flex w-full flex-col py-14 md:py-20 lg:py-28">
-        {/* Hero-specific background effects */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          {/* Large animated gradient orbs */}
-          <div className="absolute -left-64 top-0 h-150 w-150 rounded-full bg-linear-to-br from-primary/30 via-primary/20 to-transparent blur-[100px] motion-safe:animate-gradient-shift" />
-          <div className="absolute -right-64 top-1/4 h-125 w-125 rounded-full bg-linear-to-bl from-secondary/30 via-secondary/20 to-transparent blur-[100px] motion-safe:animate-gradient-shift [animation-delay:2s]" />
-          
-          {/* Floating geometric shapes */}
-          <div className="absolute left-[10%] top-[20%] h-32 w-32 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm motion-safe:animate-[float_8s_ease-in-out_infinite] transform-[rotate(25deg)]" />
-          <div className="absolute right-[15%] top-[30%] h-24 w-24 rounded-full border border-secondary/20 bg-secondary/5 backdrop-blur-sm motion-safe:animate-[float_10s_ease-in-out_infinite_2s]" />
-          <div className="absolute left-[60%] top-[60%] h-20 w-20 rounded-lg border border-accent/20 bg-accent/5 backdrop-blur-sm motion-safe:animate-[float_7s_ease-in-out_infinite_1s] transform-[rotate(-15deg)]" />
-        </div>
-
-        {/* Content container */}
-        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6">
-          {/* Animated badge */}
-          <Badge 
-            variant="secondary" 
-            className="relative w-fit overflow-hidden border-primary/20 bg-primary/10 backdrop-blur-sm animate-scale-in-bounce [animation-delay:0.2s] motion-safe:animate-bounce-subtle"
-            style={{ opacity: 0 }}
-          >
-            <Sparkles className="size-3 text-primary" />
-            <span className="relative z-10">Built for modern schools</span>
-            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent motion-safe:animate-[shine_3s_ease-in-out_infinite]" />
-          </Badge>
-
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">
-          {/* Content column */}
-          <div className="space-y-7 animate-fade-in-up-big [animation-delay:0.3s]" style={{ opacity: 0 }}>
-            {/* Hero headline with gradient text */}
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-7xl">
-              Manage your entire school
-              <span className="block bg-linear-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent motion-safe:animate-gradient-shift">
-                with confidence
-              </span>
-            </h1>
-            
-            <p className="max-w-2xl text-lg text-muted-foreground md:text-xl">
-              A beautiful, all-in-one workspace for admissions, student records, attendance, academics, and finance.
-            </p>
-
-            {/* Animated value pills */}
-            <div className="flex flex-wrap gap-2">
-              {valuePills.map((item, index) => (
-                <Badge 
-                  key={item} 
-                  variant="outline" 
-                  className="h-7 border-primary/30 bg-primary/5 px-3 text-xs font-medium backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:border-primary/50 hover:bg-primary/10 hover:shadow-lg animate-scale-in"
-                  style={{ opacity: 0, animationDelay: `${0.5 + index * 0.05}s` }}
-                >
-                  {item}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Highlights with animated icons */}
-            <div className="space-y-3">
-              {highlights.map((item, index) => (
-                <p 
-                  key={item} 
-                  className="flex items-center gap-3 text-base text-muted-foreground animate-fade-in-up"
-                  style={{ opacity: 0, animationDelay: `${0.8 + index * 0.1}s` }}
-                >
-                  <CheckCircle2 className="size-5 shrink-0 text-primary motion-safe:animate-scale-in-bounce" style={{ animationDelay: `${0.8 + index * 0.1}s` }} />
-                  {item}
-                </p>
-              ))}
-            </div>
-
-            {/* CTA buttons with shine effects */}
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Button 
-                variant="default" 
-                size="lg" 
-                onClick={() => setSignupOpen(true)} 
-                className="group relative overflow-hidden bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/40 animate-scale-in"
-                style={{ opacity: 0, animationDelay: '1.1s' }}
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Sign Up Free
-                  <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 motion-safe:animate-[shine_1.5s_ease-in-out]" />
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => setDemoOpen(true)} 
-                className="group border-2 border-primary/30 bg-background/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg animate-scale-in"
-                style={{ opacity: 0, animationDelay: '1.2s' }}
-              >
-                <PlayCircle className="size-4 transition-transform duration-300 group-hover:scale-110" />
-                Request Demo
-              </Button>
-              
-              <Link 
-                href="/login" 
-                className={cn(
-                  buttonVariants({ variant: "ghost", size: "lg" }), 
-                  "group transition-all duration-300 hover:scale-105 hover:bg-muted animate-scale-in"
-                )}
-                style={{ opacity: 0, animationDelay: '1.3s' }}
-              >
-                <School className="size-4" />
-                Sign In
-              </Link>
-            </div>
+      <section className="relative pt-20 pb-32 md:pt-32 md:pb-40">
+        <div className="mx-auto max-w-7xl px-6">
+          {/* Announcement Badge */}
+          <div className="flex justify-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Badge variant="secondary" className="px-4 py-2 text-sm font-medium bg-muted/80 backdrop-blur-sm border border-border/50 gap-2 hover:bg-muted transition-colors cursor-pointer">
+              <span className="text-primary">New:</span> AI-Powered Report Generation
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Badge>
           </div>
 
-          {/* Glass morphism trust card */}
-          <Card 
-            className="group relative overflow-hidden border border-primary/20 bg-linear-to-br from-card/90 via-card/80 to-card/90 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:border-primary/30 hover:shadow-primary/20 animate-scale-in-bounce [animation-delay:0.5s]" 
-            style={{ opacity: 0 }}
-          >
-            {/* Animated border gradient */}
-            <div className="absolute inset-0 rounded-[inherit] bg-linear-to-r from-primary/20 via-secondary/20 to-primary/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100 motion-safe:animate-[border-flow_3s_linear_infinite]" />
-            
-            <CardContent className="relative space-y-5 p-6 md:p-8">
-              {/* Badge with icon */}
-              <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-4 py-2.5 text-sm font-medium text-foreground backdrop-blur-sm">
-                <ShieldCheck className="size-5 text-primary motion-safe:animate-bounce-subtle" />
-                Trusted by school teams
-              </div>
+          {/* Main Headline */}
+          <div className="text-center max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-balance leading-[1.1]">
+              The complete platform to{" "}
+              <span className="text-primary">run your school</span>
+            </h1>
+          </div>
 
-              {/* Metrics grid */}
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Faster", desc: "Daily operations", delay: "0s" },
-                  { label: "Clearer", desc: "Reports & tracking", delay: "0.1s" },
-                  { label: "Safer", desc: "Role-based access", delay: "0.2s" },
-                  { label: "Scalable", desc: "Multi-campus ready", delay: "0.3s" }
-                ].map((metric) => (
-                  <div 
-                    key={metric.label}
-                    className="group/metric relative overflow-hidden rounded-xl border border-primary/20 bg-linear-to-br from-background/80 to-background/60 p-4 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/40 hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/20 motion-safe:animate-scale-in"
-                    style={{ animationDelay: `${0.6 + parseFloat(metric.delay)}s` }}
-                  >
-                    <p className="text-2xl font-bold transition-all duration-300 group-hover/metric:scale-110 group-hover/metric:text-primary">
-                      {metric.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{metric.desc}</p>
-                    
-                    {/* Hover shine effect */}
-                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/10 to-transparent opacity-0 transition-opacity duration-300 group-hover/metric:opacity-100" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Subheadline */}
+          <p className="mt-8 text-center text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
+            From admissions to graduation, manage every aspect of your institution with one powerful, intuitive platform.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+            <Button
+              size="lg"
+              onClick={() => setDemoOpen(true)}
+              className="h-14 px-8 text-base font-semibold bg-foreground text-background hover:bg-foreground/90 rounded-full shadow-lg shadow-foreground/20 transition-all hover:scale-105 hover:shadow-xl"
+            >
+              Get a demo
+              <ArrowRight className="ml-2 size-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setSignupOpen(true)}
+              className="h-14 px-8 text-base font-semibold rounded-full border-2 hover:bg-muted transition-all hover:scale-105"
+            >
+              Start free trial
+            </Button>
+          </div>
+
+          {/* Social Proof */}
+          <div className="mt-16 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
+            <p className="text-sm text-muted-foreground">Trusted by 500+ schools worldwide</p>
+            <div className="flex items-center gap-8 opacity-60">
+              {["Academy", "Institute", "College", "School"].map((name, i) => (
+                <div key={name} className="flex items-center gap-2 text-muted-foreground">
+                  <GraduationCap className="size-5" />
+                  <span className="font-semibold text-sm">{name} {i + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Dashboard Screenshot */}
-      {/* <section className="relative mx-auto w-full max-w-7xl px-6 py-12 md:py-16">
-        <div className="relative">
-          <div className="absolute -inset-4 rounded-2xl bg-linear-to-r from-primary/20 via-secondary/20 to-primary/20 opacity-0 blur-3xl transition-opacity duration-700 group-hover:opacity-100 motion-safe:animate-[border-flow_4s_linear_infinite]" />
-          
-          <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-linear-to-br from-muted/80 via-muted/60 to-muted/80 shadow-2xl backdrop-blur-sm transition-all duration-700 hover:border-primary/40 hover:shadow-primary/20 animate-scale-in [animation-delay:0.2s] hover:scale-[1.01]" style={{ opacity: 0 }}>
-            <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100 motion-safe:animate-[shine_2s_ease-in-out]" />
-            
-            <Image
-              src="/img/dashboard.png"
-              alt="EzySchool Dashboard"
-              width={1200}
-              height={675}
-              className="relative z-10 w-full transition-transform duration-700 group-hover:scale-[1.02]"
-              priority
-            />
-            
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-muted/80 to-transparent" />
+      {/* Stats Section */}
+      <section className="relative py-20 border-y border-border/50 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className="text-center group animate-in fade-in slide-in-from-bottom-4 duration-500"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 mb-4 group-hover:scale-110 transition-transform">
+                    <Icon className="size-6 text-primary" />
+                  </div>
+                  <div className="text-4xl md:text-5xl font-bold tracking-tight">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </section> */}
+      </section>
 
       {/* Features Section */}
-      <section id="features" className="relative mx-auto w-full max-w-7xl px-6 py-16 md:py-24">
-        <div className="mb-12 text-center animate-fade-in-up" style={{ opacity: 0 }}>
-          <Badge variant="secondary" className="mb-4">
-            Features
-          </Badge>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Everything you need to run your school
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            Comprehensive tools designed to streamline every aspect of school administration.
-          </p>
-        </div>
+      <section id="features" className="relative py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <Badge variant="secondary" className="mb-6 px-4 py-1.5">Features</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-balance">
+              Everything you need to run your school
+            </h2>
+            <p className="mt-6 text-lg text-muted-foreground text-balance">
+              Comprehensive tools designed to streamline every aspect of school administration.
+            </p>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <Card 
-                key={feature.title} 
-                className="group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/50 animate-fade-in-up"
-                style={{ opacity: 0, animationDelay: `${0.1 + index * 0.1}s` }}
-              >
-                <CardHeader>
-                  <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/30">
-                    <Icon className="size-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  <CardDescription>{feature.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            );
-          })}
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <Card
+                  key={feature.title}
+                  className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 group-hover:scale-110 transition-all">
+                        <Icon className="size-6 text-primary" />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">{feature.stat}</div>
+                        <div className="text-xs text-muted-foreground">{feature.statLabel}</div>
+                      </div>
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardDescription className="text-sm leading-relaxed">{feature.description}</CardDescription>
+                  </CardHeader>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* Benefits Section */}
-      <section id="benefits" className="relative mx-auto w-full max-w-7xl px-6 py-16 md:py-24">
-        <div className="mb-12 text-center animate-fade-in-up" style={{ opacity: 0 }}>
-          <Badge variant="secondary" className="mb-4">
-            Benefits
-          </Badge>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Why schools choose EzySchool
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            Transform the way you manage your institution with our proven platform.
-          </p>
-        </div>
-
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {benefits.map((benefit, index) => {
-            const Icon = benefit.icon;
-            return (
-              <div 
-                key={benefit.title} 
-                className="text-center group animate-fade-in-up"
-                style={{ opacity: 0, animationDelay: `${0.1 + index * 0.15}s` }}
-              >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30">
-                  <Icon className="size-8 text-primary" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.description}</p>
+      <section className="relative py-32 bg-muted/30 border-y border-border/50">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <div>
+              <Badge variant="secondary" className="mb-6 px-4 py-1.5">Why EzySchool</Badge>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-balance mb-8">
+                Built for modern schools that demand excellence
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {benefits.map((benefit, index) => {
+                  const Icon = benefit.icon;
+                  return (
+                    <div
+                      key={benefit.title}
+                      className="flex gap-4 animate-in fade-in slide-in-from-left-4"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <Icon className="size-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-1">{benefit.title}</h3>
+                        <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+
+            {/* Right - Dashboard Preview */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl opacity-30" />
+              <div className="relative bg-card border border-border/50 rounded-2xl p-6 shadow-2xl">
+                {/* Mock Dashboard Header */}
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <BarChart3 className="size-4 text-primary" />
+                    </div>
+                    <span className="font-semibold">Dashboard</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-xs text-muted-foreground">Live</span>
+                  </div>
+                </div>
+                
+                {/* Mock Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  {[
+                    { label: "Students", value: "2,847", change: "+12%" },
+                    { label: "Attendance", value: "94.2%", change: "+2.1%" },
+                    { label: "Revenue", value: "$48.5K", change: "+8.3%" },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-xs text-muted-foreground mb-1">{item.label}</div>
+                      <div className="text-lg font-bold">{item.value}</div>
+                      <div className="text-xs text-green-600">{item.change}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mock Chart */}
+                <div className="bg-muted/30 rounded-lg p-4 h-32 flex items-end gap-2">
+                  {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 bg-primary/60 rounded-t transition-all hover:bg-primary"
+                      style={{ height: `${h}%`, animationDelay: `${i * 50}ms` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="relative py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge variant="secondary" className="mb-6 px-4 py-1.5">Testimonials</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-balance">
+              Loved by schools everywhere
+            </h2>
+          </div>
+
+          {/* Testimonial Cards */}
+          <div className="relative max-w-4xl mx-auto">
+            <div className="relative min-h-[280px]">
+              {testimonials.map((testimonial, index) => (
+                <Card
+                  key={index}
+                  className={cn(
+                    "absolute inset-0 border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-500",
+                    activeTestimonial === index
+                      ? "opacity-100 translate-y-0 scale-100"
+                      : "opacity-0 translate-y-4 scale-95 pointer-events-none"
+                  )}
+                >
+                  <CardContent className="p-8 md:p-12">
+                    <Quote className="size-12 text-primary/20 mb-6" />
+                    <blockquote className="text-xl md:text-2xl font-medium leading-relaxed mb-8">
+                      &quot;{testimonial.quote}&quot;
+                    </blockquote>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold">{testimonial.author}</div>
+                        <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                      </div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: testimonial.rating }).map((_, i) => (
+                          <Star key={i} className="size-5 fill-primary text-primary" />
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Navigation Dots */}
+            <div className="flex justify-center gap-2 mt-8">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveTestimonial(index)}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    activeTestimonial === index ? "w-8 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  )}
+                  aria-label={`Go to testimonial ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="relative mx-auto w-full max-w-7xl px-6 py-16 md:py-24">
-        <Card className="border-primary/20 bg-linear-to-br from-primary/10 via-primary/5 to-transparent animate-scale-in hover:border-primary/30 transition-all duration-500" style={{ opacity: 0 }}>
-          <CardContent className="flex flex-col items-center gap-6 p-8 text-center md:p-12">
-            <Badge variant="secondary">
-              <Sparkles className="size-3" />
-              Ready to get started?
-            </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Transform your school management today
-            </h2>
-            <p className="max-w-2xl text-muted-foreground">
-              Join hundreds of schools already using EzySchool to streamline their operations and improve outcomes.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => setDemoOpen(true)}>
-                <PlayCircle className="size-4" />
-                Request Demo
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => setSignupOpen(true)}>
-                Sign Up Free
-                <ArrowRight className="size-4" />
-              </Button>
+      <section className="relative py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="relative overflow-hidden rounded-3xl bg-foreground text-background p-12 md:p-20">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] bg-[size:4rem_4rem]" />
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="relative text-center max-w-3xl mx-auto">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance mb-6">
+                Ready to transform your school?
+              </h2>
+              <p className="text-lg md:text-xl opacity-80 mb-10 text-balance">
+                Join 500+ schools already using EzySchool to streamline operations and improve student outcomes.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Button
+                  size="lg"
+                  onClick={() => setSignupOpen(true)}
+                  className="h-14 px-8 text-base font-semibold bg-background text-foreground hover:bg-background/90 rounded-full shadow-lg transition-all hover:scale-105"
+                >
+                  Start free trial
+                  <ArrowRight className="ml-2 size-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setDemoOpen(true)}
+                  className="h-14 px-8 text-base font-semibold rounded-full border-2 border-background/30 bg-transparent text-background hover:bg-background/10 transition-all hover:scale-105"
+                >
+                  Schedule a demo
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/50">
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div className="space-y-3">
-              <BrandWordmark className="h-8 w-auto" />
-              <p className="text-sm text-muted-foreground">
-                Modern school management made simple.
+      <footer className="border-t border-border/50 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
+            <div className="lg:col-span-2">
+              <BrandWordmark className="h-8 w-auto mb-4" />
+              <p className="text-sm text-muted-foreground max-w-xs mb-6">
+                Modern school management made simple. Trusted by educators worldwide.
               </p>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="text-xs"><ShieldCheck className="size-3 mr-1" /> SOC 2</Badge>
+                <Badge variant="outline" className="text-xs"><Shield className="size-3 mr-1" /> GDPR</Badge>
+              </div>
             </div>
-            <div>
-              <h3 className="mb-3 text-sm font-semibold">Product</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#features" className="hover:text-foreground">Features</Link></li>
-                <li><Link href="#benefits" className="hover:text-foreground">Benefits</Link></li>
-                <li><Link href="#pricing" className="hover:text-foreground">Pricing</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-3 text-sm font-semibold">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">About</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Contact</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Support</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-3 text-sm font-semibold">Legal</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">Privacy</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Terms</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Security</Link></li>
-              </ul>
-            </div>
+            {[
+              { title: "Product", links: ["Features", "Pricing", "Security", "Integrations"] },
+              { title: "Company", links: ["About", "Blog", "Careers", "Contact"] },
+              { title: "Legal", links: ["Privacy", "Terms", "Cookie Policy", "DPA"] },
+            ].map((section) => (
+              <div key={section.title}>
+                <h3 className="font-semibold mb-4">{section.title}</h3>
+                <ul className="space-y-3">
+                  {section.links.map((link) => (
+                    <li key={link}>
+                      <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        {link}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} EzySchool. All rights reserved.</p>
+          <div className="mt-12 pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} EzySchool. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                Twitter
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                LinkedIn
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                GitHub
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* Demo Request Dialog */}
-      <DialogBox
-        open={demoOpen}
-        onOpenChange={(open) => {
-          setDemoOpen(open);
-          if (!open) {
-            setDemoErrors({});
-          }
-        }}
-        title={
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <PlayCircle className="size-6" />
-            </div>
-            <span>Request a Demo</span>
-          </div>
-        }
-        description="Fill out the form below and we'll get back to you within 24 hours to schedule your personalized demo."
-        actionLabel="Submit Request"
-        onAction={handleDemoSubmit}
-        actionLoading={isSubmitting}
-        actionLoadingText="Submitting..."
-        cancelLabel="Cancel"
-        className="max-w-2xl border-2 border-primary/20 bg-linear-to-br from-background via-primary/3 to-background shadow-2xl shadow-primary/10 backdrop-blur-xl animate-scale-in"
-      >
-        <form className="space-y-5 pt-2" onSubmit={(e) => { e.preventDefault(); handleDemoSubmit(); }}>
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="demo-name" className="text-sm font-medium">
-              Full Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="demo-name"
-              placeholder="John Doe"
-              value={demoForm.name}
-              onChange={(e) => {
-                setDemoForm({ ...demoForm, name: e.target.value });
-                if (demoErrors.name) setDemoErrors({ ...demoErrors, name: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                demoErrors.name && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {demoErrors.name && (
-              <p className="text-xs text-destructive animate-fade-in">{demoErrors.name}</p>
-            )}
-          </div>
-
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="demo-email" className="text-sm font-medium">
-              Email Address <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="demo-email"
-              type="email"
-              placeholder="john@school.com"
-              value={demoForm.email}
-              onChange={(e) => {
-                setDemoForm({ ...demoForm, email: e.target.value });
-                if (demoErrors.email) setDemoErrors({ ...demoErrors, email: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                demoErrors.email && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {demoErrors.email && (
-              <p className="text-xs text-destructive animate-fade-in">{demoErrors.email}</p>
-            )}
-          </div>
-
-          {/* School Field */}
-          <div className="space-y-2">
-            <Label htmlFor="demo-school" className="text-sm font-medium">
-              School Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="demo-school"
-              placeholder="ABC International School"
-              value={demoForm.school}
-              onChange={(e) => {
-                setDemoForm({ ...demoForm, school: e.target.value });
-                if (demoErrors.school) setDemoErrors({ ...demoErrors, school: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                demoErrors.school && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {demoErrors.school && (
-              <p className="text-xs text-destructive animate-fade-in">{demoErrors.school}</p>
-            )}
-          </div>
-
-          {/* Phone Field */}
-          <div className="space-y-2">
-            <Label htmlFor="demo-phone" className="text-sm font-medium">
-              Phone Number <span className="text-xs text-muted-foreground">(Optional)</span>
-            </Label>
-            <Input
-              id="demo-phone"
-              type="tel"
-              placeholder="+1 (555) 000-0000"
-              value={demoForm.phone}
-              onChange={(e) => {
-                setDemoForm({ ...demoForm, phone: e.target.value });
-                if (demoErrors.phone) setDemoErrors({ ...demoErrors, phone: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                demoErrors.phone && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {demoErrors.phone && (
-              <p className="text-xs text-destructive animate-fade-in">{demoErrors.phone}</p>
-            )}
-          </div>
-
-          {/* Message Field */}
-          <div className="space-y-2">
-            <Label htmlFor="demo-message" className="text-sm font-medium">
-              Additional Information <span className="text-xs text-muted-foreground">(Optional)</span>
-            </Label>
-            <Textarea
-              id="demo-message"
-              placeholder="Tell us about your school and specific needs..."
-              rows={3}
-              value={demoForm.message}
-              onChange={(e) => setDemoForm({ ...demoForm, message: e.target.value })}
-              className="resize-none transition-all duration-200"
-            />
-          </div>
-
-          {/* Info Badge */}
-          <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <Sparkles className="size-4 shrink-0 text-primary mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              We&apos;ll contact you within 24 hours to schedule a personalized demo tailored to your school&apos;s needs.
-            </p>
-          </div>
-        </form>
-      </DialogBox>
-
-      {/* Sign Up Dialog */}
-      <DialogBox
-        open={signupOpen}
-        onOpenChange={(open) => {
-          setSignupOpen(open);
-          if (!open) {
-            setSignupErrors({});
-          }
-        }}
-        title={
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
-              <Sparkles className="size-6" />
-            </div>
-            <span>Get Started with EzySchool</span>
-          </div>
-        }
-        description="Create your account and start your free trial. No credit card required."
-        actionLabel="Create Account"
-        onAction={handleSignupSubmit}
-        actionLoading={isSubmitting}
-        actionLoadingText="Creating account..."
-        cancelLabel="Cancel"
-        actionVariant="default"
-        className="max-w-2xl border-2 border-secondary/20 bg-linear-to-br from-background via-secondary/3 to-background shadow-2xl shadow-secondary/10 backdrop-blur-xl animate-scale-in"
-      >
-        <form className="space-y-5 pt-2" onSubmit={(e) => { e.preventDefault(); handleSignupSubmit(); }}>
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="signup-name" className="text-sm font-medium">
-              Full Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="signup-name"
-              placeholder="John Doe"
-              value={signupForm.name}
-              onChange={(e) => {
-                setSignupForm({ ...signupForm, name: e.target.value });
-                if (signupErrors.name) setSignupErrors({ ...signupErrors, name: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                signupErrors.name && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {signupErrors.name && (
-              <p className="text-xs text-destructive animate-fade-in">{signupErrors.name}</p>
-            )}
-          </div>
-
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="signup-email" className="text-sm font-medium">
-              Email Address <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="signup-email"
-              type="email"
-              placeholder="john@school.com"
-              value={signupForm.email}
-              onChange={(e) => {
-                setSignupForm({ ...signupForm, email: e.target.value });
-                if (signupErrors.email) setSignupErrors({ ...signupErrors, email: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                signupErrors.email && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {signupErrors.email && (
-              <p className="text-xs text-destructive animate-fade-in">{signupErrors.email}</p>
-            )}
-          </div>
-
-          {/* School Field */}
-          <div className="space-y-2">
-            <Label htmlFor="signup-school" className="text-sm font-medium">
-              School Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="signup-school"
-              placeholder="ABC International School"
-              value={signupForm.school}
-              onChange={(e) => {
-                setSignupForm({ ...signupForm, school: e.target.value });
-                if (signupErrors.school) setSignupErrors({ ...signupErrors, school: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                signupErrors.school && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {signupErrors.school && (
-              <p className="text-xs text-destructive animate-fade-in">{signupErrors.school}</p>
-            )}
-          </div>
-
-          {/* Subdomain Field */}
-          <div className="space-y-2">
-            <Label htmlFor="signup-subdomain" className="text-sm font-medium">
-              Workspace URL <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="signup-subdomain"
-                placeholder="abc-school"
-                value={signupForm.subdomain}
-                onChange={(e) => {
-                  const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-                  setSignupForm({ ...signupForm, subdomain: value });
-                  if (signupErrors.subdomain) setSignupErrors({ ...signupErrors, subdomain: "" });
-                }}
-                className={cn(
-                  "transition-all duration-200",
-                  signupErrors.subdomain && "border-destructive focus-visible:ring-destructive"
-                )}
-              />
-              <span className="shrink-0 text-sm text-muted-foreground">.ezyschool.com</span>
-            </div>
-            {signupErrors.subdomain ? (
-              <p className="text-xs text-destructive animate-fade-in">{signupErrors.subdomain}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Only lowercase letters, numbers, and hyphens</p>
-            )}
-          </div>
-
-          {/* Password Field */}
-          <div className="space-y-2">
-            <Label htmlFor="signup-password" className="text-sm font-medium">
-              Password <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="signup-password"
-              type="password"
-              placeholder="••••••••"
-              value={signupForm.password}
-              onChange={(e) => {
-                setSignupForm({ ...signupForm, password: e.target.value });
-                if (signupErrors.password) setSignupErrors({ ...signupErrors, password: "" });
-              }}
-              className={cn(
-                "transition-all duration-200",
-                signupErrors.password && "border-destructive focus-visible:ring-destructive"
-              )}
-            />
-            {signupErrors.password ? (
-              <p className="text-xs text-destructive animate-fade-in">{signupErrors.password}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
-            )}
-          </div>
-
-          {/* Terms Info */}
-          <div className="flex items-start gap-2 rounded-lg border border-secondary/20 bg-secondary/5 p-3">
-            <Shield className="size-4 shrink-0 text-secondary mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              By creating an account, you agree to our{" "}
-              <Link href="#" className="text-foreground underline hover:text-secondary transition-colors">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="#" className="text-foreground underline hover:text-secondary transition-colors">
-                Privacy Policy
-              </Link>
-              .
-            </p>
-          </div>
-
-          {/* Features List */}
-          <div className="rounded-lg border border-muted bg-muted/50 p-4">
-            <p className="mb-3 text-sm font-medium">What&apos;s included:</p>
-            <div className="space-y-2">
-              {[
-                "14-day free trial",
-                "No credit card required",
-                "Full access to all features",
-                "Unlimited users",
-              ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CheckCircle2 className="size-3.5 text-secondary" />
-                  {feature}
+      {/* Demo Request Dialog - Extraordinary Design */}
+      <Dialog open={demoOpen} onOpenChange={(open) => { setDemoOpen(open); if (!open) setDemoErrors({}); }}>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-none">
+          {/* Animated Background Glow */}
+          <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 rounded-[32px] blur-2xl opacity-50 animate-pulse" />
+          
+          {/* Main Card */}
+          <div className="relative bg-card border border-border/50 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header with Gradient */}
+            <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8 pb-6">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/20 mb-4">
+                  <PlayCircle className="size-7 text-primary" />
                 </div>
-              ))}
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-2xl font-bold">Request a Demo</DialogTitle>
+                  <DialogDescription className="text-muted-foreground mt-2">
+                    See how EzySchool can transform your institution. We&apos;ll reach out within 24 hours.
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
             </div>
+
+            {/* Form */}
+            <form className="p-8 pt-6 space-y-5" onSubmit={(e) => { e.preventDefault(); handleDemoSubmit(); }}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="demo-name" className="text-sm font-medium">Name</Label>
+                  <Input
+                    id="demo-name"
+                    placeholder="John Doe"
+                    value={demoForm.name}
+                    onChange={(e) => { setDemoForm({ ...demoForm, name: e.target.value }); if (demoErrors.name) setDemoErrors({ ...demoErrors, name: "" }); }}
+                    className={cn("h-11 bg-muted/50 border-border/50 focus:border-primary", demoErrors.name && "border-destructive")}
+                  />
+                  {demoErrors.name && <p className="text-xs text-destructive">{demoErrors.name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="demo-email" className="text-sm font-medium">Email</Label>
+                  <Input
+                    id="demo-email"
+                    type="email"
+                    placeholder="john@school.com"
+                    value={demoForm.email}
+                    onChange={(e) => { setDemoForm({ ...demoForm, email: e.target.value }); if (demoErrors.email) setDemoErrors({ ...demoErrors, email: "" }); }}
+                    className={cn("h-11 bg-muted/50 border-border/50 focus:border-primary", demoErrors.email && "border-destructive")}
+                  />
+                  {demoErrors.email && <p className="text-xs text-destructive">{demoErrors.email}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="demo-school" className="text-sm font-medium">School Name</Label>
+                <Input
+                  id="demo-school"
+                  placeholder="Your School Name"
+                  value={demoForm.school}
+                  onChange={(e) => { setDemoForm({ ...demoForm, school: e.target.value }); if (demoErrors.school) setDemoErrors({ ...demoErrors, school: "" }); }}
+                  className={cn("h-11 bg-muted/50 border-border/50 focus:border-primary", demoErrors.school && "border-destructive")}
+                />
+                {demoErrors.school && <p className="text-xs text-destructive">{demoErrors.school}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="demo-phone" className="text-sm font-medium">Phone <span className="text-muted-foreground">(Optional)</span></Label>
+                <Input
+                  id="demo-phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={demoForm.phone}
+                  onChange={(e) => { setDemoForm({ ...demoForm, phone: e.target.value }); if (demoErrors.phone) setDemoErrors({ ...demoErrors, phone: "" }); }}
+                  className={cn("h-11 bg-muted/50 border-border/50 focus:border-primary", demoErrors.phone && "border-destructive")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="demo-message" className="text-sm font-medium">Message <span className="text-muted-foreground">(Optional)</span></Label>
+                <Textarea
+                  id="demo-message"
+                  placeholder="Tell us about your needs..."
+                  rows={3}
+                  value={demoForm.message}
+                  onChange={(e) => setDemoForm({ ...demoForm, message: e.target.value })}
+                  className="resize-none bg-muted/50 border-border/50 focus:border-primary"
+                />
+              </div>
+
+              {/* Trust Indicator */}
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                <ShieldCheck className="size-4 text-green-600 shrink-0" />
+                <span>Your information is secure and will never be shared.</span>
+              </div>
+
+              <DialogFooter className="gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setDemoOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1 bg-foreground text-background hover:bg-foreground/90">
+                  {isSubmitting ? "Submitting..." : "Request Demo"}
+                  {!isSubmitting && <ArrowRight className="ml-2 size-4" />}
+                </Button>
+              </DialogFooter>
+            </form>
           </div>
-        </form>
-      </DialogBox>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sign Up Dialog - Extraordinary Design */}
+      <Dialog open={signupOpen} onOpenChange={(open) => { setSignupOpen(open); if (!open) setSignupErrors({}); }}>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-none">
+          {/* Animated Background Glow */}
+          <div className="absolute -inset-4 bg-gradient-to-r from-green-500/30 via-emerald-500/30 to-teal-500/30 rounded-[32px] blur-2xl opacity-50 animate-pulse" />
+          
+          {/* Main Card */}
+          <div className="relative bg-card border border-border/50 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header with Gradient */}
+            <div className="relative bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent p-8 pb-6">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-500/20 mb-4">
+                  <Sparkles className="size-7 text-green-600" />
+                </div>
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-2xl font-bold">Start Your Free Trial</DialogTitle>
+                  <DialogDescription className="text-muted-foreground mt-2">
+                    Get started in minutes. No credit card required.
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form className="p-8 pt-6 space-y-5" onSubmit={(e) => { e.preventDefault(); handleSignupSubmit(); }}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name" className="text-sm font-medium">Name</Label>
+                  <Input
+                    id="signup-name"
+                    placeholder="John Doe"
+                    value={signupForm.name}
+                    onChange={(e) => { setSignupForm({ ...signupForm, name: e.target.value }); if (signupErrors.name) setSignupErrors({ ...signupErrors, name: "" }); }}
+                    className={cn("h-11 bg-muted/50 border-border/50 focus:border-green-500", signupErrors.name && "border-destructive")}
+                  />
+                  {signupErrors.name && <p className="text-xs text-destructive">{signupErrors.name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="john@school.com"
+                    value={signupForm.email}
+                    onChange={(e) => { setSignupForm({ ...signupForm, email: e.target.value }); if (signupErrors.email) setSignupErrors({ ...signupErrors, email: "" }); }}
+                    className={cn("h-11 bg-muted/50 border-border/50 focus:border-green-500", signupErrors.email && "border-destructive")}
+                  />
+                  {signupErrors.email && <p className="text-xs text-destructive">{signupErrors.email}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-school" className="text-sm font-medium">School Name</Label>
+                <Input
+                  id="signup-school"
+                  placeholder="Your School Name"
+                  value={signupForm.school}
+                  onChange={(e) => { setSignupForm({ ...signupForm, school: e.target.value }); if (signupErrors.school) setSignupErrors({ ...signupErrors, school: "" }); }}
+                  className={cn("h-11 bg-muted/50 border-border/50 focus:border-green-500", signupErrors.school && "border-destructive")}
+                />
+                {signupErrors.school && <p className="text-xs text-destructive">{signupErrors.school}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-subdomain" className="text-sm font-medium">Workspace URL</Label>
+                <div className="flex">
+                  <Input
+                    id="signup-subdomain"
+                    placeholder="your-school"
+                    value={signupForm.subdomain}
+                    onChange={(e) => {
+                      const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                      setSignupForm({ ...signupForm, subdomain: value });
+                      if (signupErrors.subdomain) setSignupErrors({ ...signupErrors, subdomain: "" });
+                    }}
+                    className={cn("h-11 bg-muted/50 border-border/50 focus:border-green-500 rounded-r-none", signupErrors.subdomain && "border-destructive")}
+                  />
+                  <div className="flex items-center px-4 bg-muted border border-l-0 border-border/50 rounded-r-md text-sm text-muted-foreground">
+                    .ezyschool.com
+                  </div>
+                </div>
+                {signupErrors.subdomain && <p className="text-xs text-destructive">{signupErrors.subdomain}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                <Input
+                  id="signup-password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={signupForm.password}
+                  onChange={(e) => { setSignupForm({ ...signupForm, password: e.target.value }); if (signupErrors.password) setSignupErrors({ ...signupErrors, password: "" }); }}
+                  className={cn("h-11 bg-muted/50 border-border/50 focus:border-green-500", signupErrors.password && "border-destructive")}
+                />
+                {signupErrors.password && <p className="text-xs text-destructive">{signupErrors.password}</p>}
+              </div>
+
+              {/* Features */}
+              <div className="flex flex-wrap gap-3 p-3 rounded-lg bg-muted/50">
+                {["14-day free trial", "No credit card", "Cancel anytime"].map((feature) => (
+                  <div key={feature} className="flex items-center gap-1.5 text-sm">
+                    <CheckCircle2 className="size-4 text-green-600" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <DialogFooter className="gap-3 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setSignupOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1 bg-green-600 text-white hover:bg-green-700">
+                  {isSubmitting ? "Creating account..." : "Create Account"}
+                  {!isSubmitting && <ArrowRight className="ml-2 size-4" />}
+                </Button>
+              </DialogFooter>
+
+              <p className="text-xs text-center text-muted-foreground">
+                By signing up, you agree to our{" "}
+                <Link href="#" className="underline hover:text-foreground">Terms</Link> and{" "}
+                <Link href="#" className="underline hover:text-foreground">Privacy Policy</Link>.
+              </p>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
