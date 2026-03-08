@@ -219,7 +219,7 @@ function AnimatedSlider({
   return (
     <div 
       className={cn(
-        "p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0 cursor-pointer transition-all duration-300",
+        "p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0 cursor-pointer transition-all duration-300",
         show && "animate-slide-up-bounce",
         isHovered && "bg-white/10 border-white/20 scale-[1.02]"
       )}
@@ -227,28 +227,24 @@ function AnimatedSlider({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", color)}>
+          <div className={cn("w-6 h-6 rounded-md flex items-center justify-center", color)}>
             {icon}
           </div>
-          <span className="text-sm font-medium text-white">{label}</span>
+          <span className="text-xs font-medium text-white">{label}</span>
         </div>
-        <span className="text-lg font-bold text-white">
+        <span className="text-sm font-bold text-white">
           <AnimatedCounter end={currentValue} delay={delay + 200} />
         </span>
       </div>
-      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div 
           className={cn("h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden", color)}
           style={{ width: `${percentage}%` }}
         >
           <div className="absolute inset-0 animate-shimmer" />
         </div>
-      </div>
-      <div className="flex justify-between mt-2 text-xs text-white/40">
-        <span>0</span>
-        <span>{maxValue.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -257,9 +253,9 @@ function AnimatedSlider({
 /* ── Live Bar Chart with Hover ── */
 function LiveBarChart({ delay }: { delay: number }) {
   const [show, setShow] = useState(false);
-  const [bars, setBars] = useState([45, 62, 38, 75, 52, 68, 85, 48, 72, 58, 80, 65]);
+  const [bars, setBars] = useState([65, 72, 58, 85, 62, 78, 90]);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   useEffect(() => {
     const timer = setTimeout(() => setShow(true), delay);
@@ -270,49 +266,48 @@ function LiveBarChart({ delay }: { delay: number }) {
     if (!show) return;
     const interval = setInterval(() => {
       setBars(prev => prev.map(bar => {
-        const change = (Math.random() - 0.5) * 15;
-        return Math.max(25, Math.min(95, bar + change));
+        const change = (Math.random() - 0.5) * 12;
+        return Math.max(35, Math.min(95, bar + change));
       }));
-    }, 3000);
+    }, 2500);
     return () => clearInterval(interval);
   }, [show]);
 
   return (
-    <div className="relative">
-      <div className="flex items-end gap-1 h-24">
+    <div className="relative h-full flex flex-col">
+      <div className="flex items-end gap-1.5 flex-1 min-h-[60px]">
         {bars.map((height, i) => (
           <div
             key={i}
-            className="relative flex-1 group"
+            className="relative flex-1 flex items-end h-full"
             onMouseEnter={() => setHoveredBar(i)}
             onMouseLeave={() => setHoveredBar(null)}
           >
             <div
               className={cn(
-                "w-full rounded-t transition-all duration-500 ease-out opacity-0 cursor-pointer",
-                i % 3 === 0 ? "bg-gradient-to-t from-primary to-primary/70" : 
-                i % 3 === 1 ? "bg-gradient-to-t from-violet-500 to-violet-400" : 
-                "bg-gradient-to-t from-emerald-500 to-emerald-400",
-                show && "animate-bar-rise",
+                "w-full rounded-t-sm transition-all duration-500 ease-out cursor-pointer",
+                i % 2 === 0 ? "bg-gradient-to-t from-primary to-primary/70" : 
+                "bg-gradient-to-t from-violet-500 to-violet-400",
+                show ? "opacity-100" : "opacity-0",
                 hoveredBar === i && "brightness-125 scale-x-110"
               )}
               style={{ 
-                height: `${height}%`,
-                animationDelay: `${i * 50}ms`,
+                height: show ? `${height}%` : '0%',
+                transition: show ? 'all 0.5s ease-out' : 'none',
+                transitionDelay: `${i * 60}ms`,
               }}
             />
             {hoveredBar === i && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-white rounded text-xs font-bold text-slate-900 whitespace-nowrap animate-bounce-in z-10">
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-white rounded text-[10px] font-bold text-slate-900 whitespace-nowrap animate-bounce-in z-10">
                 {Math.round(height)}%
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white" />
               </div>
             )}
           </div>
         ))}
       </div>
-      <div className="flex justify-between mt-2 text-xs text-white/30">
-        {['Mon', 'Wed', 'Fri', 'Sun', 'Tue', 'Thu'].map((day, i) => (
-          <span key={i}>{day}</span>
+      <div className="flex justify-between mt-2 text-[9px] text-white/40">
+        {days.map((day, i) => (
+          <span key={i} className={hoveredBar === i ? "text-white" : ""}>{day}</span>
         ))}
       </div>
     </div>
@@ -325,10 +320,10 @@ function DonutChart({ delay }: { delay: number }) {
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   
   const segments = [
-    { value: 35, color: 'hsl(var(--primary))', label: 'Grade A' },
-    { value: 28, color: 'hsl(142 76% 36%)', label: 'Grade B' },
-    { value: 22, color: 'hsl(262 83% 58%)', label: 'Grade C' },
-    { value: 15, color: 'hsl(38 92% 50%)', label: 'Grade D' },
+    { value: 35, color: 'hsl(var(--primary))', label: 'A' },
+    { value: 28, color: 'hsl(142 76% 36%)', label: 'B' },
+    { value: 22, color: 'hsl(262 83% 58%)', label: 'C' },
+    { value: 15, color: 'hsl(38 92% 50%)', label: 'D' },
   ];
 
   useEffect(() => {
@@ -336,17 +331,17 @@ function DonutChart({ delay }: { delay: number }) {
     return () => clearTimeout(timer);
   }, [delay]);
 
-  const radius = 40;
+  const radius = 32;
   const circumference = 2 * Math.PI * radius;
   let cumulativeOffset = 0;
 
   return (
     <div className={cn(
-      "flex items-center gap-6 opacity-0",
+      "flex items-center gap-4 opacity-0",
       show && "animate-scale-in"
     )}>
-      <div className="relative w-28 h-28">
-        <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+      <div className="relative w-20 h-20">
+        <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
           {segments.map((segment, i) => {
             const segmentLength = (segment.value / 100) * circumference;
             const offset = cumulativeOffset;
@@ -355,12 +350,12 @@ function DonutChart({ delay }: { delay: number }) {
             return (
               <circle
                 key={i}
-                cx="50"
-                cy="50"
+                cx="40"
+                cy="40"
                 r={radius}
                 fill="none"
                 stroke={segment.color}
-                strokeWidth={hoveredSegment === i ? "14" : "10"}
+                strokeWidth={hoveredSegment === i ? "10" : "7"}
                 strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
                 strokeDashoffset={-offset}
                 className="transition-all duration-300 cursor-pointer"
@@ -375,28 +370,25 @@ function DonutChart({ delay }: { delay: number }) {
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-white">
+          <span className="text-lg font-bold text-white">
             {hoveredSegment !== null ? segments[hoveredSegment].value : '100'}%
-          </span>
-          <span className="text-xs text-white/50">
-            {hoveredSegment !== null ? segments[hoveredSegment].label : 'Total'}
           </span>
         </div>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
         {segments.map((segment, i) => (
           <div 
             key={i} 
             className={cn(
-              "flex items-center gap-2 cursor-pointer transition-all duration-200",
+              "flex items-center gap-1.5 cursor-pointer transition-all duration-200",
               hoveredSegment === i && "scale-105"
             )}
             onMouseEnter={() => setHoveredSegment(i)}
             onMouseLeave={() => setHoveredSegment(null)}
           >
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
-            <span className="text-xs text-white/70">{segment.label}</span>
-            <span className="text-xs font-bold text-white">{segment.value}%</span>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: segment.color }} />
+            <span className="text-[10px] text-white/70">{segment.label}</span>
+            <span className="text-[10px] font-bold text-white">{segment.value}%</span>
           </div>
         ))}
       </div>
@@ -526,18 +518,16 @@ function CircularProgress({
   label, 
   color, 
   delay,
-  icon
 }: { 
   value: number; 
   label: string; 
   color: string;
   delay: number;
-  icon?: React.ReactNode;
 }) {
   const [show, setShow] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const radius = 32;
+  const radius = 24;
   const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
@@ -556,7 +546,7 @@ function CircularProgress({
   return (
     <div 
       className={cn(
-        "flex flex-col items-center gap-2 opacity-0 cursor-pointer transition-transform duration-300",
+        "flex flex-col items-center gap-1 opacity-0 cursor-pointer transition-transform duration-300",
         show && "animate-bounce-in",
         isHovered && "scale-110"
       )}
@@ -564,38 +554,37 @@ function CircularProgress({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-20 h-20">
-        <svg className="w-20 h-20 -rotate-90">
+      <div className="relative w-14 h-14">
+        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
           <circle
-            cx="40"
-            cy="40"
+            cx="28"
+            cy="28"
             r={radius}
             fill="none"
             stroke="rgba(255,255,255,0.1)"
-            strokeWidth="5"
+            strokeWidth="4"
           />
           <circle
-            cx="40"
-            cy="40"
+            cx="28"
+            cy="28"
             r={radius}
             fill="none"
             stroke={color}
-            strokeWidth="5"
+            strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             className="transition-all duration-1000 ease-out"
             style={{
-              filter: isHovered ? 'drop-shadow(0 0 8px currentColor)' : 'none'
+              filter: isHovered ? 'drop-shadow(0 0 6px currentColor)' : 'none'
             }}
           />
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {icon && <div className="mb-0.5">{icon}</div>}
-          <span className="text-lg font-bold text-white">{currentValue}%</span>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm font-bold text-white">{currentValue}%</span>
         </div>
       </div>
-      <span className="text-xs text-white/60">{label}</span>
+      <span className="text-[10px] text-white/60">{label}</span>
     </div>
   );
 }
@@ -607,58 +596,58 @@ function FloatingStatCards() {
   const cards = [
     { value: 2847, label: "Active Students", change: "+12%", color: "from-primary to-violet-500", icon: "users" },
     { value: 156, label: "Teachers", change: "+8%", color: "from-emerald-500 to-teal-500", icon: "teacher" },
-    { value: 98.5, suffix: "%", label: "Attendance Rate", change: "+2.3%", color: "from-amber-500 to-orange-500", icon: "check" },
-    { value: 42, label: "Active Classes", change: "+5", color: "from-pink-500 to-rose-500", icon: "book" },
+    { value: 98.5, suffix: "%", label: "Attendance", change: "+2.3%", color: "from-amber-500 to-orange-500", icon: "check" },
+    { value: 42, label: "Classes", change: "+5", color: "from-pink-500 to-rose-500", icon: "book" },
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % cards.length);
-    }, 4000);
+    }, 3500);
     return () => clearInterval(interval);
   }, [cards.length]);
 
   return (
-    <div className="relative h-24 overflow-hidden">
+    <div className="relative h-20 overflow-hidden">
       {cards.map((card, i) => (
         <div
           key={i}
           className={cn(
-            "absolute inset-0 p-4 rounded-2xl bg-gradient-to-r transition-all duration-700",
+            "absolute inset-0 p-3 rounded-xl bg-gradient-to-r transition-all duration-700",
             card.color,
             activeIndex === i 
               ? "opacity-100 translate-y-0 scale-100" 
-              : "opacity-0 translate-y-8 scale-95 pointer-events-none"
+              : "opacity-0 translate-y-6 scale-95 pointer-events-none"
           )}
         >
           <div className="flex items-center justify-between h-full">
             <div>
-              <p className="text-white/80 text-sm">{card.label}</p>
+              <p className="text-white/80 text-xs">{card.label}</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">
+                <span className="text-2xl font-bold text-white">
                   {activeIndex === i && <AnimatedCounter end={card.value} delay={0} suffix={card.suffix} />}
                 </span>
-                <span className="text-sm text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{card.change}</span>
+                <span className="text-xs text-white/80 bg-white/20 px-1.5 py-0.5 rounded-full">{card.change}</span>
               </div>
             </div>
-            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-              {card.icon === "users" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
-              {card.icon === "teacher" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
-              {card.icon === "check" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
-              {card.icon === "book" && <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              {card.icon === "users" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>}
+              {card.icon === "teacher" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+              {card.icon === "check" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+              {card.icon === "book" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
             </div>
           </div>
         </div>
       ))}
       {/* Progress dots */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1.5">
         {cards.map((_, i) => (
           <button
             key={i}
             onClick={() => setActiveIndex(i)}
             className={cn(
-              "w-2 h-2 rounded-full transition-all duration-300",
-              activeIndex === i ? "w-6 bg-white" : "bg-white/40"
+              "h-1.5 rounded-full transition-all duration-300",
+              activeIndex === i ? "w-4 bg-white" : "w-1.5 bg-white/40"
             )}
           />
         ))}
@@ -670,12 +659,12 @@ function FloatingStatCards() {
 /* ── Feature Carousel ── */
 function FeatureCarousel() {
   const features = [
-    { title: "Smart Analytics", desc: "AI-powered insights", icon: "chart" },
-    { title: "Attendance", desc: "Real-time tracking", icon: "check" },
-    { title: "Gradebook", desc: "Easy grade management", icon: "grade" },
-    { title: "Communication", desc: "Parent-teacher chat", icon: "message" },
-    { title: "Scheduling", desc: "Automated timetables", icon: "calendar" },
-    { title: "Reports", desc: "Custom reports", icon: "report" },
+    { title: "Analytics", icon: "chart" },
+    { title: "Attendance", icon: "check" },
+    { title: "Gradebook", icon: "grade" },
+    { title: "Messages", icon: "message" },
+    { title: "Schedule", icon: "calendar" },
+    { title: "Reports", icon: "report" },
   ];
 
   const doubled = [...features, ...features];
@@ -683,27 +672,26 @@ function FeatureCarousel() {
   return (
     <div className="overflow-hidden">
       <div 
-        className="flex gap-4"
+        className="flex gap-2"
         style={{
-          animation: 'slide-cards 30s linear infinite',
+          animation: 'slide-cards 25s linear infinite',
           width: 'fit-content'
         }}
       >
         {doubled.map((feature, i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-36 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
+            className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/50 to-violet-500/50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              {feature.icon === "chart" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
-              {feature.icon === "check" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
-              {feature.icon === "grade" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>}
-              {feature.icon === "message" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
-              {feature.icon === "calendar" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
-              {feature.icon === "report" && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary/50 to-violet-500/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+              {feature.icon === "chart" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>}
+              {feature.icon === "check" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
+              {feature.icon === "grade" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>}
+              {feature.icon === "message" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+              {feature.icon === "calendar" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
+              {feature.icon === "report" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
             </div>
-            <h4 className="text-sm font-semibold text-white mb-1">{feature.title}</h4>
-            <p className="text-xs text-white/50">{feature.desc}</p>
+            <span className="text-xs font-medium text-white">{feature.title}</span>
           </div>
         ))}
       </div>
@@ -729,9 +717,9 @@ function ShowcasePanel() {
     <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Animated gradient orbs */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-3xl animate-morph animate-float-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-violet-500/20 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-4s' }} />
-        <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-2s' }} />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-primary/20 rounded-full blur-3xl animate-morph animate-float-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-violet-500/20 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-4s' }} />
+        <div className="absolute top-1/2 left-1/2 w-[250px] h-[250px] bg-emerald-500/10 rounded-full blur-3xl animate-morph animate-float-slow" style={{ animationDelay: '-2s' }} />
       </div>
       
       {/* Animated grid pattern */}
@@ -739,12 +727,12 @@ function ShowcasePanel() {
         className="absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '50px 50px'
+          backgroundSize: '40px 40px'
         }}
       />
 
       {/* Rotating gradient ring */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none">
         <div 
           className="w-full h-full rounded-full animate-gradient-rotate"
           style={{
@@ -753,166 +741,159 @@ function ShowcasePanel() {
         />
       </div>
 
-      {/* Content */}
-      <ScrollArea className="relative z-10 h-full" orientation="vertical">
-        <div className="flex flex-col p-8 lg:p-10 min-h-full">
+      {/* Content - No ScrollArea, fits to viewport */}
+      <div className="relative z-10 flex flex-col h-full p-6 lg:p-8">
           
           {/* Header */}
           <div className={cn(
-            "flex items-center gap-4 mb-6 opacity-0",
+            "flex items-center justify-between mb-4 opacity-0",
             mounted && "animate-fade-up"
           )}>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span className="text-sm font-medium text-white">Live Dashboard Preview</span>
+              <span className="text-xs font-medium text-white">Live Dashboard Preview</span>
+            </div>
+            <div className="flex gap-2">
+              {[
+                { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "Secure" },
+                { icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>, label: "99.9%" },
+              ].map((badge, i) => (
+                <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 text-white/50 text-xs">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {badge.icon}
+                  </svg>
+                  <span>{badge.label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Headline */}
+          {/* Headline - Compact */}
           <div className={cn(
-            "mb-6 opacity-0",
+            "mb-4 opacity-0",
             mounted && "animate-fade-up"
           )} style={{ animationDelay: "100ms" }}>
-            <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight">
-              Everything you need,
-              <br />
+            <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight tracking-tight">
+              Everything you need,{" "}
               <span className="bg-gradient-to-r from-primary via-violet-400 to-emerald-400 bg-clip-text text-transparent animate-gradient-shift">
-                in one platform
+                one platform
               </span>
             </h1>
           </div>
 
-          {/* Floating Stat Cards Slider */}
+          {/* Floating Stat Cards Slider - Compact */}
           <div className={cn(
-            "mb-6 opacity-0",
+            "mb-4 opacity-0",
             mounted && "animate-slide-right"
-          )} style={{ animationDelay: "200ms" }}>
+          )} style={{ animationDelay: "150ms" }}>
             {mounted && <FloatingStatCards />}
           </div>
 
-          {/* Progress Rings */}
-          <div className={cn(
-            "flex items-center justify-between mb-6 opacity-0",
-            mounted && "animate-fade-up"
-          )} style={{ animationDelay: "300ms" }}>
-            <CircularProgress 
-              value={96} 
-              label="Attendance" 
-              color="hsl(var(--primary))" 
-              delay={500}
-              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M9 11l3 3L22 4"/></svg>}
-            />
-            <CircularProgress 
-              value={82} 
-              label="Grades" 
-              color="hsl(142 76% 36%)" 
-              delay={600}
-              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>}
-            />
-            <CircularProgress 
-              value={94} 
-              label="Satisfaction" 
-              color="hsl(262 83% 58%)" 
-              delay={700}
-              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>}
-            />
-          </div>
-
-          {/* Charts Section */}
-          <div className={cn(
-            "grid gap-4 mb-6 opacity-0",
-            mounted && "animate-fade-up"
-          )} style={{ animationDelay: "400ms" }}>
-            {/* Bar Chart */}
-            <div className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-white">Weekly Performance</h3>
-                  <p className="text-xs text-white/50">Attendance & grades combined</p>
-                </div>
-                <div className="flex gap-3 text-xs">
-                  <span className="flex items-center gap-1.5 text-white/50">
-                    <span className="w-2 h-2 rounded-full bg-primary" /> Attendance
-                  </span>
-                  <span className="flex items-center gap-1.5 text-white/50">
-                    <span className="w-2 h-2 rounded-full bg-violet-500" /> Grades
-                  </span>
-                </div>
+          {/* Main Content Grid - Optimized for viewport */}
+          <div className="flex-1 grid grid-cols-2 gap-3">
+            {/* Left Column */}
+            <div className="flex flex-col gap-3">
+              {/* Progress Rings - Compact */}
+              <div className={cn(
+                "flex items-center justify-around p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
+                mounted && "animate-fade-up"
+              )} style={{ animationDelay: "200ms" }}>
+                <CircularProgress 
+                  value={96} 
+                  label="Attendance" 
+                  color="hsl(var(--primary))" 
+                  delay={300}
+                />
+                <CircularProgress 
+                  value={82} 
+                  label="Grades" 
+                  color="hsl(142 76% 36%)" 
+                  delay={400}
+                />
+                <CircularProgress 
+                  value={94} 
+                  label="Happy" 
+                  color="hsl(262 83% 58%)" 
+                  delay={500}
+                />
               </div>
-              {mounted && <LiveBarChart delay={600} />}
+
+              {/* Bar Chart - Compact */}
+              <div className={cn(
+                "flex-1 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
+                mounted && "animate-fade-up"
+              )} style={{ animationDelay: "250ms" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-semibold text-white">Weekly Performance</h3>
+                  <div className="flex gap-2 text-[10px]">
+                    <span className="flex items-center gap-1 text-white/50">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Attend
+                    </span>
+                    <span className="flex items-center gap-1 text-white/50">
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" /> Grade
+                    </span>
+                  </div>
+                </div>
+                {mounted && <LiveBarChart delay={400} />}
+              </div>
+
+              {/* Slider 1 */}
+              <AnimatedSlider 
+                label="Students" 
+                value={2847} 
+                maxValue={3500} 
+                color="bg-gradient-to-r from-primary to-violet-500" 
+                delay={350}
+                icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
+              />
             </div>
 
-            {/* Donut + Line Chart */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                <h3 className="text-sm font-semibold text-white mb-4">Grade Distribution</h3>
-                {mounted && <DonutChart delay={700} />}
+            {/* Right Column */}
+            <div className="flex flex-col gap-3">
+              {/* Donut Chart - Compact */}
+              <div className={cn(
+                "p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
+                mounted && "animate-fade-up"
+              )} style={{ animationDelay: "300ms" }}>
+                <h3 className="text-xs font-semibold text-white mb-2">Grade Distribution</h3>
+                {mounted && <DonutChart delay={500} />}
               </div>
-              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-white">Growth Trend</h3>
-                  <span className="text-xs text-emerald-400 font-medium">+24%</span>
+
+              {/* Line Chart - Compact */}
+              <div className={cn(
+                "flex-1 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm opacity-0",
+                mounted && "animate-fade-up"
+              )} style={{ animationDelay: "350ms" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-white">Growth Trend</h3>
+                  <span className="text-[10px] text-emerald-400 font-medium bg-emerald-500/20 px-1.5 py-0.5 rounded">+24%</span>
                 </div>
-                {mounted && <AnimatedLineGraph delay={800} />}
+                {mounted && <AnimatedLineGraph delay={600} />}
               </div>
+
+              {/* Slider 2 */}
+              <AnimatedSlider 
+                label="Classes" 
+                value={42} 
+                maxValue={50} 
+                color="bg-gradient-to-r from-emerald-500 to-teal-500" 
+                delay={400}
+                icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
+              />
             </div>
           </div>
 
-          {/* Feature Carousel */}
+          {/* Feature Carousel - Bottom */}
           <div className={cn(
-            "mb-6 opacity-0",
+            "mt-4 opacity-0",
             mounted && "animate-fade-up"
-          )} style={{ animationDelay: "500ms" }}>
-            <h3 className="text-sm font-semibold text-white mb-4">Explore Features</h3>
+          )} style={{ animationDelay: "450ms" }}>
             {mounted && <FeatureCarousel />}
           </div>
-
-          {/* Interactive Sliders */}
-          <div className={cn(
-            "grid grid-cols-2 gap-4 opacity-0",
-            mounted && "animate-fade-up"
-          )} style={{ animationDelay: "600ms" }}>
-            <AnimatedSlider 
-              label="Students Enrolled" 
-              value={2847} 
-              maxValue={3500} 
-              color="bg-gradient-to-r from-primary to-violet-500" 
-              delay={900}
-              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>}
-            />
-            <AnimatedSlider 
-              label="Classes Active" 
-              value={42} 
-              maxValue={50} 
-              color="bg-gradient-to-r from-emerald-500 to-teal-500" 
-              delay={1000}
-              icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>}
-            />
-          </div>
-
-          {/* Trust badges */}
-          <div className={cn(
-            "flex items-center gap-6 mt-8 pt-6 border-t border-white/10 opacity-0",
-            mounted && "animate-fade-in"
-          )} style={{ animationDelay: "700ms" }}>
-            {[
-              { icon: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, label: "256-bit Encryption" },
-              { icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>, label: "99.9% Uptime" },
-              { icon: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></>, label: "24/7 Support" },
-            ].map((badge, i) => (
-              <div key={i} className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors cursor-pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {badge.icon}
-                </svg>
-                <span className="text-xs font-medium">{badge.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
-      </ScrollArea>
     </div>
   );
 }
