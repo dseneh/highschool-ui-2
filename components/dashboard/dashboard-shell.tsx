@@ -104,14 +104,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
     const isAdminPath = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
 
+    // If user is on the admin workspace (admin.ezyschool.net), ensure they're on admin paths
     if (isAdminWorkspace && !isAdminPath) {
       router.replace("/admin/dashboard");
       return;
     }
 
-    if (!isAdminWorkspace && isAdminPath) {
-      router.replace("/");
-    }
+    // Allow admin routes from any subdomain - role-based auth will handle access control
+    // Users with appropriate permissions (superadmin/admin) can access /admin/* from tenant subdomains
   }, [authenticated, isAdminWorkspace, loading, normalizedPath, router]);
 
   // Check if user has default password and redirect to change-password page
