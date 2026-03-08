@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
 import * as tenantService from "@/lib/api2/admin-tenant-service";
+import { useAdminWorkspace } from "@/hooks/use-admin-workspace";
 import type {
   TenantDetail,
   CreateTenantDto,
@@ -25,9 +26,12 @@ export function useTenants(
   params?: TenantListParams,
   options?: Omit<UseQueryOptions<PaginatedTenants>, "queryKey" | "queryFn">
 ) {
+  const { isAdminWorkspace } = useAdminWorkspace();
+
   return useQuery({
     queryKey: tenantKeys.list(params),
     queryFn: () => tenantService.listTenants(params),
+    enabled: isAdminWorkspace && (options?.enabled ?? true),
     ...options,
   });
 }
@@ -39,10 +43,12 @@ export function useTenant(
   schemaName: string,
   options?: Omit<UseQueryOptions<TenantDetail>, "queryKey" | "queryFn">
 ) {
+  const { isAdminWorkspace } = useAdminWorkspace();
+
   return useQuery({
     queryKey: tenantKeys.detail(schemaName),
     queryFn: () => tenantService.getTenant(schemaName),
-    enabled: !!schemaName,
+    enabled: isAdminWorkspace && !!schemaName && (options?.enabled ?? true),
     ...options,
   });
 }

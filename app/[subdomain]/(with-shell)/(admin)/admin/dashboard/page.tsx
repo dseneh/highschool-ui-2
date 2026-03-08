@@ -1,19 +1,16 @@
 "use client";
 
+import PageLayout from "@/components/dashboard/page-layout";
 import { Card } from "@/components/ui/card";
 import StatCard from "@/components/admin/stat-card";
 import { Building2, Users, Settings, Activity } from "lucide-react";
 
 export default function AdminDashboardPage() {
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Overview of your multi-tenant system
-        </p>
-      </div>
+    <PageLayout
+      title="Dashboard"
+      description="Overview of your multi-tenant system"
+    >
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -58,6 +55,6 @@ export default function AdminDashboardPage() {
           Quick actions coming soon
         </div>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

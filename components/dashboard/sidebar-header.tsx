@@ -38,6 +38,12 @@ export default function SidebarHeaderDropDown() {
   const tenant = useTenantStore((state) => state.tenant);
   const clearTenant = useTenantStore((state) => state.clearTenant);
   const subdomain = useTenantSubdomain();
+  const routeWorkspace =
+    typeof window !== "undefined"
+      ? window.location.hostname.split(".")[0] || ""
+      : "";
+  const currentWorkspace =
+    routeWorkspace || tenant?.workspace || tenant?.schema_name || subdomain;
 
   return (
     <div className="flex items-center justify-between">
@@ -72,35 +78,42 @@ export default function SidebarHeaderDropDown() {
             </p>
 
             {/* Render tenants from user profile */}
-            {user?.tenants?.map((t) => (
+            {user?.tenants?.map((t) => {
+              const workspaceFromTenant = (t as { workspace?: string }).workspace;
+              const targetWorkspace = workspaceFromTenant ?? t.schema_name;
+              const isSelected =
+                currentWorkspace === targetWorkspace ||
+                currentWorkspace === t.schema_name;
+
+              return (
               <DropdownMenuItem
                 key={t.id}
-                onClick={() => changeWorkspace(t.schema_name)}
-                className="cursor-pointer"
+                onClick={() => changeWorkspace(targetWorkspace)}
+                className={isSelected ? "cursor-pointer bg-accent" : "cursor-pointer"}
               >
-                <div className="size-7 rounded-lg bg-background border shadow-xs flex items-center justify-center mr-2 overflow-hidden">
+                <div className="size-7 shadow-xs flex items-center justify-center mr-2 overflow-hidden">
                    <AvatarImg
                       src={t?.logo}
                       alt={t?.name}
                       name={t?.name}
-                      className="size-5 rounded-2xl"
-                      imgClassName="size-5 rounded-2xl object-cover"
+                      className="size-7"
+                      imgClassName="size-7 object-cover"
                     />
                 </div>
                 <div className="flex items-start flex-col truncate flex-1">
                   <span className="text-sm">{t.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {t.schema_name}
+                    {targetWorkspace}
                   </span>
                 </div>
-                {subdomain === t.schema_name && (
+                {/* {isSelected && (
                   <HugeiconsIcon
                     icon={Tick01Icon}
                     className="size-4 ml-auto shrink-0"
                   />
-                )}
+                )} */}
               </DropdownMenuItem>
-            ))}
+            )})}
 
             {(!user?.tenants || user.tenants.length === 0) && (
               <div className="px-2 py-1.5 text-xs text-muted-foreground italic">

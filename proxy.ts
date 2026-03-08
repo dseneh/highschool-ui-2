@@ -81,7 +81,13 @@ export function proxy(request: NextRequest) {
 
   if (subdomain) {
     const prefix = `/${subdomain}`;
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+    if (pathname === prefix) {
+      return NextResponse.next();
+    }
+
+    // Special case: admin subdomain uses /admin/* namespace routes.
+    // We still need to rewrite /admin/... to /admin/admin/... for [subdomain] routing.
+    if (pathname.startsWith(`${prefix}/`) && subdomain !== "admin") {
       return NextResponse.next();
     }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/store/auth-store";
+import PageLayout from "@/components/dashboard/page-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,13 +18,10 @@ export default function AdminAuthDebugPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Authentication Debug</h1>
-        <p className="text-muted-foreground">
-          Check your authentication status and user information
-        </p>
-      </div>
+    <PageLayout
+      title="Authentication Debug"
+      description="Check your authentication status and user information"
+    >
 
       <Card>
         <CardHeader>
@@ -102,11 +100,11 @@ export default function AdminAuthDebugPage() {
             </li>
             <li>
               <code className="rounded bg-muted px-1 py-0.5">user.role</code> must be{" "}
-              <code className="rounded bg-muted px-1 py-0.5">"superadmin"</code>
+              <code className="rounded bg-muted px-1 py-0.5">&quot;superadmin&quot;</code>
             </li>
           </ul>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

@@ -42,6 +42,7 @@ type DashboardHeaderProps = {
   showLayoutControls?: boolean;
   icon?: ComponentProps<typeof HugeiconsIcon>["icon"];
   backUrl?: string;
+  isAdminWorkspace?: boolean;
 };
 
 export function DashboardHeader({
@@ -49,6 +50,7 @@ export function DashboardHeader({
   showLayoutControls = true,
   icon = DashboardSquare01Icon,
   backUrl: propsBackUrl,
+  isAdminWorkspace = false,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const storeBackUrl = useDashboardStore((state) => state.backUrl);
@@ -73,7 +75,6 @@ export function DashboardHeader({
 
   return (
     <header className="w-full border-b bg-background">
-      {/* Top bar */}
       <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <SidebarTrigger className="-ml-2">
@@ -106,8 +107,12 @@ export function DashboardHeader({
         <div className="flex items-center gap-1 shrink-0">
           {/* Desktop view - all controls visible */}
           <div className="hidden sm:flex items-center gap-2">
-            <AcademicYearIndicator />
-            <div className="h-6 w-px bg-border mx-0.5" />
+            {!isAdminWorkspace ? (
+              <>
+                <AcademicYearIndicator />
+                <div className="h-6 w-px bg-border mx-0.5" />
+              </>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"
@@ -118,8 +123,12 @@ export function DashboardHeader({
               <span className="hidden lg:flex">Search</span>
             </Button>
             <Notification />
-            <div className="h-6 w-px bg-border mx-0.5" />
-            <SystemStatusIndicator />
+            {!isAdminWorkspace ? (
+              <>
+                <div className="h-6 w-px bg-border mx-0.5" />
+                <SystemStatusIndicator />
+              </>
+            ) : null}
             <ThemeToggle />
             <ThemeCustomizer />
           </div>
@@ -139,21 +148,25 @@ export function DashboardHeader({
                 }
               />
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem disabled className="text-xs font-medium">
-                    Academic Year
-                  </DropdownMenuItem>
-                  <AcademicYearIndicator />
-                </DropdownMenuGroup>
+                {!isAdminWorkspace ? (
+                  <>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem disabled className="text-xs font-medium">
+                        Academic Year
+                      </DropdownMenuItem>
+                      <AcademicYearIndicator />
+                    </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                <DropdownMenuItem disabled className="text-xs font-medium">
-                  System Status
-                </DropdownMenuItem>
-                <SystemStatusIndicator />
+                    <DropdownMenuItem disabled className="text-xs font-medium">
+                      System Status
+                    </DropdownMenuItem>
+                    <SystemStatusIndicator />
 
-                <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
 
                 <DropdownMenuItem disabled className="text-xs font-medium">
                   Theme
@@ -227,86 +240,6 @@ export function DashboardHeader({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
-          {/* Desktop layout controls button */}
-          {/* {showLayoutControls ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="hidden sm:flex"
-                    icon={
-                      <HugeiconsIcon icon={SidebarLeft01Icon} className="size-4" />
-                    }
-                  >
-                    Edit Layout
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuGroup>
-                  <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
-                    Layout Density
-                  </p>
-                  {(Object.keys(densityLabels) as LayoutDensity[]).map((key) => (
-                    <DropdownMenuItem
-                      key={key}
-                      onClick={() => setLayoutDensity(key)}
-                    >
-                      {densityLabels[key]}
-                      {layoutDensity === key && (
-                        <HugeiconsIcon
-                          icon={Tick01Icon}
-                          className="size-4 ml-auto"
-                        />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuGroup>
-                  <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
-                    Show / Hide Sections
-                  </p>
-                  <DropdownMenuCheckboxItem
-                    checked={showAlertBanner}
-                    onCheckedChange={setShowAlertBanner}
-                  >
-                    Alert Banner
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={showStatsCards}
-                    onCheckedChange={setShowStatsCards}
-                  >
-                    Statistics Cards
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={showChart}
-                    onCheckedChange={setShowChart}
-                  >
-                    Financial Flow Chart
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={showTable}
-                    onCheckedChange={setShowTable}
-                  >
-                    Employees Table
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={resetLayout}>
-                  <HugeiconsIcon icon={RefreshIcon} className="size-4 mr-2" />
-                  Reset to Default
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null} */}
         </div>
       </div>
     </header>

@@ -6,6 +6,51 @@ const JSON_HEADERS = {
   Accept: "application/json",
 };
 
+let adminTokenPromise: Promise<string | null> | null = null;
+let adminTokenCache: { token: string | null; timestamp: number } | null = null;
+const ADMIN_TOKEN_CACHE_TTL = 5000;
+
+async function getAdminAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (adminTokenCache && Date.now() - adminTokenCache.timestamp < ADMIN_TOKEN_CACHE_TTL) {
+    return adminTokenCache.token;
+  }
+
+  if (adminTokenPromise) {
+    return adminTokenPromise;
+  }
+
+  adminTokenPromise = (async () => {
+    try {
+      const tokenRes = await fetch("/api/auth/token", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        const token = tokenData?.accessToken ?? null;
+        adminTokenCache = { token, timestamp: Date.now() };
+        return token;
+      }
+    } catch {
+      // Fall back to localStorage token for legacy auth flows.
+    } finally {
+      adminTokenPromise = null;
+    }
+
+    const fallbackToken = localStorage.getItem("accessToken");
+    adminTokenCache = { token: fallbackToken, timestamp: Date.now() };
+    return fallbackToken;
+  })();
+
+  return adminTokenPromise;
+}
+
 function ensureTrailingSlash(url: string): string {
   const [path, query] = url.split("?");
   const normalizedPath = path.endsWith("/") ? path : `${path}/`;
@@ -54,10 +99,11 @@ tenantScopedPublicApiClient.interceptors.request.use((config) => {
 export const adminApiClient = axios.create({
   baseURL: API_URL,
   headers: JSON_HEADERS,
+  withCredentials: true,
 });
-adminApiClient.interceptors.request.use((config) => {
+adminApiClient.interceptors.request.use(async (config) => {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("accessToken");
+    const token = await getAdminAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

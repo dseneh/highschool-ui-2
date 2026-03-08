@@ -1,6 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { DialogBox } from "@/components/ui/dialog-box";
@@ -8,14 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 import { CreateTenantDto, UpdateTenantDto, TenantDetail } from "@/lib/api2/admin-tenant-types";
+import { SelectField } from "../ui/select-field";
 
 const tenantFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -57,36 +54,48 @@ export default function TenantFormDialog({
 }: TenantFormDialogProps) {
   const isEdit = !!tenant;
 
+  const buildFormValues = (currentTenant?: TenantDetail | null): TenantFormValues => ({
+    name: currentTenant?.name || "",
+    short_name: currentTenant?.short_name || "",
+    schema_name: currentTenant?.schema_name || "",
+    domain: currentTenant?.domain || "",
+    email: currentTenant?.email || "",
+    phone: currentTenant?.phone || "",
+    website: currentTenant?.website || "",
+    slogan: currentTenant?.slogan || "",
+    description: currentTenant?.description || "",
+    address: currentTenant?.address || "",
+    city: currentTenant?.city || "",
+    state: currentTenant?.state || "",
+    country: currentTenant?.country || "",
+    postal_code: currentTenant?.postal_code || "",
+    funding_type: currentTenant?.funding_type || "",
+    school_type: currentTenant?.school_type || "",
+    status: currentTenant?.status || "inactive",
+    is_active: Boolean(currentTenant?.is_active ?? currentTenant?.active),
+  });
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     setValue,
+    control,
   } = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
-    defaultValues: tenant
-      ? {
-          name: tenant.name,
-          short_name: tenant.short_name,
-          schema_name: tenant.schema_name,
-          email: tenant.email || "",
-          phone: tenant.phone || "",
-          website: tenant.website || "",
-          slogan: tenant.slogan || "",
-          description: tenant.description || "",
-          address: tenant.address || "",
-          city: tenant.city || "",
-          state: tenant.state || "",
-          country: tenant.country || "",
-          postal_code: tenant.postal_code || "",
-          funding_type: tenant.funding_type,
-          school_type: tenant.school_type,
-          status: tenant.status,
-          is_active: tenant.is_active ?? tenant.active,
-        }
-      : {},
+    defaultValues: buildFormValues(tenant),
   });
+
+  const currentIsActive = useWatch({ control, name: "is_active" });
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    reset(buildFormValues(tenant));
+  }, [open, tenant, reset]);
 
   const handleFormSubmit = async (data: TenantFormValues) => {
     await onSubmit(data);
@@ -94,16 +103,28 @@ export default function TenantFormDialog({
     onOpenChange(false);
   };
 
-  const handleCancel = () => {
-    reset();
-    onOpenChange(false);
+  const handleAction = async () => {
+    await handleSubmit(handleFormSubmit)();
   };
+
+  const fundingOptions = [
+    { value: "public", label: "Public" },
+    { value: "private", label: "Private" },
+    { value: "other", label: "Other" },
+  ]
+
+  const schoolTypeOptions = [
+    { value: "elementary", label: "Elementary" },
+    { value: "middle", label: "Middle School" },
+    { value: "high", label: "High School" },
+    { value: "combined", label: "Combined" },
+    { value: "other", label: "Other" },
+  ]
 
   return (
     <DialogBox
       open={open}
       onOpenChange={onOpenChange}
-      onCancel={handleCancel}
       title={isEdit ? "Edit Tenant" : "Create New Tenant"}
       description={
         isEdit
@@ -111,8 +132,12 @@ export default function TenantFormDialog({
           : "Create a new tenant organization"
       }
       className="max-w-3xl"
+      actionLabel={isEdit ? "Update Tenant" : "Create Tenant"}
+      actionLoading={isLoading}
+      actionLoadingText="Saving..."
+      onAction={handleAction}
     >
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form id="tenant-form" className="space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold">Basic Information</h3>
@@ -276,38 +301,20 @@ export default function TenantFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="funding_type">Funding Type</Label>
-              <Select
-                onValueChange={(value) => setValue("funding_type", value ?? "")}
-                defaultValue={tenant?.funding_type}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select funding type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <SelectField
+                onValueChange={(value: any) => setValue("funding_type", value ?? "")}
+                value={tenant?.funding_type}
+                items={fundingOptions}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="school_type">School Type</Label>
-              <Select
-                onValueChange={(value) => setValue("school_type", value ?? "")}
-                defaultValue={tenant?.school_type}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select school type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="elementary">Elementary</SelectItem>
-                  <SelectItem value="middle">Middle School</SelectItem>
-                  <SelectItem value="high">High School</SelectItem>
-                  <SelectItem value="combined">Combined</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <SelectField
+                onValueChange={(value: any) => setValue("school_type", value ?? "")}
+                value={tenant?.school_type}
+                items={schoolTypeOptions}
+              />
             </div>
           </div>
         </div>
@@ -315,59 +322,69 @@ export default function TenantFormDialog({
         {/* Status (Edit only) */}
         {isEdit && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Status</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 ">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select
-                  onValueChange={(value) => setValue("status", value ?? "")}
+                <SelectField
+                onValueChange={(value) => setValue("status", String(value ?? ""))}
                   defaultValue={tenant?.status}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="trial">Trial</SelectItem>
-                  </SelectContent>
-                </Select>
+                  value={tenant?.status}
+                  items={[
+                    {value: 'active', label: 'Active'},
+                    {value: 'inactive', label: 'Inactive'},
+                    {value: 'suspended', label: 'Suspended'},
+                    {value: 'trial', label: 'Trial'},
+                  ]}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="is_active">Active</Label>
-                <Select
-                  onValueChange={(value) => setValue("is_active", value === "true")}
-                  defaultValue={(tenant?.is_active ?? tenant?.active) ? "true" : "false"}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Yes</SelectItem>
-                    <SelectItem value="false">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="grid gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setValue("is_active", true, { shouldDirty: true })}
+                    className={cn(
+                      "h-auto justify-start px-3 py-2 text-left",
+                      currentIsActive
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                        : "border-border"
+                    )}
+                  >
+                    <span className="flex w-full items-start justify-between gap-2">
+                      <span>
+                        <span className="block text-sm font-medium">Enabled</span>
+                        <span className="block text-xs opacity-75">Users can access this workspace</span>
+                      </span>
+                      {currentIsActive ? <Check className="mt-0.5 size-4" /> : null}
+                    </span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setValue("is_active", false, { shouldDirty: true })}
+                    className={cn(
+                      "h-auto justify-start px-3 py-2 text-left",
+                      !currentIsActive
+                        ? "border-orange-500 bg-orange-50 text-orange-900 hover:bg-orange-100"
+                        : "border-border"
+                    )}
+                  >
+                    <span className="flex w-full items-start justify-between gap-2">
+                      <span>
+                        <span className="block text-sm font-medium">Disabled</span>
+                        <span className="block text-xs opacity-75">Workspace login and actions are blocked</span>
+                      </span>
+                      {!currentIsActive ? <Check className="mt-0.5 size-4" /> : null}
+                    </span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         )}
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 border-t pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" loading={isLoading} loadingText="Saving...">
-            {isEdit ? "Update Tenant" : "Create Tenant"}
-          </Button>
-        </div>
       </form>
     </DialogBox>
   );

@@ -17,27 +17,27 @@ import { useState } from "react";
 const navigation = [
   {
     name: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
     name: "Tenants",
-    href: "/admin/tenants",
+    href: "/tenants",
     icon: Building2,
   },
   {
     name: "Users",
-    href: "/admin/users",
+    href: "/users",
     icon: Users,
   },
   {
     name: "Settings",
-    href: "/admin/settings",
+    href: "/settings",
     icon: Settings,
   },
   {
     name: "Audit Logs",
-    href: "/admin/logs",
+    href: "/logs",
     icon: FileText,
   },
 ];

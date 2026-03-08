@@ -63,8 +63,9 @@ import NavStudentCard from "./nav-student-card";
 import { useStudentByNumber } from "@/hooks/use-student";
 
 export function DashboardSidebar({
+  navSections = primaryNavSections,
   ...props
-}: React.ComponentProps<typeof Sidebar>) {
+}: React.ComponentProps<typeof Sidebar> & { navSections?: NavSection[] }) {
   const { state: sidebarState, isMobile: isSidebarMobile } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
@@ -135,7 +136,7 @@ export function DashboardSidebar({
   );
 
   const filteredPrimaryNavSections = React.useMemo<NavSection[]>(() => {
-    return primaryNavSections
+    return navSections
       .map((section) => {
         const filteredItems = section.items
           .map((item) => {
@@ -163,7 +164,7 @@ export function DashboardSidebar({
         };
       })
       .filter((section) => section.items.length > 0);
-  }, [canViewNavItem]);
+  }, [canViewNavItem, navSections]);
 
   /*
    * ═══════════════════════════════════════════════════════════════════════
@@ -201,7 +202,7 @@ export function DashboardSidebar({
   const menuConfig = {
     main: {
       isActive: activeMenu === "main",
-      items: primaryNavSections,
+      items: navSections,
       type: "accordion" as const,
     },
     student: {

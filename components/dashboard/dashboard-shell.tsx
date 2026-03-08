@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { primaryNavSections } from "@/components/dashboard/navigation";
+import { primaryNavSections, adminNavSections } from "@/components/dashboard/navigation";
 import { useAuth } from "@/components/portable-auth/src/client";
 import { useTenantStore } from "@/store/tenant-store";
 import {
@@ -14,12 +14,16 @@ import {
   getTenantFromSubdomain,
 } from "@/lib/tenant";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
+import { useAdminWorkspace } from "@/hooks/use-admin-workspace";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { authenticated, loading, tenant: authTenant, user } = useAuth();
   const setTenant = useTenantStore((state) => state.setTenant);
   const subdomain = useTenantSubdomain();
+  const { isAdminWorkspace } = useAdminWorkspace();
+
+  const navSections = isAdminWorkspace ? adminNavSections : primaryNavSections;
 
   const pathname = usePathname();
   const normalizedPath = useMemo(() => {
@@ -30,7 +34,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [pathname, subdomain]);
 
   const activeItem = useMemo(() => {
-    const allItems = primaryNavSections.flatMap((section) =>
+    const allItems = navSections.flatMap((section) =>
       section.items.flatMap((item) =>
         item.subItems && item.subItems.length > 0
           ? [item, ...item.subItems]
@@ -46,7 +50,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
 
     return matches.sort((a, b) => b.path.length - a.path.length)[0] || allItems[0];
-  }, [normalizedPath]);
+  }, [normalizedPath, navSections]);
 
   const backUrl = useMemo(() => {
     if (activeItem.path === "/" || activeItem.path === normalizedPath) {
@@ -94,6 +98,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, loading, pathname, router, subdomain]);
 
+
+  useEffect(() => {
+    if (loading || !authenticated) return;
+
+    const isAdminPath = normalizedPath === "/admin" || normalizedPath.startsWith("/admin/");
+
+    if (isAdminWorkspace && !isAdminPath) {
+      router.replace("/admin/dashboard");
+      return;
+    }
+
+    if (!isAdminWorkspace && isAdminPath) {
+      router.replace("/");
+    }
+  }, [authenticated, isAdminWorkspace, loading, normalizedPath, router]);
+
   // Check if user has default password and redirect to change-password page
   useEffect(() => {
     if (loading || !authenticated || !user) return;
@@ -113,7 +133,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider className="bg-sidebar">
-      <DashboardSidebar />
+      <DashboardSidebar navSections={navSections} />
       <div className="h-svh overflow-hidden lg:p-2 w-full">
         <div className="lg:border lg:rounded-md overflow-hidden flex flex-col items-center justify-start bg-container h-full w-full bg-background min-h-0">
           <DashboardHeader
@@ -121,6 +141,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             icon={activeItem.icon}
             showLayoutControls={showLayoutControls}
             backUrl={backUrl}
+            isAdminWorkspace={isAdminWorkspace}
           />
           <div className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden">
             {children}

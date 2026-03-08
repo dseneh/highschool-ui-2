@@ -2,13 +2,13 @@
 
 import { DialogBox } from "@/components/ui/dialog-box";
 import { Button } from "@/components/ui/button";
-import { TenantListItem } from "@/lib/api2/admin-tenant-types";
+import { TenantDetail, TenantListItem } from "@/lib/api2/admin-tenant-types";
 import { AlertTriangle } from "lucide-react";
 
 interface DeleteTenantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tenant: TenantListItem | null;
+  tenant: TenantListItem | TenantDetail | null;
   onConfirm: () => Promise<void>;
   isLoading?: boolean;
 }
