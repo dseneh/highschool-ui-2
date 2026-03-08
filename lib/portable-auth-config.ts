@@ -1,7 +1,7 @@
 import type { PortableAuthConfig } from "@/components/portable-auth/src/types";
+import { API_URL } from "@/config/utils";
 import { getRootDomain } from "@/lib/tenant";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const BACKEND_BASE_URL = API_URL.replace("/api/v1", ""); // Get base URL without /api/v1
 
 /**

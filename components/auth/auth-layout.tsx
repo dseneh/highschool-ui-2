@@ -565,7 +565,7 @@ function FormPanel({
   }, []);
 
   return (
-    <div className="relative flex w-full flex-col lg:w-[45%] bg-background">
+    <div className="relative flex w-full flex-col mx-auto lg:w-xl bg-background">
       <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:px-16 xl:px-20">
         {/* Logo */}
         <div className={cn(
@@ -580,7 +580,7 @@ function FormPanel({
           "mb-8 opacity-0",
           mounted && "animate-fade-up"
         )} style={{ animationDelay: "100ms" }}>
-          <h2 className="text-2xl lg:text-3xl font-semibold text-foreground tracking-tight mb-2">
+          <h2 className="text-2xl text-center lg:text-3xl font-semibold text-foreground tracking-tight mb-2">
             {title}
           </h2>
           {subtitle && (

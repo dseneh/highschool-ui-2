@@ -1,8 +1,8 @@
 import { buildPortableAuthConfig } from "@/lib/portable-auth-config";
 import { createSessionRoute, readSession } from "@/components/portable-auth/src/server";
 import { NextResponse } from "next/server";
+import { API_URL } from "@/config/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const CURRENT_USER_PATH = "/auth/users/current/";
 
 /**
