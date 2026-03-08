@@ -1,56 +1,91 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { BrandWordmark } from "@/components/brand/brand-logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-/* ── Refined animations for modern aesthetic ── */
+/* ── Advanced animations stylesheet ── */
 const styleSheet = `
-  @keyframes float-gentle {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-8px) rotate(0.5deg); }
+  @keyframes float-up {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
   }
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.02); }
+  @keyframes float-down {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(8px); }
   }
-  @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-in-up {
+    from { opacity: 0; transform: translateY(40px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes ping-soft {
+    0% { transform: scale(1); opacity: 1; }
+    75%, 100% { transform: scale(1.5); opacity: 0; }
+  }
+  @keyframes counter-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes bar-grow {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
   }
   @keyframes line-draw {
-    from { stroke-dashoffset: 1000; }
     to { stroke-dashoffset: 0; }
   }
-  @keyframes orbit {
-    from { transform: rotate(0deg) translateX(120px) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+  @keyframes notification-pop {
+    0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+    50% { transform: translateY(-5px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
   }
-  @keyframes orbit-reverse {
-    from { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
-    to { transform: rotate(0deg) translateX(80px) rotate(0deg); }
+  .animate-float-up { animation: float-up 6s ease-in-out infinite; }
+  .animate-float-down { animation: float-down 5s ease-in-out infinite; }
+  .animate-slide-in-left { animation: slide-in-left 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-slide-in-right { animation: slide-in-right 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-slide-in-up { animation: slide-in-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+  .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+  .animate-shimmer { 
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
   }
-  @keyframes glow {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
+  .animate-ping-soft { animation: ping-soft 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+  .animate-counter-up { animation: counter-up 0.6s ease-out forwards; }
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
   }
-  @keyframes shimmer-line {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+  .animate-bar-grow { 
+    transform-origin: bottom;
+    animation: bar-grow 1s ease-out forwards;
   }
-  .animate-float-gentle { animation: float-gentle 8s ease-in-out infinite; }
-  .animate-pulse-soft { animation: pulse-soft 4s ease-in-out infinite; }
-  .animate-slide-up { animation: slide-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-  .animate-fade-in { animation: fade-in 1s ease-out forwards; }
-  .animate-line-draw { animation: line-draw 2s ease-out forwards; stroke-dasharray: 1000; }
-  .animate-orbit { animation: orbit 20s linear infinite; }
-  .animate-orbit-reverse { animation: orbit-reverse 25s linear infinite; }
-  .animate-glow { animation: glow 3s ease-in-out infinite; }
+  .animate-notification-pop { animation: notification-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 `;
 
 type AuthLayoutProps = {
@@ -60,342 +95,369 @@ type AuthLayoutProps = {
   footer?: React.ReactNode;
 };
 
-/* ── Feature highlights data ── */
+/* ── Key Features Data ── */
 const FEATURES = [
   {
-    label: "Student Management",
-    description: "Complete enrollment and profile tracking",
+    title: "Student Management",
+    description: "Track enrollment, profiles & academic progress in real-time",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
+    gradient: "from-blue-500 to-cyan-400",
   },
   {
-    label: "Academic Planning",
-    description: "Dynamic scheduling and curriculum",
+    title: "Grade Analytics",
+    description: "AI-powered insights and performance dashboards",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    label: "Grade Analytics",
-    description: "Performance insights and reporting",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
+    gradient: "from-indigo-500 to-purple-400",
   },
   {
-    label: "Financial Tracking",
-    description: "Fee management and analytics",
+    title: "Smart Scheduling",
+    description: "Automated timetables with conflict detection",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
       </svg>
     ),
+    gradient: "from-emerald-500 to-teal-400",
+  },
+  {
+    title: "Fee Management",
+    description: "Automated billing, payments & financial reports",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+    gradient: "from-amber-500 to-orange-400",
   },
 ];
 
-/* ── Testimonial data ── */
-const TESTIMONIALS = [
-  {
-    quote: "EzySchool transformed how we manage our entire academic workflow.",
-    author: "Sarah Chen",
-    role: "Principal, Westfield Academy",
-  },
-  {
-    quote: "The most intuitive school management platform we've ever used.",
-    author: "Michael Roberts",
-    role: "Administrator, Valley High",
-  },
-  {
-    quote: "Real-time analytics have revolutionized our decision making.",
-    author: "Emily Watson",
-    role: "Director, Lincoln Prep",
-  },
-];
+/* ── Animated Counter Component ── */
+function AnimatedCounter({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
 
-/* ── Animated Orbital Ring Component ── */
-function OrbitalRing({ className, reverse = false }: { className?: string; reverse?: boolean }) {
+  useEffect(() => {
+    const timer = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    const duration = 2000;
+    const steps = 60;
+    const increment = value / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setCount(value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [started, value]);
+
   return (
-    <div className={cn("absolute rounded-full border border-white/[0.03]", className)}>
+    <span className={cn("tabular-nums", started && "animate-counter-up")}>
+      {count.toLocaleString()}{suffix}
+    </span>
+  );
+}
+
+/* ── Floating Dashboard Preview Card ── */
+function DashboardPreview() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <div className={cn(
+      "relative w-full max-w-md mx-auto opacity-0",
+      mounted && "animate-scale-in"
+    )} style={{ animationDelay: "300ms" }}>
+      {/* Main Dashboard Card */}
+      <div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 shadow-2xl">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white">Performance Overview</p>
+              <p className="text-[10px] text-white/40">Real-time analytics</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
+            <span className="text-[10px] text-emerald-400 font-medium">Live</span>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {[
+            { label: "Students", value: 1247, gradient: "from-blue-500 to-cyan-400" },
+            { label: "Attendance", value: 96, suffix: "%", gradient: "from-emerald-500 to-teal-400" },
+            { label: "Avg. Grade", value: 87, suffix: "%", gradient: "from-amber-500 to-orange-400" },
+          ].map((stat, i) => (
+            <div key={stat.label} className="relative overflow-hidden rounded-xl bg-white/[0.03] border border-white/[0.05] p-3">
+              <div className={cn(
+                "absolute inset-0 opacity-10 bg-gradient-to-br",
+                stat.gradient
+              )} />
+              <p className="relative text-lg font-bold text-white">
+                <AnimatedCounter value={stat.value} suffix={stat.suffix} delay={500 + i * 200} />
+              </p>
+              <p className="relative text-[10px] text-white/50 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart Area */}
+        <div className="relative h-32 bg-white/[0.02] rounded-xl border border-white/[0.05] p-4 overflow-hidden">
+          <div className="flex items-end justify-between h-full gap-2">
+            {[65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 92].map((height, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex-1 rounded-t-sm bg-gradient-to-t from-indigo-500 to-purple-400 opacity-0 animate-bar-grow"
+                )}
+                style={{
+                  height: `${height}%`,
+                  animationDelay: `${800 + i * 50}ms`,
+                }}
+              />
+            ))}
+          </div>
+          {/* Chart label */}
+          <div className="absolute top-3 left-3 flex items-center gap-2">
+            <span className="text-[10px] font-medium text-white/60">Monthly Progress</span>
+            <span className="text-[10px] font-semibold text-emerald-400">+12.5%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Notification Cards */}
       <div className={cn(
-        "absolute w-2 h-2 rounded-full bg-white/20",
-        reverse ? "animate-orbit-reverse" : "animate-orbit"
-      )} />
+        "absolute -right-4 top-16 opacity-0",
+        mounted && "animate-notification-pop"
+      )} style={{ animationDelay: "1200ms" }}>
+        <div className="bg-emerald-500/90 backdrop-blur-sm rounded-xl px-4 py-3 shadow-lg shadow-emerald-500/20 animate-float-up">
+          <div className="flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="text-xs font-semibold text-white">New enrollment!</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={cn(
+        "absolute -left-4 bottom-20 opacity-0",
+        mounted && "animate-notification-pop"
+      )} style={{ animationDelay: "1500ms" }}>
+        <div className="bg-white/[0.05] backdrop-blur-sm border border-white/[0.1] rounded-xl px-4 py-3 shadow-lg animate-float-down">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-[10px] font-bold text-white">A</div>
+            <div>
+              <p className="text-[10px] font-semibold text-white">Grade Updated</p>
+              <p className="text-[9px] text-white/40">Physics - 95%</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Geometric Grid Pattern ── */
-function GridPattern() {
-  return (
-    <svg className="absolute inset-0 w-full h-full opacity-[0.015]" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-  );
-}
-
-/* ── Floating Stat Orb ── */
-function StatOrb({ 
-  value, 
-  label, 
-  delay = 0,
-  className 
+/* ── Feature Card Component ── */
+function FeatureCard({ 
+  feature, 
+  index,
+  mounted 
 }: { 
-  value: string; 
-  label: string; 
-  delay?: number;
-  className?: string;
+  feature: typeof FEATURES[0]; 
+  index: number;
+  mounted: boolean;
 }) {
   return (
     <div 
       className={cn(
-        "flex flex-col items-center justify-center w-24 h-24 rounded-full",
-        "bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm",
-        "animate-float-gentle opacity-0",
-        className
+        "group relative overflow-hidden rounded-xl bg-white/[0.02] border border-white/[0.05] p-4",
+        "hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-500",
+        "opacity-0",
+        mounted && "animate-slide-in-up"
       )}
-      style={{ 
-        animationDelay: `${delay}ms`,
-        animation: `float-gentle 8s ease-in-out ${delay}ms infinite, fade-in 1s ease-out ${delay}ms forwards`
-      }}
+      style={{ animationDelay: `${1800 + index * 100}ms` }}
     >
-      <span className="text-2xl font-semibold text-white tracking-tight">{value}</span>
-      <span className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5">{label}</span>
+      {/* Gradient overlay on hover */}
+      <div className={cn(
+        "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br",
+        feature.gradient
+      )} />
+      
+      <div className="relative flex items-start gap-3">
+        <div className={cn(
+          "flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br text-white shrink-0",
+          feature.gradient
+        )}>
+          {feature.icon}
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
+            {feature.title}
+          </h3>
+          <p className="text-[11px] text-white/40 leading-relaxed mt-0.5 group-hover:text-white/50 transition-colors">
+            {feature.description}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ── Modern showcase panel with minimal aesthetic ── */
+/* ── Modern Feature Showcase Panel ── */
 function ShowcasePanel() {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const style = document.createElement("style");
     style.textContent = styleSheet;
     document.head.appendChild(style);
-    
-    intervalRef.current = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % TESTIMONIALS.length);
-    }, 6000);
-
     return () => {
       document.head.removeChild(style);
-      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  const testimonial = TESTIMONIALS[currentTestimonial];
-
   return (
-    <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-neutral-950">
-      {/* Base gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950" />
+    <div className="relative hidden w-[55%] overflow-hidden lg:flex lg:flex-col bg-[#0a0a0f]">
+      {/* Gradient background layers */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/40 via-[#0a0a0f] to-purple-950/30" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.15),transparent)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_80%_80%,rgba(168,85,247,0.1),transparent)]" />
       
-      {/* Subtle radial gradient accent */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.02)_0%,transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.015)_0%,transparent_50%)]" />
+      {/* Animated gradient orbs */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
       
       {/* Grid pattern */}
-      <GridPattern />
+      <svg className="absolute inset-0 w-full h-full opacity-[0.02]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="feature-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#feature-grid)" />
+      </svg>
 
-      {/* Orbital rings - decorative */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">
-        <OrbitalRing className="w-full h-full" />
-        <OrbitalRing className="w-[70%] h-[70%] top-[15%] left-[15%]" reverse />
-        <OrbitalRing className="w-[40%] h-[40%] top-[30%] left-[30%]" />
-      </div>
-
-      {/* Central glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.02] blur-[100px] animate-pulse-soft" />
-
-      {/* Content wrapper */}
-      <div className="relative z-10 flex h-full w-full flex-col justify-between px-10 py-10 xl:px-14 xl:py-12">
+      {/* Content */}
+      <div className="relative z-10 flex h-full w-full flex-col px-8 py-8 xl:px-12 xl:py-10">
         
-        {/* Top: Brand badge */}
-        <div className={cn(
-          "flex items-center justify-between",
-          mounted ? "animate-slide-up" : "opacity-0"
-        )} style={{ animationDelay: "100ms" }}>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06]">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-medium text-white/50 uppercase tracking-[0.15em]">EzySchool.net</span>
-            </div>
-          </div>
-          <div className="text-[10px] font-mono text-white/20 uppercase tracking-wider">
-            Secure Portal
-          </div>
-        </div>
-
-        {/* Center: Main content */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-12 py-10">
-          
-          {/* Headline */}
+        {/* Top Section: Badge + Headline */}
+        <div className="flex-shrink-0">
+          {/* Status Badge */}
           <div className={cn(
-            "text-center max-w-lg",
-            mounted ? "animate-slide-up" : "opacity-0"
+            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] opacity-0",
+            mounted && "animate-slide-in-left"
+          )} style={{ animationDelay: "100ms" }}>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-400"></span>
+            </span>
+            <span className="text-[11px] font-medium text-white/60">Trusted by 500+ Schools</span>
+          </div>
+
+          {/* Main Headline */}
+          <div className={cn(
+            "mt-6 opacity-0",
+            mounted && "animate-slide-in-up"
           )} style={{ animationDelay: "200ms" }}>
-            <h2 className="text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.1] text-balance">
-              Education
+            <h1 className="text-3xl xl:text-4xl font-bold text-white tracking-tight leading-[1.15]">
+              Everything you need to
               <br />
-              <span className="text-white/40">Simplified</span>
-            </h2>
-            <p className="mt-4 text-sm text-white/30 font-medium max-w-sm mx-auto leading-relaxed">
-              The complete platform for modern school management. Streamline operations, enhance learning outcomes.
+              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient-shift">
+                manage your school
+              </span>
+            </h1>
+            <p className="mt-4 text-sm text-white/40 max-w-md leading-relaxed">
+              Streamline operations, boost student outcomes, and save hours every week with our all-in-one platform.
             </p>
           </div>
-
-          {/* Floating stat orbs */}
-          <div className="relative w-full max-w-md h-32">
-            <StatOrb 
-              value="1,247" 
-              label="Students" 
-              delay={400}
-              className="absolute left-0 top-0"
-            />
-            <StatOrb 
-              value="98%" 
-              label="Uptime" 
-              delay={600}
-              className="absolute left-1/2 -translate-x-1/2 top-4"
-            />
-            <StatOrb 
-              value="42" 
-              label="Schools" 
-              delay={800}
-              className="absolute right-0 top-0"
-            />
-          </div>
-
-          {/* Features grid */}
-          <div className={cn(
-            "grid grid-cols-2 gap-3 w-full max-w-md",
-            mounted ? "animate-slide-up" : "opacity-0"
-          )} style={{ animationDelay: "500ms" }}>
-            {FEATURES.map((feature, i) => (
-              <div 
-                key={feature.label}
-                className={cn(
-                  "group flex items-start gap-3 p-4 rounded-xl",
-                  "bg-white/[0.02] border border-white/[0.04]",
-                  "hover:bg-white/[0.04] hover:border-white/[0.08]",
-                  "transition-all duration-300 cursor-default"
-                )}
-              >
-                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.04] text-white/40 group-hover:text-white/60 transition-colors shrink-0">
-                  {feature.icon}
-                </div>
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-xs font-medium text-white/70 group-hover:text-white/90 transition-colors truncate">
-                    {feature.label}
-                  </span>
-                  <span className="text-[10px] text-white/30 leading-tight">
-                    {feature.description}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Bottom: Testimonial */}
-        <div className={cn(
-          "relative",
-          mounted ? "animate-slide-up" : "opacity-0"
-        )} style={{ animationDelay: "700ms" }}>
-          {/* Testimonial card */}
-          <div className="relative bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6">
-            {/* Quote mark */}
-            <div className="absolute -top-3 left-6">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white/10">
-                <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" fill="currentColor"/>
-              </svg>
-            </div>
+        {/* Center: Dashboard Preview */}
+        <div className="flex-1 flex items-center justify-center py-6 xl:py-8">
+          <DashboardPreview />
+        </div>
 
-            <div className="relative">
-              <p className="text-sm text-white/60 font-medium leading-relaxed italic">
-                {`"${testimonial.quote}"`}
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-white/70">{testimonial.author}</p>
-                  <p className="text-[10px] text-white/30">{testimonial.role}</p>
-                </div>
-                {/* Dots indicator */}
-                <div className="flex items-center gap-1.5">
-                  {TESTIMONIALS.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentTestimonial(i)}
-                      className={cn(
-                        "h-1 rounded-full transition-all duration-300",
-                        i === currentTestimonial 
-                          ? "w-4 bg-white/40" 
-                          : "w-1 bg-white/10 hover:bg-white/20"
-                      )}
-                      aria-label={`Go to testimonial ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+        {/* Bottom: Features Grid */}
+        <div className="flex-shrink-0">
+          <div className="grid grid-cols-2 gap-3">
+            {FEATURES.map((feature, i) => (
+              <FeatureCard key={feature.title} feature={feature} index={i} mounted={mounted} />
+            ))}
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 mt-6">
-            <div className="flex items-center gap-2 text-white/20">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          {/* Trust Indicators */}
+          <div className={cn(
+            "flex items-center justify-center gap-6 mt-6 pt-6 border-t border-white/[0.05] opacity-0",
+            mounted && "animate-slide-in-up"
+          )} style={{ animationDelay: "2200ms" }}>
+            <div className="flex items-center gap-2 text-white/30">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
-              <span className="text-[10px] font-medium uppercase tracking-wider">256-bit SSL</span>
+              <span className="text-[11px] font-medium">Enterprise Security</span>
             </div>
-            <div className="h-3 w-px bg-white/10" />
-            <div className="flex items-center gap-2 text-white/20">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-2 text-white/30">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              <span className="text-[10px] font-medium uppercase tracking-wider">SOC 2</span>
+              <span className="text-[11px] font-medium">99.9% Uptime</span>
             </div>
-            <div className="h-3 w-px bg-white/10" />
-            <div className="flex items-center gap-2 text-white/20">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-2 text-white/30">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              <span className="text-[10px] font-medium uppercase tracking-wider">GDPR</span>
+              <span className="text-[11px] font-medium">24/7 Support</span>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Decorative corner accents */}
-      <div className="absolute top-0 left-0 w-32 h-32 border-l border-t border-white/[0.03] rounded-br-3xl" />
-      <div className="absolute bottom-0 right-0 w-32 h-32 border-r border-b border-white/[0.03] rounded-tl-3xl" />
     </div>
   );
 }
@@ -404,7 +466,7 @@ function ShowcasePanel() {
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
   return (
     <div className="flex h-svh w-full bg-background flex-col-reverse lg:flex-row-reverse overflow-hidden">
-      {/* ── Right: form panel ── */}
+      {/* Right: Form panel */}
       <ScrollArea className="w-full h-svh! lg:w-[45%]" orientation="vertical">
         <div className="flex min-h-full flex-col items-center justify-between px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
           {/* Logo */}
