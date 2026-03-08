@@ -92,7 +92,7 @@ export default function TenantListPage() {
   };
 
   const handleView = (tenant: TenantListItem) => {
-    router.push(`/tenants/${tenant.schema_name}`);
+    router.push(`/admin/tenants/${tenant.schema_name}`);
   };
 
   const handleEdit = (tenant: TenantListItem) => {
