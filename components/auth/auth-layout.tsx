@@ -40,6 +40,7 @@ const featureSlides = [
     image: "/images/features/student-management.jpg",
     stats: { label: "Students Managed", value: "50,000+" },
     color: "from-blue-500 to-indigo-600",
+    chartType: "pie" as const,
   },
   {
     id: 2,
@@ -48,6 +49,7 @@ const featureSlides = [
     image: "/images/features/gradebook.jpg",
     stats: { label: "Grades Processed", value: "2M+" },
     color: "from-emerald-500 to-teal-600",
+    chartType: "bar" as const,
   },
   {
     id: 3,
@@ -56,6 +58,7 @@ const featureSlides = [
     image: "/images/features/attendance.jpg",
     stats: { label: "Accuracy Rate", value: "99.9%" },
     color: "from-violet-500 to-purple-600",
+    chartType: "line" as const,
   },
   {
     id: 4,
@@ -64,6 +67,7 @@ const featureSlides = [
     image: "/images/features/communication.jpg",
     stats: { label: "Messages Sent", value: "10M+" },
     color: "from-amber-500 to-orange-600",
+    chartType: "pie" as const,
   },
   {
     id: 5,
@@ -72,8 +76,281 @@ const featureSlides = [
     image: "/images/features/analytics.jpg",
     stats: { label: "Reports Generated", value: "500K+" },
     color: "from-rose-500 to-pink-600",
+    chartType: "bar" as const,
   },
 ];
+
+/* ── Animated Pie Chart ── */
+function AnimatedPieChart({ isActive, variant }: { isActive: boolean; variant: number }) {
+  const [animationProgress, setAnimationProgress] = useState(0);
+  
+  const segments = variant === 1 
+    ? [
+        { value: 45, color: "#3b82f6", label: "Active" },
+        { value: 30, color: "#6366f1", label: "New" },
+        { value: 25, color: "#8b5cf6", label: "Alumni" },
+      ]
+    : [
+        { value: 55, color: "#f59e0b", label: "Read" },
+        { value: 30, color: "#f97316", label: "Sent" },
+        { value: 15, color: "#ef4444", label: "Pending" },
+      ];
+
+  useEffect(() => {
+    if (!isActive) {
+      setAnimationProgress(0);
+      return;
+    }
+    const timer = setTimeout(() => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 2;
+        setAnimationProgress(Math.min(progress, 100));
+        if (progress >= 100) clearInterval(interval);
+      }, 20);
+      return () => clearInterval(interval);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isActive]);
+
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  let cumulativeOffset = 0;
+
+  return (
+    <div className={cn(
+      "transition-all duration-500",
+      isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+    )}>
+      <div className="flex items-center gap-6">
+        <div className="relative w-32 h-32">
+          <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
+            {segments.map((segment, i) => {
+              const segmentLength = (segment.value / 100) * circumference;
+              const animatedLength = (segmentLength * animationProgress) / 100;
+              const offset = cumulativeOffset;
+              cumulativeOffset += segmentLength;
+              
+              return (
+                <circle
+                  key={i}
+                  cx="60"
+                  cy="60"
+                  r={radius}
+                  fill="none"
+                  stroke={segment.color}
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  strokeDasharray={`${animatedLength} ${circumference - animatedLength}`}
+                  strokeDashoffset={-offset * (animationProgress / 100)}
+                  style={{ transition: "stroke-dasharray 0.3s ease-out" }}
+                />
+              );
+            })}
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xl font-bold text-white">100%</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          {segments.map((segment, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
+              <span className="text-sm text-white/70">{segment.label}</span>
+              <span className="text-sm font-semibold text-white">{segment.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Animated Bar Chart ── */
+function AnimatedBarChart({ isActive, variant }: { isActive: boolean; variant: number }) {
+  const [animationProgress, setAnimationProgress] = useState(0);
+  
+  const bars = variant === 1 
+    ? [
+        { value: 85, label: "A", color: "#10b981" },
+        { value: 72, label: "B", color: "#14b8a6" },
+        { value: 45, label: "C", color: "#06b6d4" },
+        { value: 28, label: "D", color: "#0ea5e9" },
+        { value: 12, label: "F", color: "#6366f1" },
+      ]
+    : [
+        { value: 92, label: "Jan", color: "#f43f5e" },
+        { value: 78, label: "Feb", color: "#ec4899" },
+        { value: 85, label: "Mar", color: "#d946ef" },
+        { value: 95, label: "Apr", color: "#a855f7" },
+        { value: 88, label: "May", color: "#8b5cf6" },
+      ];
+
+  useEffect(() => {
+    if (!isActive) {
+      setAnimationProgress(0);
+      return;
+    }
+    const timer = setTimeout(() => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 3;
+        setAnimationProgress(Math.min(progress, 100));
+        if (progress >= 100) clearInterval(interval);
+      }, 20);
+      return () => clearInterval(interval);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isActive]);
+
+  return (
+    <div className={cn(
+      "transition-all duration-500",
+      isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+    )}>
+      <div className="flex items-end gap-3 h-28">
+        {bars.map((bar, i) => (
+          <div key={i} className="flex flex-col items-center gap-2 flex-1">
+            <div className="w-full h-24 flex items-end">
+              <div
+                className="w-full rounded-t-lg transition-all duration-500"
+                style={{ 
+                  height: `${(bar.value * animationProgress) / 100}%`,
+                  backgroundColor: bar.color,
+                  transitionDelay: `${i * 80}ms`
+                }}
+              />
+            </div>
+            <span className="text-xs text-white/60">{bar.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Animated Line Chart ── */
+function AnimatedLineChart({ isActive }: { isActive: boolean }) {
+  const [animationProgress, setAnimationProgress] = useState(0);
+  
+  const points = [
+    { x: 0, y: 65 },
+    { x: 20, y: 78 },
+    { x: 40, y: 72 },
+    { x: 60, y: 88 },
+    { x: 80, y: 82 },
+    { x: 100, y: 95 },
+  ];
+
+  useEffect(() => {
+    if (!isActive) {
+      setAnimationProgress(0);
+      return;
+    }
+    const timer = setTimeout(() => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 2;
+        setAnimationProgress(Math.min(progress, 100));
+        if (progress >= 100) clearInterval(interval);
+      }, 20);
+      return () => clearInterval(interval);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isActive]);
+
+  const pathData = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * 2.4} ${100 - p.y}`)
+    .join(' ');
+
+  const totalLength = 400;
+  const visibleLength = (totalLength * animationProgress) / 100;
+
+  return (
+    <div className={cn(
+      "transition-all duration-500",
+      isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+    )}>
+      <div className="relative">
+        <svg viewBox="0 0 240 100" className="w-full h-28">
+          {/* Grid lines */}
+          {[0, 25, 50, 75, 100].map((y) => (
+            <line key={y} x1="0" y1={100 - y} x2="240" y2={100 - y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+          ))}
+          
+          {/* Gradient fill */}
+          <defs>
+            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          
+          {/* Area fill */}
+          <path
+            d={`${pathData} L 240 100 L 0 100 Z`}
+            fill="url(#lineGradient)"
+            style={{
+              clipPath: `inset(0 ${100 - animationProgress}% 0 0)`,
+            }}
+          />
+          
+          {/* Line */}
+          <path
+            d={pathData}
+            fill="none"
+            stroke="#8b5cf6"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={totalLength}
+            strokeDashoffset={totalLength - visibleLength}
+            style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
+          />
+          
+          {/* Points */}
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x * 2.4}
+              cy={100 - p.y}
+              r="5"
+              fill="#8b5cf6"
+              stroke="white"
+              strokeWidth="2"
+              style={{
+                opacity: animationProgress > (i * 100) / points.length ? 1 : 0,
+                transition: "opacity 0.3s ease-out",
+              }}
+            />
+          ))}
+        </svg>
+        
+        {/* Labels */}
+        <div className="flex justify-between mt-2 text-xs text-white/60">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <span key={day}>{day}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature Chart Selector ── */
+function FeatureChart({ chartType, isActive, slideId }: { chartType: "pie" | "bar" | "line"; isActive: boolean; slideId: number }) {
+  switch (chartType) {
+    case "pie":
+      return <AnimatedPieChart isActive={isActive} variant={slideId === 1 ? 1 : 2} />;
+    case "bar":
+      return <AnimatedBarChart isActive={isActive} variant={slideId === 2 ? 1 : 2} />;
+    case "line":
+      return <AnimatedLineChart isActive={isActive} />;
+    default:
+      return null;
+  }
+}
 
 /* ── Feature Image Component ── */
 function FeatureImage({ slide, isActive }: { slide: typeof featureSlides[0]; isActive: boolean }) {
@@ -172,30 +449,49 @@ function FeatureSlider() {
         </div>
 
         {/* Center content - Feature info */}
-        <div className="flex-1 flex flex-col justify-center max-w-lg">
-          <div 
-            key={activeIndex}
-            className="animate-fade-up"
-          >
-            {/* Feature stat */}
-            <div className="mb-4">
-              <span className={cn(
-                "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r",
-                currentSlide.color
-              )}>
-                {currentSlide.stats.label}: {currentSlide.stats.value}
-              </span>
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="flex items-center gap-8 lg:gap-12">
+            {/* Left side - Text content */}
+            <div className="flex-1 max-w-md">
+              <div 
+                key={activeIndex}
+                className="animate-fade-up"
+              >
+                {/* Feature stat */}
+                <div className="mb-4">
+                  <span className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r",
+                    currentSlide.color
+                  )}>
+                    {currentSlide.stats.label}: {currentSlide.stats.value}
+                  </span>
+                </div>
+
+                {/* Feature title */}
+                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4 tracking-tight">
+                  {currentSlide.title}
+                </h2>
+
+                {/* Feature description */}
+                <p className="text-base lg:text-lg text-white/70 leading-relaxed">
+                  {currentSlide.description}
+                </p>
+              </div>
             </div>
 
-            {/* Feature title */}
-            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
-              {currentSlide.title}
-            </h2>
-
-            {/* Feature description */}
-            <p className="text-lg text-white/70 leading-relaxed">
-              {currentSlide.description}
-            </p>
+            {/* Right side - Chart */}
+            <div className="hidden xl:block flex-shrink-0">
+              <div 
+                key={`chart-${activeIndex}`}
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+              >
+                <FeatureChart 
+                  chartType={currentSlide.chartType} 
+                  isActive={true}
+                  slideId={currentSlide.id}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
