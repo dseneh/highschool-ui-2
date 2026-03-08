@@ -665,15 +665,15 @@ export default function Page() {
           <div className="mt-12 pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} EzySchool. All rights reserved.</p>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-                <Link href="#">Twitter</Link>
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-                <Link href="#">LinkedIn</Link>
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-                <Link href="#">GitHub</Link>
-              </Button>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                Twitter
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                LinkedIn
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+                GitHub
+              </Link>
             </div>
           </div>
         </div>
