@@ -119,12 +119,12 @@ function AnimatedPieChart({ isActive, variant }: { isActive: boolean; variant: n
 
   return (
     <div className={cn(
-      "transition-all duration-500",
+      "w-64 transition-all duration-500",
       isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
     )}>
-      <div className="flex items-center gap-6">
-        <div className="relative w-32 h-32">
-          <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-28 h-28">
+          <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
             {segments.map((segment, i) => {
               const segmentLength = (segment.value / 100) * circumference;
@@ -150,15 +150,15 @@ function AnimatedPieChart({ isActive, variant }: { isActive: boolean; variant: n
             })}
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-bold text-white">100%</span>
+            <span className="text-lg font-bold text-white">100%</span>
           </div>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex justify-center gap-4">
           {segments.map((segment, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: segment.color }} />
-              <span className="text-sm text-white/70">{segment.label}</span>
-              <span className="text-sm font-semibold text-white">{segment.value}%</span>
+            <div key={i} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: segment.color }} />
+              <span className="text-xs text-white/70">{segment.label}</span>
+              <span className="text-xs font-semibold text-white">{segment.value}%</span>
             </div>
           ))}
         </div>
@@ -206,15 +206,15 @@ function AnimatedBarChart({ isActive, variant }: { isActive: boolean; variant: n
 
   return (
     <div className={cn(
-      "transition-all duration-500",
+      "w-64 transition-all duration-500",
       isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
     )}>
-      <div className="flex items-end gap-3 h-28">
+      <div className="flex items-end gap-2 h-32">
         {bars.map((bar, i) => (
           <div key={i} className="flex flex-col items-center gap-2 flex-1">
-            <div className="w-full h-24 flex items-end">
+            <div className="w-full h-28 flex items-end">
               <div
-                className="w-full rounded-t-lg transition-all duration-500"
+                className="w-full rounded-t-md transition-all duration-500"
                 style={{ 
                   height: `${(bar.value * animationProgress) / 100}%`,
                   backgroundColor: bar.color,
@@ -269,11 +269,11 @@ function AnimatedLineChart({ isActive }: { isActive: boolean }) {
 
   return (
     <div className={cn(
-      "transition-all duration-500",
+      "w-64 transition-all duration-500",
       isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
     )}>
       <div className="relative">
-        <svg viewBox="0 0 240 100" className="w-full h-28">
+        <svg viewBox="0 0 240 100" className="w-full h-32">
           {/* Grid lines */}
           {[0, 25, 50, 75, 100].map((y) => (
             <line key={y} x1="0" y1={100 - y} x2="240" y2={100 - y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
@@ -483,7 +483,7 @@ function FeatureSlider() {
             <div className="hidden xl:block flex-shrink-0">
               <div 
                 key={`chart-${activeIndex}`}
-                className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
                 <FeatureChart 
                   chartType={currentSlide.chartType} 
