@@ -83,6 +83,13 @@ export function useAxiosAuth() {
       // Check if auth headers should be skipped (for public endpoints)
       const skipAuth = config.skipAuth === true
 
+      // Always include tenant header when available, even if token fetch fails.
+      // This prevents tenant API calls from falling back to public schema.
+      const tenantId = tenant?.schema_name || authTenant?.workspace
+      if (!skipAuth && tenantId) {
+        headers['x-tenant'] = tenantId
+      }
+
       // Get access token from /api/auth/token endpoint with deduplication
       // This uses the Option 3 pattern - tokens stay in HttpOnly cookie
       // Skip if explicitly disabled via skipAuth flag
@@ -91,13 +98,6 @@ export function useAxiosAuth() {
           const accessToken = await getAccessToken()
           if (accessToken) {
             headers.Authorization = `Bearer ${accessToken}`
-
-            // Get tenant from store, fallback to auth workspace (for option 2: x-tenant header support)
-            // Priority: tenant.schema_name > authTenant?.workspace
-            const tenantId = tenant?.schema_name || authTenant?.workspace
-            if (tenantId) {
-              headers['x-tenant'] = tenantId
-            }
           }
         } catch (err) {
           // Silently fail - request will proceed without auth header

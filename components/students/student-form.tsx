@@ -1092,7 +1092,7 @@ function buildInitialForm(student?: StudentDto | null) {
     entry_date: student?.entry_date
       ? new Date(student.entry_date)
       : (new Date() as Date | undefined),
-    grade_level: student?.grade_level ?? "",
+    grade_level: student?.grade_level?.id ?? "",
     entry_as: student?.entry_as ?? "new",
     prev_id_number: student?.prev_id_number ?? "",
     enroll_student: false,
