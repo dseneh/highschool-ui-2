@@ -167,9 +167,23 @@ export function ViewConcessionDialog({
           ) : billingSummary ? (
             <div className="space-y-2">
               <div className="flex justify-between py-2">
-                <span className="text-sm text-muted-foreground">Total Bill:</span>
+                <span className="text-sm text-muted-foreground">Gross Total Bill:</span>
                 <span className="text-sm font-medium">
-                  {currencySymbol}{Number(billingSummary.total_bill || 0).toLocaleString()}
+                  {currencySymbol}{Number(billingSummary.gross_total_bill ?? billingSummary.total_bill ?? 0).toLocaleString()}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-muted-foreground">Concession:</span>
+                <span className="text-sm font-medium text-amber-600">
+                  -{currencySymbol}{Number(billingSummary.total_concession || 0).toLocaleString()}
+                </span>
+              </div>
+              <Separator />
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-muted-foreground">Net Total Bill:</span>
+                <span className="text-sm font-medium">
+                  {currencySymbol}{Number(billingSummary.net_total_bill ?? billingSummary.total_bill ?? 0).toLocaleString()}
                 </span>
               </div>
               <Separator />

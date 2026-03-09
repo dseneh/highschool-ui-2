@@ -3,7 +3,6 @@
 import * as React from "react";
 import { DialogBox } from "@/components/ui/dialog-box";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import type { TransactionDto } from "@/lib/api2/finance-types";
@@ -11,10 +10,11 @@ import { getStatusBadgeClass } from "@/lib/status-colors";
 import { formatCurrency, cn, getErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
 
-import { ArrowBigLeft, Pencil, Undo } from "lucide-react";
+import { Check, Pencil, Trash2, Undo, XCircle } from "lucide-react";
 import { useTransactionMutations } from "@/hooks/use-finance";
 import { toast } from "sonner";
 import { AuthButton } from "../auth/auth-button";
+import { getQueryClient } from "@/lib/query-client";
 
 interface TransactionDetailDialogProps {
   open: boolean;
@@ -23,6 +23,16 @@ interface TransactionDetailDialogProps {
   currency?: string;
   onEdit?: (tx: TransactionDto) => void;
 }
+
+interface TransactionActionButtonsProps {
+  tx: TransactionDto;
+  onEdit?: (tx: TransactionDto) => void;
+  onActionSuccess?: () => void;
+  compact?: boolean;
+  className?: string;
+}
+
+type PendingTxAction = "approve" | "cancel" | "reverse" | "delete" | "edit";
 
 function DetailRow({
   label,
@@ -47,33 +57,73 @@ function DetailRow({
   );
 }
 
-export function TransactionDetailDialog({
-  open,
-  onOpenChange,
-  transaction,
-  currency = "USD",
+export function TransactionActionButtons({
+  tx,
   onEdit,
-}: TransactionDetailDialogProps) {
-  const studentId = typeof transaction?.student === "string" ? transaction.student : transaction?.student?.id;
-  const { approve, cancel, update } = useTransactionMutations(studentId);
+  onActionSuccess,
+  compact = true,
+  className,
+}: TransactionActionButtonsProps) {
+  const studentId = typeof tx.student === "string" ? tx.student : tx.student?.id;
+  const { approve, cancel, update, remove } = useTransactionMutations(studentId);
   const [isApproving, setIsApproving] = React.useState(false);
   const [isCanceling, setIsCanceling] = React.useState(false);
   const [isReversing, setIsReversing] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState<PendingTxAction | null>(null);
 
-  if (!transaction) return null;
+  const queryClient = getQueryClient();
 
-  const tx = transaction;
-  const isExpense = tx.transaction_type?.type === "expense";
-  const isCanceled = tx.status === "canceled";
   const canApprove = tx.status === "pending";
   const canCancel = tx.status === "pending" || tx.status === "approved";
+  const canReverse = tx.status === "canceled";
+  const canDelete = tx.status === "pending" || tx.status === "canceled";
+  const canEdit = tx.status === "pending";
+
+  const actionMeta: Record<PendingTxAction, { title: string; description: string; actionLabel: string; actionVariant: "default" | "destructive" | "outline" }> = {
+    approve: {
+      title: "Approve Transaction?",
+      description: "This will mark the transaction as approved and apply it to balances.",
+      actionLabel: "Approve",
+      actionVariant: "default",
+    },
+    cancel: {
+      title: "Cancel Transaction?",
+      description: "This will mark the transaction as canceled.",
+      actionLabel: "Cancel",
+      actionVariant: "destructive",
+    },
+    reverse: {
+      title: "Reverse Transaction Cancellation?",
+      description: "This will move the transaction back to pending status.",
+      actionLabel: "Reverse",
+      actionVariant: "outline",
+    },
+    delete: {
+      title: "Delete Transaction?",
+      description: "This action cannot be undone.",
+      actionLabel: "Delete",
+      actionVariant: "destructive",
+    },
+    edit: {
+      title: "Edit Transaction?",
+      description: "You are about to open this transaction in edit mode.",
+      actionLabel: "Continue",
+      actionVariant: "default",
+    },
+  };
+
+  const invalidateAndNotify = async (message: string) => {
+    toast.success(message);
+    await queryClient.invalidateQueries({ queryKey: ["students"] });
+    onActionSuccess?.();
+  };
 
   const handleApprove = async () => {
     setIsApproving(true);
     try {
       await approve.mutateAsync(tx.id);
-      toast.success("Transaction approved successfully");
-      onOpenChange(false);
+      await invalidateAndNotify("Transaction approved successfully");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -85,8 +135,7 @@ export function TransactionDetailDialog({
     setIsCanceling(true);
     try {
       await cancel.mutateAsync(tx.id);
-      toast.success("Transaction canceled successfully");
-      onOpenChange(false);
+      await invalidateAndNotify("Transaction canceled successfully");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -97,18 +146,162 @@ export function TransactionDetailDialog({
   const handleReverse = async () => {
     setIsReversing(true);
     try {
-      await update.mutateAsync({
-        id: tx.id,
-        payload: { status: "pending" },
-      });
-      toast.success("Transaction reversed to pending status");
-      onOpenChange(false);
+      await update.mutateAsync({ id: tx.id, payload: { status: "pending" } });
+      await invalidateAndNotify("Transaction reversed to pending status");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
       setIsReversing(false);
     }
   };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await remove.mutateAsync(tx.id);
+      await invalidateAndNotify("Transaction deleted successfully");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const btnSize = compact ? "xs" : "sm";
+
+  const isActionLoading =
+    (pendingAction === "approve" && isApproving) ||
+    (pendingAction === "cancel" && isCanceling) ||
+    (pendingAction === "reverse" && isReversing) ||
+    (pendingAction === "delete" && isDeleting);
+
+  const executePendingAction = async () => {
+    if (!pendingAction) return;
+
+    if (pendingAction === "approve") {
+      await handleApprove();
+      setPendingAction(null);
+      return;
+    }
+    if (pendingAction === "cancel") {
+      await handleCancel();
+      setPendingAction(null);
+      return;
+    }
+    if (pendingAction === "reverse") {
+      await handleReverse();
+      setPendingAction(null);
+      return;
+    }
+    if (pendingAction === "delete") {
+      await handleDelete();
+      setPendingAction(null);
+      return;
+    }
+    if (pendingAction === "edit") {
+      onEdit?.(tx);
+      setPendingAction(null);
+    }
+  };
+
+  return (
+    <>
+      <div className={cn("flex items-center gap-1 sm:gap-2 flex-wrap", className)}>
+        {canApprove && (
+          <AuthButton
+            roles={["finance", "registrar", "accountant"]}
+            size={btnSize}
+            variant="success-outline"
+            onClick={() => setPendingAction("approve")}
+            tooltip="Approve"
+            icon={<Check size={16} />}
+          >
+            Approve
+          </AuthButton>
+        )}
+        {canCancel && (
+          <AuthButton
+            roles={["finance", "registrar", "accountant"]}
+            size={btnSize}
+            variant="destructive-outline"
+            onClick={() => setPendingAction("cancel")}
+            tooltip="Cancel"
+            icon={<XCircle size={16} />}
+          >
+            Cancel
+          </AuthButton>
+        )}
+        {canReverse && (
+          <AuthButton
+            roles={["finance", "registrar", "accountant"]}
+            size={btnSize}
+            variant="warning-outline"
+            onClick={() => setPendingAction("reverse")}
+            tooltip="Reverse"
+            icon={<Undo size={16} />}
+          >
+            Reverse
+          </AuthButton>
+        )}
+        {canDelete && (
+          <AuthButton
+            roles={["finance", "registrar", "accountant"]}
+            size={btnSize}
+            variant="ghost"
+            className="text-red-600 hover:text-red-700"
+            onClick={() => setPendingAction("delete")}
+            tooltip="Delete"
+            icon={<Trash2 size={16} />}
+          >
+            Delete
+          </AuthButton>
+        )}
+        {canEdit && (
+          <AuthButton
+            roles={["finance", "registrar", "accountant"]}
+            size={btnSize}
+            variant="ghost"
+            onClick={() => setPendingAction("edit")}
+            tooltip="Edit"
+            icon={<Pencil size={16} />}
+          >
+            Edit
+          </AuthButton>
+        )}
+      </div>
+
+      <DialogBox
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+        title={pendingAction ? actionMeta[pendingAction].title : "Confirm Action"}
+        description={pendingAction ? actionMeta[pendingAction].description : undefined}
+        actionLabel={pendingAction ? actionMeta[pendingAction].actionLabel : undefined}
+        actionVariant={pendingAction ? actionMeta[pendingAction].actionVariant : "default"}
+        actionLoading={isActionLoading}
+        actionLoadingText="Processing..."
+        onAction={() => {
+          void executePendingAction();
+        }}
+        cancelLabel="Cancel"
+      />
+    </>
+  );
+}
+
+export function TransactionDetailDialog({
+  open,
+  onOpenChange,
+  transaction,
+  currency = "USD",
+  onEdit,
+}: TransactionDetailDialogProps) {
+  if (!transaction) return null;
+
+  const tx = transaction;
+  const isExpense = tx.transaction_type?.type === "expense";
+  const isCanceled = tx.status === "canceled";
 
   return (
     <DialogBox
@@ -156,63 +349,19 @@ export function TransactionDetailDialog({
       }
       cancelLabel={false}
       footer={
-        (canApprove || canCancel || tx.status === "pending" || tx.status === "canceled") ? (
+        (tx.status === "pending" || tx.status === "approved" || tx.status === "canceled") ? (
             <>
             <Separator />
-          <div className="flex items-center justify-between gap-2 w-full">
-            <div className="flex items-center gap-2">
-              {canApprove && (
-                <AuthButton
-                  roles={["finance", "registrar", "accountant"]}
-                  size="sm"
-                  variant="success-outline"
-                  onClick={handleApprove}
-                  loading={isApproving}
-                  loadingText="Approving…"
-                >
-                  Approve Transaction
-                </AuthButton>
-              )}
-              {canCancel && (
-                <AuthButton
-                  roles={["finance", "registrar", "accountant"]}
-                  size="sm"
-                  variant="destructive-outline"
-                  onClick={handleCancel}
-                  loading={isCanceling}
-                  loadingText="Canceling…"
-                >
-                  Cancel Transaction
-                </AuthButton>
-              )}
-              {tx.status === "canceled" && (
-                <AuthButton
-                  roles={["finance", "registrar", "accountant"]}
-                  size="sm"
-                  variant="warning-outline"
-                  onClick={handleReverse}
-                  loading={isReversing}
-                  loadingText="Reversing…"
-                  icon={<Undo size={16} />}
-                >
-                  Reverse Cancellation
-                </AuthButton>
-              )}
-            </div>
-            {tx.status === "pending" && (
-              <AuthButton
-                roles={["finance", "registrar", "accountant"]}
-                size="sm"
-                variant="ghost"
-                icon={<Pencil size={16} />}
-                onClick={() => {
-                  onOpenChange(false);
-                  onEdit?.(tx);
-                }}
-              >
-                Edit
-              </AuthButton>
-            )}
+          <div className="flex items-center justify-end gap-2 w-full">
+            <TransactionActionButtons
+              tx={tx}
+              compact={false}
+              onActionSuccess={() => onOpenChange(false)}
+              onEdit={(txToEdit) => {
+                onOpenChange(false);
+                onEdit?.(txToEdit);
+              }}
+            />
           </div>
           </>
         ) : undefined

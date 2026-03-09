@@ -2,16 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -25,11 +17,11 @@ import {
   EmptyStateDescription,
 } from "@/components/ui/empty-state"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Coins01Icon } from "@hugeicons/core-free-icons"
+import { Coins01Icon, ArrowDown01Icon, Invoice01Icon } from "@hugeicons/core-free-icons"
 import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import apiClient from "@/lib/api2/client"
 import { toast } from "sonner"
-import { getErrorMessage } from "@/lib/utils"
+import { getErrorMessage, cn } from "@/lib/utils"
 import { Pencil, Trash } from "lucide-react"
 import { AuthButton } from "../auth/auth-button"
 
@@ -42,8 +34,8 @@ interface ConcessionsTabProps {
   onDeleteSuccess?: () => void
 }
 
-// Mobile card component
-function ConcessionMobileCard({
+// Concession Card Component
+function ConcessionCard({
   concession,
   currencySymbol,
   onEdit,
@@ -55,66 +47,81 @@ function ConcessionMobileCard({
   onDelete?: (concession: StudentConcessionDto) => void
 }) {
   return (
-    <div className="p-4 border rounded-lg space-y-3 bg-card">
-      <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1 flex-1">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="capitalize text-xs">
-              {concession.concession_type}
-            </Badge>
-            <Badge
-              variant={concession.active ? "default" : "secondary"}
-              className="capitalize text-xs"
-            >
-              {concession.active ? "Active" : "Inactive"}
-            </Badge>
+    <Card className="overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-start gap-3 flex-1">
+            <div className="size-10 shrink-0 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <HugeiconsIcon icon={ArrowDown01Icon} className="size-5 text-purple-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h4 className="font-semibold text-base capitalize">
+                  {concession.target.replace(/_/g, " ")}
+                </h4>
+                <Badge
+                  variant={concession.active ? "default" : "secondary"}
+                  className="text-xs"
+                >
+                  {concession.active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline" className="capitalize text-xs">
+                  {concession.concession_type}
+                </Badge>
+                <span>•</span>
+                <span className="font-medium">
+                  {concession.concession_type === "percentage"
+                    ? `${concession.value}%`
+                    : `${currencySymbol}${Number(concession.value).toLocaleString()}`}
+                </span>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {concession.target.replace(/_/g, " ")} • Target
-          </p>
+          
+          <div className="flex items-center gap-1 shrink-0">
+            <AuthButton
+              disable
+              variant="ghost"
+              size="sm"
+              icon={<Pencil className="size-4" />}
+              onClick={() => onEdit?.(concession)}
+              roles={["finance", "registrar", "accountant"]}
+              className="h-8 w-8 p-0"
+            />
+            <AuthButton
+              disable
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+              icon={<Trash className="size-4" />}
+              onClick={() => onDelete?.(concession)}
+              roles={["finance", "registrar", "accountant"]}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Pencil className="size-4" />}
-            onClick={() => onEdit?.(concession)}
-            className="h-8 w-8"
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
-            icon={<Trash className="size-4" />}
-            onClick={() => onDelete?.(concession)}
-          />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
+              Concession Amount
+            </p>
+            <p className="text-2xl font-bold text-purple-600">
+              {currencySymbol}{Number(concession.amount).toLocaleString()}
+            </p>
+          </div>
+          {concession.notes && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
+                Notes
+              </p>
+              <p className="text-sm text-foreground">{concession.notes}</p>
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Value</p>
-          <p className="font-semibold text-sm">
-            {concession.concession_type === "percentage"
-              ? `${concession.value}%`
-              : `${currencySymbol}${Number(concession.value).toLocaleString()}`}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Amount</p>
-          <p className="font-bold text-sm text-purple-600">
-            {currencySymbol}{Number(concession.amount).toLocaleString()}
-          </p>
-        </div>
-      </div>
-
-      {concession.notes && (
-        <div className="pt-2 border-t">
-          <p className="text-xs text-muted-foreground mb-1">Notes</p>
-          <p className="text-sm text-foreground">{concession.notes}</p>
-        </div>
-      )}
-    </div>
+    </Card>
   )
 }
 
@@ -154,15 +161,11 @@ export function ConcessionsTab({
   }
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <Card key={i} className="h-40 animate-pulse" />
+        ))}
+      </div>
     )
   }
 
@@ -188,96 +191,17 @@ export function ConcessionsTab({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Applied Concessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Desktop view - Table */}
-          <div className="overflow-x-auto hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {concessions.map((concession) => (
-                  <TableRow key={concession.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {concession.concession_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="capitalize text-sm">
-                      {concession.target.replace(/_/g, " ")}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {concession.concession_type === "percentage"
-                        ? `${concession.value}%`
-                        : `${currencySymbol}${Number(concession.value).toLocaleString()}`}
-                    </TableCell>
-                    <TableCell className="font-semibold text-purple-600">
-                      {currencySymbol}{Number(concession.amount).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={concession.active ? "default" : "secondary"}
-                        className="capitalize"
-                      >
-                        {concession.active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {concession.notes || "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <AuthButton
-                          disable
-                          variant="ghost"
-                          size="sm"
-                          icon={<Pencil className="size-4" />}
-                          onClick={() => onEdit?.(concession)}
-                          roles={["finance", "registrar", "accountant"]}
-                        />
-                        <AuthButton
-                        disable
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          icon={<Trash className="size-4" />}
-                          onClick={() => handleDeleteClick(concession)}
-                          roles={["finance", "registrar", "accountant"]}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile view - Card list */}
-          <div className="sm:hidden space-y-3">
-            {concessions.map((concession) => (
-              <ConcessionMobileCard
-                key={concession.id}
-                concession={concession}
-                currencySymbol={currencySymbol}
-                onEdit={onEdit}
-                onDelete={() => handleDeleteClick(concession)}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {concessions.map((concession) => (
+          <ConcessionCard
+            key={concession.id}
+            concession={concession}
+            currencySymbol={currencySymbol}
+            onEdit={onEdit}
+            onDelete={() => handleDeleteClick(concession)}
+          />
+        ))}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

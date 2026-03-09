@@ -1,19 +1,18 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkCircle01Icon,
-  AlertCircleIcon,
-  TimeQuarterPassIcon,
-  CreditCardIcon,
   Invoice01Icon,
+  Wallet01Icon,
+  MoneyReceive01Icon,
+  MoneyNotFound01Icon,
 } from "@hugeicons/core-free-icons"
 import type { StudentDto } from "@/lib/api2/student-types"
 import { cn } from "@/lib/utils"
+import {CircleCheck} from 'lucide-react';
 
 interface StudentFinancialOverviewProps {
   student: StudentDto
@@ -33,155 +32,87 @@ export function StudentFinancialOverview({ student }: StudentFinancialOverviewPr
 
   const currency = billing.currency || '$'
   const paymentStatus = billing.payment_status
+  const grossTotalBill = billing.gross_total_bill ?? billing.total_bill
+  const totalConcession = billing.total_concession ?? 0
+  const netTotalBill = billing.net_total_bill ?? billing.total_bill
+  const balanceDue = billing.balance
 
-  const billingItems = [
-    { label: "Tuition", amount: billing.tuition },
-    { label: "Other Fees", amount: billing.total_fees },
+  const isPaidInFull = paymentStatus.is_paid_in_full
+
+  const statCards = [
+    {
+      label: "Gross Total Bill",
+      amount: grossTotalBill,
+      icon: Invoice01Icon,
+      iconColor: "text-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+    },
+    {
+      label: "Concession",
+      amount: totalConcession,
+      icon: MoneyReceive01Icon,
+      iconColor: "text-amber-500",
+      bgColor: "bg-amber-50 dark:bg-amber-950/20",
+      isNegative: true,
+    },
+    {
+      label: "Net Bill",
+      amount: netTotalBill,
+      icon: Wallet01Icon,
+      iconColor: "text-purple-500",
+      bgColor: "bg-purple-50 dark:bg-purple-950/20",
+    },
+    {
+      label: "Balance Due",
+      amount: balanceDue,
+      icon: MoneyNotFound01Icon,
+      iconColor: balanceDue > 0 ? "text-destructive" : "text-emerald-500",
+      bgColor: balanceDue > 0 
+        ? "bg-red-50 dark:bg-red-950/20" 
+        : "bg-emerald-50 dark:bg-emerald-950/20",
+    },
   ]
 
-  const getPaymentStatusConfig = () => {
-    if (paymentStatus.is_paid_in_full) {
-      return {
-        label: "Paid in Full",
-        variant: "default" as const,
-        className: "bg-emerald-500 hover:bg-emerald-600 text-white",
-        icon: CheckmarkCircle01Icon,
-      }
-    }
-    if (!paymentStatus.is_on_time) {
-      return {
-        label: "Payment Overdue",
-        variant: "destructive" as const,
-        className: "",
-        icon: AlertCircleIcon,
-      }
-    }
-    return {
-      label: "On Track",
-      variant: "default" as const,
-      className: "bg-blue-500 hover:bg-blue-600 text-white",
-      icon: TimeQuarterPassIcon,
-    }
-  }
-
-  const statusConfig = getPaymentStatusConfig()
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-      {/* Payment Status Card */}
-      <div className="rounded-xl border border-border bg-card p-5 h-full flex flex-col justify-between">
-        <div className="flex items-center justify-between flex-wrap">
-        <div className="flex items-center gap-2 text-muted-foreground fmb-4">
-          <HugeiconsIcon icon={CreditCardIcon} className="size-5" />
-          <span className="font-medium">Payment Status</span>
-        </div>
-         <div className="flex justify-center">
-            <Badge className={cn("px-4 py-1.5 text-sm gap-2 rounded-full", statusConfig.className)}>
-              <HugeiconsIcon icon={statusConfig.icon} className="size-4" />
-              {statusConfig.label}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="flex-1 flex flex-col justify-center space-y-2">
-          <div className="grid grid-cols-3 gap-4 text-center p-4 rounded-lg bg-muted/30">
-            <div>
-              <p className="text-2xl font-bold">
-                {Math.round(paymentStatus.paid_percentage)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Paid</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-amber-600">
-                {Math.round(paymentStatus.expected_payment_percentage - paymentStatus.paid_percentage > 0 ? paymentStatus.expected_payment_percentage - paymentStatus.paid_percentage : 0)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Behind</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-destructive">
-                {Math.round(paymentStatus.overdue_percentage)}%
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Overdue</p>
+    <div className="space-y-4">
+      {/* Success Alert for Paid in Full */}
+      {isPaidInFull && (
+        <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 flex items-center gap-2">
+            <CircleCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="text-emerald-800 dark:text-emerald-200 font-medium text-sm">
+              Payment Complete! All fees have been paid in full.
             </div>
           </div>
+      )}
 
-          <div className="space-y-3 pt-2">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">Overall Progress</span>
-                <span className="text-xs font-semibold">
-                  {Math.round(paymentStatus.paid_percentage)}%
-                </span>
+      {/* Financial Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, index) => (
+          <Card key={index} className="p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  {stat.label}
+                </p>
+                <p className={cn(
+                  "text-2xl font-bold tracking-tight",
+                  stat.label === "Balance Due" && balanceDue === 0 && "text-emerald-600"
+                )}>
+                  {currency}{Math.abs(stat.amount).toLocaleString()}
+                </p>
               </div>
-              <Progress value={paymentStatus.paid_percentage} className="h-2" />
-            </div>
-            
-            {(paymentStatus.overdue_count > 0 || paymentStatus.next_due_date) && (
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm justify-center pt-2">
-                {paymentStatus.overdue_count > 0 && (
-                  <span className="text-destructive font-medium flex items-center gap-1">
-                    <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5" />
-                    {paymentStatus.overdue_count} Overdue
-                  </span>
-                )}
-                {paymentStatus.next_due_date && (
-                  <span className="text-muted-foreground">
-                    Next Due: <span className="text-foreground font-medium">{new Date(paymentStatus.next_due_date).toLocaleDateString("en-US", { month: "short", day: "numeric"})}</span>
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Bill Breakdown */}
-      <div className="rounded-xl border border-border bg-card p-5 h-full flex flex-col">
-        <div className="flex items-center gap-2 text-muted-foreground mb-6">
-          <HugeiconsIcon icon={Invoice01Icon} className="size-5" />
-          <span className="font-medium">Financial Summary</span>
-        </div>
-
-        <div className="flex-1 space-y-6">
-           {/* <div className="text-center py-2">
-             <p className="text-sm text-muted-foreground mb-1">Total Outstanding Balance</p>
-              <p className={cn(
-                "text-4xl font-bold tracking-tight",
-                billing.balance > 0 ? "text-destructive" : "text-emerald-600"
+              <div className={cn(
+                "rounded-full p-2.5",
+                stat.bgColor
               )}>
-                {currency}{billing.balance.toLocaleString()}
-              </p>
-           </div> */}
-
-           <Separator />
-
-          <div className="space-y-3">
-            {/* Billing Items */}
-             {billingItems.map((item, index) => (
-              <div key={index} className="flex justify-between items-center py-1">
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className="text-sm font-medium">
-                  {currency}{item.amount.toLocaleString()}
-                </span>
+                <HugeiconsIcon 
+                  icon={stat.icon} 
+                  className={cn("size-5", stat.iconColor)} 
+                />
               </div>
-            ))}
-            
-            <Separator className="my-2" />
-            
-             <div className="flex justify-between items-center py-1">
-                <span className="text-sm font-medium">Total Billed</span>
-                <span className="text-sm font-bold">
-                  {currency}{billing.total_bill.toLocaleString()}
-                </span>
-              </div>
-             <div className="flex justify-between items-center py-1">
-                <span className="text-sm font-medium">Total Paid</span>
-                <span className="text-sm font-bold text-emerald-600">
-                  {currency}{billing.paid.toLocaleString()}
-                </span>
-              </div>
-          </div>
-        </div>
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   )

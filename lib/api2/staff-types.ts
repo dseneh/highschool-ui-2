@@ -65,6 +65,9 @@ export interface StaffDto {
     billing_summary: {
       total_fees: number;
       tuition: number;
+      gross_total_bill?: number;
+      net_total_bill?: number;
+      total_concession?: number;
       total_bill: number;
       paid: number;
       balance: number;
@@ -109,6 +112,9 @@ export interface StaffDto {
     billing_summary: {
       total_fees: number;
       tuition: number;
+      gross_total_bill?: number;
+      net_total_bill?: number;
+      total_concession?: number;
       total_bill: number;
       paid: number;
       balance: number;

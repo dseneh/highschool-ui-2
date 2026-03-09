@@ -31,15 +31,14 @@ import {
   Cancel01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
-  MoneyReceiveSquareIcon,
-  RefreshIcon
+  Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import type { CreateTransactionCommand, TransactionDto } from "@/lib/api2/finance-types"
 import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import { TuitionPaymentDialog } from "@/components/finance/tuition-payment-dialog"
-import { TransactionDetailDialog } from "@/components/finance/transaction-detail-dialog"
+import { TransactionActionButtons, TransactionDetailDialog } from "@/components/finance/transaction-detail-dialog"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils"
 import { getQueryClient } from "@/lib/query-client"
@@ -48,6 +47,7 @@ import PageLayout from "@/components/dashboard/page-layout"
 import { AddConcessionDialog } from "@/components/students/add-concession-dialog"
 import { ConcessionsTab } from "@/components/students/concessions-tab"
 import { AuthButton } from "@/components/auth/auth-button"
+import { CircleCheck } from "lucide-react"
 
 /* ------------------------------------------------------------------ */
 /*  Skeleton                                                           */
@@ -63,6 +63,7 @@ function BillingSkeleton() {
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Skeleton className="lg:col-span-3 h-96 rounded-xl" />
@@ -71,24 +72,6 @@ function BillingSkeleton() {
       </div>
     </PageContent>
   )
-}
-
-/* ------------------------------------------------------------------ */
-/*  Transaction status icon                                            */
-/* ------------------------------------------------------------------ */
-
-function TransactionStatusIcon({ status }: { status: string }) {
-  switch (status) {
-    case "approved":
-      return <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-green-600" />
-    case "pending":
-      return <HugeiconsIcon icon={Clock01Icon} className="size-4 text-yellow-600" />
-    case "rejected":
-    case "canceled":
-      return <HugeiconsIcon icon={Cancel01Icon} className="size-4 text-red-600" />
-    default:
-      return <HugeiconsIcon icon={Clock01Icon} className="size-4 text-muted-foreground" />
-  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -194,18 +177,6 @@ export default function StudentBillingPage() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  const statusLabel = paymentStatus?.is_paid_in_full
-    ? "Paid in Full"
-    : paymentStatus?.is_on_time
-    ? "On Track"
-    : "Overdue"
-
-  const statusVariant = paymentStatus?.is_paid_in_full
-    ? "completed"
-    : paymentStatus?.is_on_time
-    ? "active"
-    : "rejected"
-
   // Handle refresh
   const handleRefresh = () => {
     void refetchBills()
@@ -220,6 +191,17 @@ export default function StudentBillingPage() {
       setIsCreatingTransaction(true)
       await post("/transactions/", payload)
       setShowPaymentDialog(false)
+
+      // Invalidate all related student billing caches so summary/payment plan/payment status
+      // are recalculated from backend immediately after posting a payment.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["students", student?.id, "bills"] }),
+        queryClient.invalidateQueries({ queryKey: ["students", student?.id, "transactions"] }),
+        queryClient.invalidateQueries({ queryKey: ["students", student?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["students", subdomain, student?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["concessions", "academicYear", academicYearId] }),
+      ])
+
       toast.success("Payment recorded successfully")
       void refetchBills()
       void refetchTransactions()
@@ -314,6 +296,20 @@ export default function StudentBillingPage() {
     toast.info("Edit functionality coming soon")
   }
 
+  const handleTransactionActionSuccess = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id, "bills"] }),
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id, "transactions"] }),
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id] }),
+      queryClient.invalidateQueries({ queryKey: ["students", subdomain, student?.id] }),
+    ])
+
+    void refetchBills()
+    void refetchTransactions()
+  }
+
+  const disableButtons = !student?.is_enrolled || !balance || balance <= 0 || loading || fetching
+
   return (
     <PageLayout
     title="Billing & Payments" 
@@ -325,7 +321,7 @@ export default function StudentBillingPage() {
             variant="default"
             size="sm"
             onClick={() => setShowPaymentDialog(true)}
-            disabled={!student?.is_enrolled || !balance || balance <= 0 || loading || fetching}
+            disabled={disableButtons}
             icon={<HugeiconsIcon icon={Coins01Icon} className="size-4" />}
           >
             <span className="hidden sm:inline">Make Payment</span>
@@ -338,22 +334,24 @@ export default function StudentBillingPage() {
               setEditingConcession(null)
               setShowConcessionDialog(true)
             }}
-            disabled={!student?.is_enrolled || loading || fetching}
+            disabled={disableButtons}
           >
             <span className="hidden sm:inline">Add Concession</span>
             <span className="sm:hidden">Concession</span>
           </AuthButton>
-          <Button
+          {/* <Button
             variant="outline"
             size="icon-sm"
             onClick={handleRefresh}
             icon={<HugeiconsIcon icon={RefreshIcon} className="size-4" />}
             loading={loading || fetching}
             title="Refresh billing data"
-          />
+          /> */}
       </>
     }
     loading={loading}
+    fetching={fetching}
+    refreshAction={handleRefresh}
     skeleton={<BillingSkeleton />}
     emptyState={!student}
     globalChildren={
@@ -406,35 +404,30 @@ export default function StudentBillingPage() {
     }
     >
       <div className="space-y-4">
+        {/* Success Alert for Paid in Full */}
+        {paymentStatus?.is_paid_in_full && (
+          <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 flex items-center gap-2">
+            <CircleCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="text-emerald-800 dark:text-emerald-200 font-medium text-sm">
+              Payment Complete! All fees have been paid in full.
+            </div>
+          </div>
+        )}
+
         {/* ── Summary Cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Total Bill */}
+          {/* Gross Total Bill */}
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="size-10 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
                 <HugeiconsIcon icon={Invoice01Icon} className="size-5 text-blue-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Total Bill</p>
-                <p className="text-lg font-bold truncate">{currency}{totalBill.toLocaleString()}</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Gross Total</p>
+                <p className="text-lg font-bold truncate">{currency}{grossTotalBill.toLocaleString()}</p>
               </div>
             </div>
           </Card>
-
-          {/* Total Paid */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 shrink-0 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={MoneyReceiveSquareIcon} className="size-5 text-green-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Paid</p>
-                <p className="text-lg font-bold text-green-600 truncate">{currency}{paid.toLocaleString()}</p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Balance */}
 
           {/* Concession */}
           <Card className="p-4">
@@ -444,11 +437,41 @@ export default function StudentBillingPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Concession</p>
-                <p className="text-lg font-bold text-purple-600 truncate">{currency}{totalConcession.toLocaleString()}</p>
+                <p className="text-lg font-bold text-purple-600 truncate">
+                  {currency}{totalConcession.toLocaleString()}
+                </p>
               </div>
             </div>
           </Card>
-           <Card className="p-4">
+
+          {/* Net Bill */}
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 shrink-0 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <HugeiconsIcon icon={Wallet01Icon} className="size-5 text-green-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Net Bill</p>
+                <p className="text-lg font-bold text-green-600 truncate">{currency}{netTotalBill.toLocaleString()}</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Total Paid */}
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Total Paid</p>
+                <p className="text-lg font-bold text-emerald-600 truncate">{currency}{paid.toLocaleString()}</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Balance Due */}
+          <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "size-10 shrink-0 rounded-lg flex items-center justify-center",
@@ -460,42 +483,10 @@ export default function StudentBillingPage() {
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Balance</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Balance Due</p>
                 <p className={cn("text-lg font-bold truncate", balance > 0 ? "text-red-600" : "text-green-600")}>
                   {currency}{balance.toLocaleString()}
                 </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Payment Status */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "size-10 shrink-0 rounded-lg flex items-center justify-center",
-                paymentStatus?.is_paid_in_full
-                  ? "bg-green-500/10"
-                  : paymentStatus?.is_on_time
-                  ? "bg-blue-500/10"
-                  : "bg-red-500/10"
-              )}>
-                <HugeiconsIcon
-                  icon={Coins01Icon}
-                  className={cn(
-                    "size-5",
-                    paymentStatus?.is_paid_in_full
-                      ? "text-green-600"
-                      : paymentStatus?.is_on_time
-                      ? "text-blue-600"
-                      : "text-red-600"
-                  )}
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Status</p>
-                <Badge className={cn("text-xs mt-0.5", getStatusBadgeClass(statusVariant))}>
-                  {statusLabel}
-                </Badge>
               </div>
             </div>
           </Card>
@@ -674,34 +665,29 @@ export default function StudentBillingPage() {
           </TabsContent>
 
           <TabsContent value="payments">
-            <Card className="p-0 gap-0">
-              <div className="p-4 pb-2">
-                <h3 className="text-lg font-semibold">Payment History</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {transactions?.length ?? 0} transaction{(transactions?.length ?? 0) !== 1 && "s"}
-                </p>
+            {transactionsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-32 animate-pulse" />
+                ))}
               </div>
-              <CardContent className="p-4 pt-0">
-                {transactionsLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <Skeleton key={i} className="h-14 w-full rounded-lg" />
-                    ))}
-                  </div>
-                ) : sortedTransactions.length > 0 ? (
-                  <div className="space-y-1">
-                    
-                    {sortedTransactions.map((tx) => (
-                      <TransactionRow 
-                        key={tx.id} 
-                        tx={tx as TransactionDto} 
-                        currency={tx.currency?.symbol || currency}
-                        onClick={setSelectedTransaction}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState className="h-48 border-none p-4">
+            ) : sortedTransactions.length > 0 ? (
+              <div className="space-y-4">
+                {sortedTransactions.map((tx) => (
+                  <TransactionCard 
+                    key={tx.id} 
+                    tx={tx as TransactionDto} 
+                    currency={tx.currency?.symbol || currency}
+                    onClick={setSelectedTransaction}
+                    onEdit={handleTransactionEdit}
+                    onActionSuccess={handleTransactionActionSuccess}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-6">
+                  <EmptyState className="h-48 border-none p-0">
                     <EmptyStateIcon>
                       <HugeiconsIcon icon={CreditCardIcon} />
                     </EmptyStateIcon>
@@ -710,9 +696,9 @@ export default function StudentBillingPage() {
                       Payments will show up here once recorded.
                     </EmptyStateDescription>
                   </EmptyState>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="concessions">
@@ -737,50 +723,116 @@ export default function StudentBillingPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Transaction Row                                                    */
+/*  Transaction Card                                                   */
 /* ------------------------------------------------------------------ */
 
-function TransactionRow({ tx, currency, onClick }: { tx: TransactionDto; currency: string; onClick?: (tx: TransactionDto) => void }) {
+function TransactionCard({
+  tx,
+  currency,
+  onClick,
+  onEdit,
+  onActionSuccess,
+}: {
+  tx: TransactionDto
+  currency: string
+  onClick?: (tx: TransactionDto) => void
+  onEdit?: (tx: TransactionDto) => void
+  onActionSuccess?: () => void
+}) {
   const dateLabel = new Date(tx.date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   })
 
+  const statusConfig = {
+    approved: {
+      icon: CheckmarkCircle02Icon,
+      bgColor: "bg-green-500/10",
+      iconColor: "text-green-600",
+      label: "Approved",
+    },
+    pending: {
+      icon: Clock01Icon,
+      bgColor: "bg-yellow-500/10",
+      iconColor: "text-yellow-600",
+      label: "Pending",
+    },
+    rejected: {
+      icon: Cancel01Icon,
+      bgColor: "bg-red-500/10",
+      iconColor: "text-red-600",
+      label: "Rejected",
+    },
+    canceled: {
+      icon: Cancel01Icon,
+      bgColor: "bg-red-500/10",
+      iconColor: "text-red-600",
+      label: "Canceled",
+    },
+  }[tx.status] || {
+    icon: Clock01Icon,
+    bgColor: "bg-muted/10",
+    iconColor: "text-muted-foreground",
+    label: tx.status,
+  }
+
   return (
-    <div 
-      className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+    <Card 
+      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onClick?.(tx)}
     >
-      <div className={cn(
-        "size-9 rounded-lg shrink-0 flex items-center justify-center",
-        tx.status === "approved"
-          ? "bg-green-500/10"
-          : tx.status === "pending"
-          ? "bg-yellow-500/10"
-          : "bg-red-500/10"
-      )}>
-        <TransactionStatusIcon status={tx.status} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium truncate">
-            {tx.transaction_type?.name || "Payment"}
-          </p>
-          <span className="text-sm font-semibold text-green-600 tabular-nums shrink-0">
-            {currency}{tx.amount.toLocaleString()}
-          </span>
+      <div className="p-5">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1">
+            <div className={cn("size-10 shrink-0 rounded-lg flex items-center justify-center", statusConfig.bgColor)}>
+              <HugeiconsIcon icon={statusConfig.icon} className={cn("size-5", statusConfig.iconColor)} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-base mb-1">
+                {tx.transaction_type?.name || "Payment"}
+              </h4>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                <span>{dateLabel}</span>
+                {tx.payment_method?.name && (
+                  <>
+                    <span>•</span>
+                    <span>{tx.payment_method.name}</span>
+                  </>
+                )}
+                {tx.reference && (
+                  <>
+                    <span>•</span>
+                    <span className="font-mono text-xs">{tx.reference}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-left sm:text-right shrink-0">
+            <Badge className={cn("mb-2", getStatusBadgeClass(tx.status))}>
+              {statusConfig.label}
+            </Badge>
+            <p className="text-2xl font-bold text-green-600">
+              {currency}{tx.amount.toLocaleString()}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-[11px] text-muted-foreground truncate">
-            {dateLabel}
-            {tx.payment_method?.name ? ` · ${tx.payment_method.name}` : ""}
-          </span>
-          <Badge className={cn("text-[10px] h-4 px-1.5", getStatusBadgeClass(tx.status))}>
-            {tx.status}
-          </Badge>
+
+        <div
+          className="mt-4 pt-3 border-t flex items-center justify-start sm:justify-end"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <TransactionActionButtons
+            tx={tx}
+            compact={false}
+            className="w-full sm:w-auto"
+            onEdit={onEdit}
+            onActionSuccess={onActionSuccess}
+          />
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
