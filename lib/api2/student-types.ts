@@ -57,7 +57,11 @@ export interface StudentDto {
   country: string | null;
   status: string;
   entry_date: string | null;
-  grade_level: string;
+  grade_level: {
+    id: string;
+    name: string;
+    level?: number;
+  } | null;
   date_of_graduation: string | null;
   place_of_birth: string | null;
   photo: string | null;

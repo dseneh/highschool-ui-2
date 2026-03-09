@@ -562,7 +562,7 @@ function SidebarUserMenu() {
           >
             <Avatar className="size-7 rounded-full">
               <AvatarImage
-                src={(user?.avatar as string) || "/ln.png"}
+                src={(user?.avatar as string)}
                 alt={displayName}
               />
               <AvatarFallback className="rounded-full text-xs bg-primary/10 text-primary font-semibold">
@@ -591,7 +591,7 @@ function SidebarUserMenu() {
           <div className="flex items-center gap-2 px-2 py-1.5">
             <Avatar className="size-8 rounded-full">
               <AvatarImage
-                src={(user?.avatar as string) || "/ln.png"}
+                src={(user?.avatar as string)}
                 alt={displayName}
               />
               <AvatarFallback className="rounded-full text-xs bg-primary/10 text-primary font-semibold">

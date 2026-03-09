@@ -24,8 +24,8 @@ export function EmptyStudents({ onAddStudent }: EmptyStudentsProps) {
         information, upload photos, and manage their enrollment.
       </EmptyStateDescription>
       {onAddStudent && (
-        <EmptyStateAction>
-          <Button onClick={onAddStudent}>Add Your First Student</Button>
+        <EmptyStateAction onClick={onAddStudent}>
+          Add Your First Student
         </EmptyStateAction>
       )}
     </EmptyState>

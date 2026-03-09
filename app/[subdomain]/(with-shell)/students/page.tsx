@@ -166,17 +166,19 @@ export default function StudentsPage() {
         error={error}
         noData={isEmpty}
         skeleton={<StudentTableSkeleton />}
-        emptyState={<EmptyStudents />}
+        emptyState={<EmptyStudents onAddStudent={() => setShowCreateModal(true)} />}
       >
         {/* Stats Cards */}
         {!isEmpty && !isLoading && <StudentStatsCards items={stats} />}
+        {!isEmpty && !isLoading && (
 
-        <StudentTable
+          <StudentTable
           data={studentsList}
           onEnroll={handleEnroll}
           onFixEnrollment={handleFixEnrollment}
           onDelete={handleDelete}
-        />
+          />
+        )}
 
         {data && data.count > 0 && !isLoading && (
           <div className="mt-4 text-sm text-muted-foreground text-center">

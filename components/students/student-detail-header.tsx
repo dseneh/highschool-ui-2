@@ -22,7 +22,7 @@ export function StudentDetailHeader({
   student,
 }: StudentDetailHeaderProps) {
   const enrollmentStatus = student?.status
-  const gradeLevel = student?.current_enrollment?.grade_level?.name || student?.grade_level
+  const gradeLevel = student?.current_enrollment?.grade_level?.name || student?.grade_level?.name
   const section = student?.current_enrollment?.section?.name
 
   // Calculate age from date_of_birth
@@ -84,7 +84,7 @@ export function StudentDetailHeader({
               </Badge>
               {gradeLevel && (
                 <Badge variant="secondary" className="font-medium">
-                  {gradeLevel} - {section}
+                  {gradeLevel} {section ? `- ${section}` : ""}
                 </Badge>
               )}
               {/* {section && (

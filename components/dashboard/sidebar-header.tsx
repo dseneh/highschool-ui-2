@@ -13,7 +13,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowDown01Icon,
   Settings01Icon,
-  Tick01Icon,
   UserIcon,
   Logout01Icon,
 } from "@hugeicons/core-free-icons";
@@ -21,6 +20,7 @@ import {
   buildRootLoginUrl,
   getRootDomain,
   changeWorkspace,
+  getSubdomainFromHost,
 } from "@/lib/tenant";
 import { clearAuthCookies } from "@/lib/auth-cookies";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useTenantStore } from "@/store/tenant-store";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import AvatarImg from "../shared/avatar-img";
+import { cn } from "@/lib/utils";
 
 export default function SidebarHeaderDropDown() {
   const [loggingOut, setLoggingOut] = React.useState(false);
@@ -40,10 +41,10 @@ export default function SidebarHeaderDropDown() {
   const subdomain = useTenantSubdomain();
   const routeWorkspace =
     typeof window !== "undefined"
-      ? window.location.hostname.split(".")[0] || ""
+      ? getSubdomainFromHost(window.location.host) ?? ""
       : "";
   const currentWorkspace =
-    routeWorkspace || tenant?.workspace || tenant?.schema_name || subdomain;
+    subdomain || routeWorkspace || tenant?.schema_name || tenant?.workspace || "";
 
   return (
     <div className="flex items-center justify-between">
@@ -63,7 +64,7 @@ export default function SidebarHeaderDropDown() {
               {tenant?.name ?? "EzySchool"}
             </span>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground truncate w-full text-left">
-              {tenant?.workspace ?? tenant?.schema_name ?? subdomain ?? null}
+              {subdomain || tenant?.schema_name || tenant?.workspace || null}
             </span>
           </div>
           <HugeiconsIcon
@@ -71,7 +72,7 @@ export default function SidebarHeaderDropDown() {
             className="size-4 text-muted-foreground shrink-0"
           />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent align="start" className="min-w-67.5">
           <DropdownMenuGroup>
             <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
               Workspaces
@@ -80,7 +81,7 @@ export default function SidebarHeaderDropDown() {
             {/* Render tenants from user profile */}
             {user?.tenants?.map((t) => {
               const workspaceFromTenant = (t as { workspace?: string }).workspace;
-              const targetWorkspace = workspaceFromTenant ?? t.schema_name;
+              const targetWorkspace = t.schema_name ?? workspaceFromTenant;
               const isSelected =
                 currentWorkspace === targetWorkspace ||
                 currentWorkspace === t.schema_name;
@@ -89,7 +90,10 @@ export default function SidebarHeaderDropDown() {
               <DropdownMenuItem
                 key={t.id}
                 onClick={() => changeWorkspace(targetWorkspace)}
-                className={isSelected ? "cursor-pointer bg-accent" : "cursor-pointer"}
+                className={cn(
+                  isSelected ? "cursor-pointer bg-accent" : "cursor-pointer",
+                  "hover:bg-accent/50 focus:bg-accent/50"
+                )}
               >
                 <div className="size-7 shadow-xs flex items-center justify-center mr-2 overflow-hidden">
                    <AvatarImg
@@ -121,13 +125,6 @@ export default function SidebarHeaderDropDown() {
               </div>
             )}
           </DropdownMenuGroup>
-
-          {/* <DropdownMenuSeparator /> */}
-
-          {/* <DropdownMenuItem>
-                    <HugeiconsIcon icon={Add01Icon} className="size-4 mr-2" />
-                    Create Workspace
-                  </DropdownMenuItem> */}
 
           <DropdownMenuSeparator />
 

@@ -15,7 +15,6 @@ import {
   ComboboxContent,
   ComboboxList,
   ComboboxItem,
-  ComboboxEmpty,
 } from "@/components/ui/combobox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -28,6 +27,7 @@ export type SelectOption = {
   value: string;
   label: string;
   is_current?: boolean;
+  active?: boolean;
   [key: string]: unknown;
 };
 
@@ -40,11 +40,9 @@ type BaseDataSelectProps<T = unknown> = {
 
   /* ---- Data fetching ---- */
   /** A React Query hook — called with `...hookArgs`. Must return `{ data, isLoading }`. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useDataHook: (...args: any[]) => {
     data?: T | T[];
     isLoading?: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
   hookArgs?: unknown[];
@@ -127,26 +125,35 @@ export default function BaseDataSelect<T = unknown>({
   /* ---- Data ---- */
   const prevHookArgsRef = React.useRef<unknown[] | undefined>(undefined);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const hookResult = (useDataHook as any)(...hookArgs, { enabled });
   const rawData = dataKey ? hookResult[dataKey] : hookResult.data;
   const isLoading: boolean = hookResult.isLoading ?? hookResult.isLoadingData ?? false;
 
-  const options: SelectOption[] = React.useMemo(() => {
+  const allOptions: SelectOption[] = React.useMemo(() => {
     if (!rawData) return [];
     if (mapOptions) return mapOptions(rawData);
     return Array.isArray(rawData)
-      ? rawData
-          .filter((item: Record<string, unknown>) =>
-            showActiveOnly ? item.active : true
-          )
-          .map((item: Record<string, unknown>) => ({
-            value: String(item.id),
-            label: String(item.name),
-            is_current: Boolean(item.is_current),
-          }))
+      ? rawData.map((item: Record<string, unknown>) => ({
+          value: String(item.id),
+          label: String(item.name),
+          is_current: Boolean(item.is_current),
+          active: Boolean(item.active ?? item.is_active ?? true),
+        }))
       : [];
-  }, [rawData, mapOptions, showActiveOnly]);
+  }, [rawData, mapOptions]);
+
+  const options: SelectOption[] = React.useMemo(() => {
+    if (!showActiveOnly) return allOptions;
+
+    const activeOptions = allOptions.filter((opt) => opt.active !== false);
+    if (!value) return activeOptions;
+
+    const hasSelectedInActive = activeOptions.some((opt) => opt.value === value);
+    if (hasSelectedInActive) return activeOptions;
+
+    const selectedOption = allOptions.find((opt) => opt.value === value);
+    return selectedOption ? [selectedOption, ...activeOptions] : activeOptions;
+  }, [allOptions, showActiveOnly, value]);
 
   /* ---- Reset on dependency change ---- */
   React.useEffect(() => {
@@ -188,11 +195,18 @@ export default function BaseDataSelect<T = unknown>({
   /* ---- Value → label map for combobox display ---- */
   const valueLabelMap = React.useMemo(() => {
     const map = new Map<string, string>();
-    for (const opt of options) {
+    for (const opt of allOptions) {
       map.set(opt.value, opt.label);
     }
     return map;
-  }, [options]);
+  }, [allOptions]);
+
+  const hasResolvedSelection = React.useMemo(() => {
+    if (!value) return false;
+    return valueLabelMap.has(value);
+  }, [value, valueLabelMap]);
+
+  const resolvedSelectValue = hasResolvedSelection ? value : "";
 
   /* ---- Render ---- */
   const isComponentLoading = externalLoading ?? isLoading;
@@ -219,10 +233,10 @@ export default function BaseDataSelect<T = unknown>({
       )}
       {searchable ? (
         <Combobox
-          value={value || null}
+          value={hasResolvedSelection ? value : null}
           onValueChange={(v) => setValue(v ? String(v) : "")}
           disabled={disabled || !enabled}
-          itemToStringLabel={(v) => valueLabelMap.get(String(v)) ?? String(v)}
+          itemToStringLabel={(v) => valueLabelMap.get(String(v)) ?? ""}
         >
           <ComboboxInput
             placeholder={placeholder ?? `Search ${title?.toLowerCase()}...`}
@@ -243,8 +257,8 @@ export default function BaseDataSelect<T = unknown>({
         </Combobox>
       ) : (
         <Select
-          value={value}
-          onValueChange={(v) => setValue(v!)}
+          value={resolvedSelectValue}
+          onValueChange={(v) => setValue(v ?? "")}
           disabled={disabled || !enabled}
           items={options.map((opt) => ({ value: opt.value, label: opt.label }))}
         >
