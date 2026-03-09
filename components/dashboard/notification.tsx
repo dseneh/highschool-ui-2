@@ -29,7 +29,7 @@ export default function Notification() {
     <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="ghost" size="icon" className="relative shrink-0 hidden sm:inline-flex" icon={<HugeiconsIcon icon={Notification01Icon} className="size-5 text-muted-foreground" />}>
+              <Button disabled variant="ghost" size="icon" className="relative shrink-0 hidden sm:inline-flex" icon={<HugeiconsIcon icon={Notification01Icon} className="size-5 text-muted-foreground" />}>
                 <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500 ring-2 ring-background" />
               </Button>
             }

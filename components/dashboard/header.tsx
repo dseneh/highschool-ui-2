@@ -123,12 +123,12 @@ export function DashboardHeader({
               <span className="hidden lg:flex">Search</span>
             </Button>
             <Notification />
-            {!isAdminWorkspace ? (
+            {/* {!isAdminWorkspace ? (
               <>
                 <div className="h-6 w-px bg-border mx-0.5" />
                 <SystemStatusIndicator />
               </>
-            ) : null}
+            ) : null} */}
             <ThemeToggle />
             <ThemeCustomizer />
           </div>
@@ -162,7 +162,7 @@ export function DashboardHeader({
                     <DropdownMenuItem disabled className="text-xs font-medium">
                       System Status
                     </DropdownMenuItem>
-                    <SystemStatusIndicator />
+                    {/* <SystemStatusIndicator /> */}
 
                     <DropdownMenuSeparator />
                   </>
