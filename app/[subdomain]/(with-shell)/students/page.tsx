@@ -27,13 +27,16 @@ import { useHasRole } from "@/hooks/use-authorization";
 import type { StudentDto } from "@/lib/api2/student-types";
 import type { CreateStudentCommand } from "@/lib/api2/student-types";
 import PageLayout from "@/components/dashboard/page-layout";
+import { getQueryClient } from "@/lib/query-client";
 
 export default function StudentsPage() {
   const studentsApi = useStudentsApi();
-  const { data, isLoading, error, isFetching } = studentsApi.getStudents({});
+  const { data, isLoading, error, isFetching, refetch } = studentsApi.getStudents({});
   const createMutation = studentsApi.createStudent();
   const { data: currentYear } = useCurrentAcademicYear();
   const canManageStudents = useHasRole("teacher");
+
+  const queryClient = getQueryClient()
   
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [enrollStudent, setEnrollStudent] = React.useState<StudentDto | null>(
@@ -47,8 +50,8 @@ export default function StudentsPage() {
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleRefresh = useCallback(() => {
-    // TODO: Implement query invalidation for api2 students
-  }, []);
+    refetch();
+  }, [refetch]);
 
   const handleEnroll = useCallback((student: StudentDto) => {
     setEnrollStudent(student);
@@ -75,6 +78,7 @@ export default function StudentsPage() {
               "Student deleted",
               `${deleteStudent.full_name} has been permanently removed`,
             );
+            queryClient.invalidateQueries({ queryKey: ["students"] });
             setDeleteStudent(null);
             setIsDeleting(false);
           },
@@ -85,7 +89,7 @@ export default function StudentsPage() {
         },
       );
     },
-    [deleteStudent, studentsApi],
+    [deleteStudent, studentsApi, queryClient],
   );
 
   const studentsList = useMemo(() => {
@@ -197,6 +201,7 @@ export default function StudentsPage() {
               "Student created",
               "The student has been added to the system",
             );
+            queryClient.invalidateQueries({ queryKey: ["students"] });
             setShowCreateModal(false);
           } catch (error) {
             showToast.error("Create failed", getErrorMessage(error));

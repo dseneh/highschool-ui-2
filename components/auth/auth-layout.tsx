@@ -439,13 +439,13 @@ function FeatureSlider() {
           "opacity-0",
           mounted && "animate-fade-up"
         )}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 px-2 py-2 rounded-full  border border-white/10 backdrop-blur-sm">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span className="text-sm text-white/80">Trusted by 500+ schools</span>
           </div>
+            <span className="text-[10px] uppercase tracking-[.6rem] text-white/80">EzySchool Platform</span>
         </div>
 
         {/* Center content - Feature info */}
@@ -648,7 +648,7 @@ export function AuthLayout({
   footer,
 }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full bg-background">
       <ShowcasePanel />
       <FormPanel title={title} subtitle={subtitle} footer={footer}>
         {children}
