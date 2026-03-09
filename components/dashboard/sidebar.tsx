@@ -51,7 +51,7 @@ import {
   getStudentPortalNavigation,
   type NavItem,
   type NavSection,
-} from "@/components/dashboard/navigation";
+} from "@/components/navigation";
 import { useNavigation } from "@/contexts/navigation-context";
 import { stripTenantFromPath } from "@/lib/tenant";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
@@ -121,7 +121,9 @@ export function DashboardSidebar({
     const path = pathname && pathname !== "/" && pathname.endsWith("/")
       ? pathname.slice(0, -1)
       : pathname || "/";
-    return stripTenantFromPath(path, subdomain);
+
+    const shouldStripTenantPrefix = subdomain !== "admin" && subdomain !== "public";
+    return shouldStripTenantPrefix ? stripTenantFromPath(path, subdomain) : path;
   }, [pathname, subdomain]);
 
   const canViewNavItem = React.useCallback(

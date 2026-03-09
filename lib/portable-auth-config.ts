@@ -1,5 +1,5 @@
 import type { PortableAuthConfig } from "@/components/portable-auth/src/types";
-import { API_URL } from "@/config/utils";
+import { API_URL, AUTH_SECRET } from "@/config/utils";
 import { getRootDomain } from "@/lib/tenant";
 
 const BACKEND_BASE_URL = API_URL.replace("/api/v1", ""); // Get base URL without /api/v1
@@ -53,7 +53,7 @@ export function buildPortableAuthConfig(host: string): PortableAuthConfig {
     },
     cookie: {
       name: "pa_session",
-      secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev-secret-must-be-at-least-32-chars-long!!",
+      secret: AUTH_SECRET,
       // In development: ".localhost" allows cookies across subdomains
       // In production: use root domain with leading dot
       domain: isLocal ? ".localhost" : `.${rootDomain}`,

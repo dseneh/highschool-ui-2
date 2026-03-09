@@ -1,3 +1,4 @@
+import {ROOT_DOMAIN} from '@/config/utils';
 /**
  * Utility functions for subdomain and tenant handling
  */
@@ -25,7 +26,7 @@ export function extractSubdomain(hostname: string): string | null {
             return parts[0]
         }
     } else {
-        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, '') || ''
+        const rootDomain = ROOT_DOMAIN?.replace(/^https?:\/\//, '') || ''
         if (rootDomain && hostname.endsWith(`.${rootDomain}`)) {
             const sub = hostname.replace(`.${rootDomain}`, '')
             if (sub && sub !== 'www') {
@@ -86,7 +87,7 @@ export function buildSubdomainUrl(workspace: string, pathname: string, request: 
     }
 
     // Production
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || ''
+    const rootDomain = ROOT_DOMAIN
     const rootDomainFormatted = rootDomain.split(':')[0].replace(/^https?:\/\//, '')
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
     return `${protocol}://${workspace}.${rootDomainFormatted}${cleanPath}${url.search}`
@@ -120,7 +121,7 @@ export function buildMainDomainUrl(pathname: string, request: { url: string; hea
     }
 
     // Production
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || ''
+    const rootDomain = ROOT_DOMAIN
     const rootDomainFormatted = rootDomain.split(':')[0].replace(/^https?:\/\//, '')
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
     const mainUrl = new URL(pathname, `${protocol}://${rootDomainFormatted}`)
@@ -170,7 +171,7 @@ export function buildDomainUrlFromWindow(path: string): string {
             }
         }
     } else {
-        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, '') || hostname
+        const rootDomain = ROOT_DOMAIN?.replace(/^https?:\/\//, '') || hostname
         mainHost = rootDomain
     }
 
@@ -196,7 +197,7 @@ export async function buildDomainUrlFromHeaders(path: string): Promise<string> {
             }
         }
     } else {
-        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, '') || hostname
+        const rootDomain = ROOT_DOMAIN?.replace(/^https?:\/\//, '') || hostname
         mainHost = rootDomain
     }
 

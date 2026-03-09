@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigation } from "@/contexts/navigation-context";
 import { stripTenantFromPath } from "@/lib/tenant";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
-import type { NavItem } from "@/components/dashboard/navigation";
+import type { NavItem } from "@/components/navigation";
 import { useMemo } from "react";
 import NavStudentCard from "./nav-student-card";
 import NavStaffCard from "./nav-staff-card";

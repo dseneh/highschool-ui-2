@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useNavigation } from "@/contexts/navigation-context";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
-import { getStudentNavigation } from "@/components/dashboard/navigation";
+import { getStudentNavigation } from "@/components/navigation";
 import { DetailSideNav } from "@/components/dashboard/detail-side-nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

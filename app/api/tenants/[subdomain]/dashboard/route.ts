@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_API = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
+import {BACKEND_API_URL} from '@/config/utils';
 interface Student {
   id: string;
   first_name: string;
@@ -43,7 +41,7 @@ export async function GET(
 
   try {
     // Fetch students for the recent activity list
-    const studentsRes = await fetch(`${BACKEND_API}/api/v1/students/?limit=5`, {
+    const studentsRes = await fetch(`${BACKEND_API_URL}/api/v1/students/?limit=5`, {
       headers,
     }).catch(() => null);
     
@@ -52,7 +50,7 @@ export async function GET(
       : [];
 
     // Fetch summary stats (if available; fallback to mock data)
-    const statsRes = await fetch(`${BACKEND_API}/api/v1/students/summary/`, {
+    const statsRes = await fetch(`${BACKEND_API_URL}/api/v1/students/summary/`, {
       headers,
     }).catch(() => null);
     

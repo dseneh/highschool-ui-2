@@ -1,8 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/portable-auth/src/client";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
-import { useTenantStore } from "@/store/tenant-store";
 
 const ADMIN_WORKSPACES = new Set(["admin", "public"]);
 
@@ -13,16 +11,9 @@ export function isAdminWorkspaceName(workspace?: string | null): boolean {
 
 export function useAdminWorkspace() {
   const subdomain = useTenantSubdomain();
-  const { tenant: authTenant } = useAuth();
-  const storeTenant = useTenantStore((state) => state.tenant);
 
-  const workspace =
-    (storeTenant?.workspace ||
-      storeTenant?.schema_name ||
-      authTenant?.workspace ||
-      subdomain ||
-      "")
-      .toLowerCase();
+  // URL subdomain is the only source of truth for active workspace.
+  const workspace = (subdomain || "").toLowerCase();
 
   const isAdminWorkspace = isAdminWorkspaceName(workspace);
 

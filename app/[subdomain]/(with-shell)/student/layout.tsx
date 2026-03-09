@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useNavigation } from "@/contexts/navigation-context";
 import { useCurrentStudent } from "@/hooks/use-current-student";
-import { getStudentNavigation } from "@/components/dashboard/navigation";
+import { getStudentNavigation } from "@/components/navigation";
 import { DetailSideNav } from "@/components/dashboard/detail-side-nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 

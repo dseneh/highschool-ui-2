@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { primaryNavSections, adminNavSections } from "@/components/dashboard/navigation";
+import { primaryNavSections, adminNavSections } from "@/components/navigation";
 import { useAuth } from "@/components/portable-auth/src/client";
 import { useTenantStore } from "@/store/tenant-store";
 import {
@@ -30,7 +30,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     const path = pathname && pathname !== "/" && pathname.endsWith("/")
       ? pathname.slice(0, -1)
       : pathname || "/";
-    return stripTenantFromPath(path, subdomain);
+
+    // Do not strip route prefixes for admin/public workspaces.
+    // Otherwise `/admin/...` on admin subdomain gets transformed to `/...`
+    // and triggers incorrect redirects back to `/admin/dashboard`.
+    const shouldStripTenantPrefix = subdomain !== "admin" && subdomain !== "public";
+    return shouldStripTenantPrefix ? stripTenantFromPath(path, subdomain) : path;
   }, [pathname, subdomain]);
 
   const activeItem = useMemo(() => {

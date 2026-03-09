@@ -1,14 +1,17 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useTenantStore } from "@/store/tenant-store";
+import { getSubdomainFromHost } from "@/lib/tenant";
 
 export function useTenantSubdomain() {
-  const tenant = useTenantStore((state) => state.tenant);
   const params = useParams<{ subdomain?: string }>();
   const paramValue = Array.isArray(params?.subdomain)
     ? params?.subdomain[0]
     : params?.subdomain;
+  const hostSubdomain =
+    typeof window !== "undefined"
+      ? getSubdomainFromHost(window.location.host)
+      : null;
 
-  return tenant?.schema_name ?? paramValue ?? "";
+  return hostSubdomain ?? paramValue ?? "";
 }

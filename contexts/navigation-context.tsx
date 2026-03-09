@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import type { NavItem } from "@/components/dashboard/navigation";
+import type { NavItem } from "@/components/navigation";
 
 type NavigationContextType = "main" | "student" | "staff";
 
