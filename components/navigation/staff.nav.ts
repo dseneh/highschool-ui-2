@@ -34,6 +34,12 @@ export function getStaffNavigation(staffId: string): NavItem[] {
       meta: "Teaching schedule",
     },
     {
+      icon: Calendar01Icon,
+      label: "Calendar",
+      path: `/staff/${staffId}/calendar`,
+      meta: "Calendar view",
+    },
+    {
       icon: CourseIcon,
       label: "Classes",
       path: `/staff/${staffId}/classes`,

@@ -53,6 +53,17 @@ function formatTime(time: string) {
   return `${h12}:${m} ${ampm}`
 }
 
+function getScheduleLabel(item: SectionScheduleDto) {
+  if (item.is_recess || item.period.period_type === "recess" || !item.subject) {
+    return "Recess";
+  }
+  return item.subject.name;
+}
+
+function isRecess(item: SectionScheduleDto) {
+  return item.is_recess || item.period.period_type === "recess" || !item.subject;
+}
+
 function ScheduleSkeleton() {
   return (
     <PageContent>
@@ -87,7 +98,11 @@ export default function StudentSchedulePage() {
   // Build a subject → color map
   const subjectColorMap = useMemo(() => {
     if (!schedules) return new Map<string, string>()
-    const uniqueSubjects = [...new Set(schedules.map((s) => s.subject.name))]
+    const uniqueSubjects = [...new Set(
+      schedules
+        .filter((s) => !isRecess(s) && s.subject)
+        .map((s) => s.subject!.name)
+    )]
     const map = new Map<string, string>()
     uniqueSubjects.forEach((name, i) => {
       map.set(name, SUBJECT_COLORS[i % SUBJECT_COLORS.length])
@@ -178,11 +193,13 @@ export default function StudentSchedulePage() {
                           key={item.id}
                           className={cn(
                             "rounded-lg border p-3 space-y-1",
-                            subjectColorMap.get(item.subject.name) || "bg-muted"
+                            isRecess(item)
+                              ? "bg-muted text-muted-foreground border-border"
+                              : subjectColorMap.get(getScheduleLabel(item)) || "bg-muted"
                           )}
                         >
                           <p className="font-medium text-sm leading-tight">
-                            {item.subject.name}
+                            {getScheduleLabel(item)}
                           </p>
                           <p className="text-xs opacity-80">
                             {formatTime(item.period_time.start_time)} – {formatTime(item.period_time.end_time)}
@@ -205,7 +222,7 @@ export default function StudentSchedulePage() {
               <CardContent>
                 <div className="flex flex-wrap gap-3">
                   {Array.from(subjectColorMap.entries()).map(([name, color]) => {
-                    const count = schedules.filter((s) => s.subject.name === name).length
+                    const count = schedules.filter((s) => !isRecess(s) && getScheduleLabel(s) === name).length
                     return (
                       <div key={name} className="flex items-center gap-2 text-sm">
                         <div className={cn("size-3 rounded-sm border", color.split(" ").slice(0, 2).join(" "))} />
@@ -231,7 +248,7 @@ export default function StudentSchedulePage() {
                     return daySchedules.map((item) => (
                       <div key={item.id} className="px-4 py-3 flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium">{item.subject.name}</p>
+                          <p className="text-sm font-medium">{getScheduleLabel(item)}</p>
                           <p className="text-xs text-muted-foreground">
                             {DAY_SHORT[day]} · {item.period.name}
                           </p>

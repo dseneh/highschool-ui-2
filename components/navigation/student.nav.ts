@@ -114,6 +114,12 @@ export function getStudentPortalNavigation(): NavItem[] {
       meta: "Your class schedule",
     },
     {
+      icon: Calendar01Icon,
+      label: "Calendar",
+      path: "/my-calendar",
+      meta: "Schedule calendar view",
+    },
+    {
       icon: FileExportIcon,
       label: "Reports",
       path: "/my-reports",

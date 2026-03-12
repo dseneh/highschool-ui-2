@@ -115,10 +115,16 @@ export interface SectionScheduleDto {
   subject: {
     id: string;
     name: string;
-  };
+  } | null;
+  teacher?: {
+    id: string;
+    id_number: string;
+    full_name: string;
+  } | null;
   period: {
     id: string;
     name: string;
+    period_type?: "class" | "recess";
   };
   period_time: {
     id: string;
@@ -126,4 +132,5 @@ export interface SectionScheduleDto {
     end_time: string;
     day_of_week: number;
   };
+  is_recess?: boolean;
 }

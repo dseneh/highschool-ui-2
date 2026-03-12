@@ -62,8 +62,35 @@ type ScheduleItem = {
   class_schedule?: {
     id?: string
     section?: string | { id?: string; name?: string }
-    period?: string | { id?: string; name?: string }
+    subject?: { id?: string; name?: string } | null
+    period?: string | { id?: string; name?: string; period_type?: "class" | "recess" }
+    period_time?: {
+      id?: string
+      start_time?: string
+      end_time?: string
+      day_of_week?: number
+    }
+    is_recess?: boolean
   }
+}
+
+const DAY_NAMES: Record<number, string> = {
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+  6: "Saturday",
+  7: "Sunday",
+}
+
+function formatTime(value?: string) {
+  if (!value) return "--"
+  const [h, m] = value.split(":")
+  const hour = parseInt(h, 10)
+  const ampm = hour >= 12 ? "PM" : "AM"
+  const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+  return `${h12}:${m} ${ampm}`
 }
 
 export default function StaffClassesPage() {
@@ -146,11 +173,37 @@ export default function StaffClassesPage() {
     return ""
   }
 
+  const getScheduleSectionId = (schedule: ScheduleItem) => {
+    const section = schedule.class_schedule?.section
+    if (typeof section === "string") return undefined
+    return section?.id
+  }
+
   const getSchedulePeriodName = (schedule: ScheduleItem) => {
     const period = schedule.class_schedule?.period
     if (typeof period === "string") return period
     if (period && typeof period.name === "string") return period.name
     return "Period"
+  }
+
+  const getScheduleSubjectName = (schedule: ScheduleItem) => {
+    const subjectName = schedule.class_schedule?.subject?.name
+    if (subjectName) return subjectName
+    const period = schedule.class_schedule?.period
+    const isRecess =
+      schedule.class_schedule?.is_recess ||
+      (typeof period !== "string" && period?.period_type === "recess")
+    return isRecess ? "Recess" : "Unassigned"
+  }
+
+  const getScheduleDay = (schedule: ScheduleItem) =>
+    schedule.class_schedule?.period_time?.day_of_week
+
+  const getScheduleTimeRange = (schedule: ScheduleItem) => {
+    const start = schedule.class_schedule?.period_time?.start_time
+    const end = schedule.class_schedule?.period_time?.end_time
+    if (!start || !end) return "--"
+    return `${formatTime(start)} - ${formatTime(end)}`
   }
 
   return (
@@ -208,8 +261,19 @@ export default function StaffClassesPage() {
                   const sectionId = getSectionId(section, idx)
                   const groupName = getSectionGroupName(section)
                   const sectionSchedules = schedules.filter(
-                    (schedule) => getScheduleSectionName(schedule) === sectionName
+                    (schedule) =>
+                      getScheduleSectionId(schedule) === sectionId ||
+                      getScheduleSectionName(schedule) === sectionName
                   )
+                  const sortedSectionSchedules = [...sectionSchedules].sort((a, b) => {
+                    const dayA = getScheduleDay(a) ?? 99
+                    const dayB = getScheduleDay(b) ?? 99
+                    if (dayA !== dayB) return dayA - dayB
+
+                    const startA = a.class_schedule?.period_time?.start_time ?? "99:99"
+                    const startB = b.class_schedule?.period_time?.start_time ?? "99:99"
+                    return startA.localeCompare(startB)
+                  })
                   const assignedSubjects = teacherSubjectsBySection[sectionId] ?? []
 
                   return (
@@ -279,18 +343,47 @@ export default function StaffClassesPage() {
                           </TabsContent>
 
                           <TabsContent value="schedule" className="space-y-2">
-                            {sectionSchedules.length > 0 ? (
-                              sectionSchedules.map((schedule, scheduleIdx) => (
-                                <div
-                                  key={schedule.id ?? `schedule-${scheduleIdx}`}
-                                  className="rounded-lg border p-3"
-                                >
-                                  <p className="text-sm font-medium">
-                                    {getSchedulePeriodName(schedule)}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">{sectionName}</p>
-                                </div>
-                              ))
+                            {sortedSectionSchedules.length > 0 ? (
+                              <div className="rounded-lg border overflow-hidden">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-muted/50">
+                                    <tr>
+                                      <th className="text-left font-medium px-3 py-2">Day</th>
+                                      <th className="text-left font-medium px-3 py-2">Time</th>
+                                      <th className="text-left font-medium px-3 py-2">Period</th>
+                                      <th className="text-left font-medium px-3 py-2">Subject</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {sortedSectionSchedules.map((schedule, scheduleIdx) => {
+                                      const day = getScheduleDay(schedule)
+                                      const period = schedule.class_schedule?.period
+                                      const recess =
+                                        schedule.class_schedule?.is_recess ||
+                                        (typeof period !== "string" && period?.period_type === "recess")
+
+                                      return (
+                                        <tr key={schedule.id ?? `schedule-${scheduleIdx}`} className="border-t">
+                                          <td className="px-3 py-2 text-muted-foreground">
+                                            {day ? DAY_NAMES[day] ?? `Day ${day}` : "--"}
+                                          </td>
+                                          <td className="px-3 py-2">{getScheduleTimeRange(schedule)}</td>
+                                          <td className="px-3 py-2">{getSchedulePeriodName(schedule)}</td>
+                                          <td className="px-3 py-2">
+                                            {recess ? (
+                                              <Badge variant="outline" className="text-muted-foreground">
+                                                Recess
+                                              </Badge>
+                                            ) : (
+                                              <span>{getScheduleSubjectName(schedule)}</span>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
                             ) : (
                               <p className="rounded-lg border p-3 text-sm text-muted-foreground">
                                 No schedule entries for this class.

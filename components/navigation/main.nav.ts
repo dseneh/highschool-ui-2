@@ -138,6 +138,12 @@ export const primaryNavSections: NavSection[] = [
       },
       {
         icon: Calendar03Icon,
+        label: "Calendar",
+        path: "/calendar",
+        meta: "School timetable calendar",
+      },
+      {
+        icon: Calendar03Icon,
         label: "Academic Setup",
         path: "/setup/academic-years",
         meta: "Years, terms, and setup",
