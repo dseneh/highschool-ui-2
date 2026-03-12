@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useParams } from "next/navigation";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number";
 import {
   useStudentGuardians,
   useCreateGuardian,
@@ -328,13 +328,12 @@ function GuardianCard({
 /* ------------------------------------------------------------------ */
 
 export default function StudentGuardiansPage() {
-  const params = useParams();
-  const idNumber = params.id_number as string;
+  const idNumber = useResolvedStudentIdNumber();
 
   const studentsApi = useStudentsApi();
   const { data: student, isLoading: studentLoading } =
     studentsApi.getStudent(idNumber, {
-      enabled: !!idNumber && window.location.href.includes("/students/"),
+      enabled: !!idNumber,
     });
   const hookResult = useStudentPageActions(student);
 

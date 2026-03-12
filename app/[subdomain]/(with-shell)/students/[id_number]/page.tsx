@@ -1,6 +1,5 @@
 "use client"
 
-import { useParams } from "next/navigation"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { StudentDetailHeader } from "@/components/students/student-detail-header"
 import { StudentDashboardMetrics } from "@/components/students/student-dashboard-metrics"
@@ -11,15 +10,14 @@ import { EnrollmentAlert } from "@/components/students/enrollment-alert"
 import { WithdrawnBanner } from "@/components/students/withdrawn-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import PageLayout from "@/components/dashboard/page-layout"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 export default function StudentOverviewPage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const studentsApi = useStudentsApi()
-  const currentUrl = window.location.href
 
   const { data: student, isLoading, error, refetch, isFetching } = studentsApi.getStudent(idNumber, {
-    enabled: !!idNumber && currentUrl.includes("/students/"), // Only fetch if idNumber is present and URL contains "/students/"
+    enabled: !!idNumber,
   })
 
   const handleRefresh = () => {

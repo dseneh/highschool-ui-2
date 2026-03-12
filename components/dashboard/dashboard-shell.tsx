@@ -5,7 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { primaryNavSections, adminNavSections } from "@/components/navigation";
+import {
+  primaryNavSections,
+  adminNavSections,
+  getStudentPortalNavigation,
+} from "@/components/navigation";
 import { useAuth } from "@/components/portable-auth/src/client";
 import { useTenantStore } from "@/store/tenant-store";
 import {
@@ -22,8 +26,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const setTenant = useTenantStore((state) => state.setTenant);
   const subdomain = useTenantSubdomain();
   const { isAdminWorkspace } = useAdminWorkspace();
+  const isStudentAccount = user?.account_type?.toLowerCase() === "student";
 
   const navSections = isAdminWorkspace ? adminNavSections : primaryNavSections;
+  const activeNavSections = useMemo(() => {
+    if (!isAdminWorkspace && isStudentAccount) {
+      return [{ items: getStudentPortalNavigation() }];
+    }
+    return navSections;
+  }, [isAdminWorkspace, isStudentAccount, navSections]);
 
   const pathname = usePathname();
   const normalizedPath = useMemo(() => {
@@ -39,7 +50,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [pathname, subdomain]);
 
   const activeItem = useMemo(() => {
-    const allItems = navSections.flatMap((section) =>
+    const allItems = activeNavSections.flatMap((section) =>
       section.items.flatMap((item) =>
         item.subItems && item.subItems.length > 0
           ? [item, ...item.subItems]
@@ -55,7 +66,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
 
     return matches.sort((a, b) => b.path.length - a.path.length)[0] || allItems[0];
-  }, [normalizedPath, navSections]);
+  }, [normalizedPath, activeNavSections]);
 
   const backUrl = useMemo(() => {
     if (activeItem.path === "/" || activeItem.path === normalizedPath) {
@@ -127,9 +138,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     if (pathname === '/change-password') return;
     
     // Redirect to change password if user has default password
-    if (user.is_default_password === true) {
-      router.replace('/change-password');
-    }
+    // if (user.is_default_password === true) {
+    //   router.replace('/change-password');
+    // }
   }, [authenticated, loading, user, pathname, router]);
 
   if (loading || !authenticated) {

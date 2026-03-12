@@ -46,7 +46,9 @@ import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Pencil, Trash } from "lucide-react";
 import { AddSubjectDialog } from "./add-subject-dialog";
+import { AssignSectionTeachersDialog } from "./assign-section-teachers-dialog";
 import { SectionFeeList } from "@/components/finance/section-fee-list";
+import { AuthButton } from "@/components/auth/auth-button";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -79,6 +81,10 @@ export function SectionTab() {
     sectionName: string;
   } | null>(null);
   const [manageFeesSection, setManageFeesSection] = React.useState<SectionDto | null>(null);
+  const [assignTeachersDialog, setAssignTeachersDialog] = React.useState<{
+    sectionId: string;
+    sectionName: string;
+  } | null>(null);
 
   const form = useForm<FormInput>({
     resolver: zodResolver(formSchema),
@@ -215,6 +221,10 @@ export function SectionTab() {
     setManageFeesSection(section);
   };
 
+  const handleAssignTeachers = (sectionId: string, sectionName: string) => {
+    setAssignTeachersDialog({ sectionId, sectionName });
+  };
+
   const columns: ColumnDef<SectionDto>[] = [
     {
       accessorKey: "name",
@@ -270,6 +280,14 @@ export function SectionTab() {
             size="sm"
             onClick={() => handleManageFees(row.original)}
           >Manage Fees</Button>
+          <AuthButton
+            roles={["admin", "registrar", "data_entry"]}
+            variant="link"
+            size="sm"
+            onClick={() => handleAssignTeachers(row.original.id, row.original.name)}
+          >
+            Assign Teachers
+          </AuthButton>
           <Button
             variant="outline"
             size="sm"
@@ -385,6 +403,13 @@ export function SectionTab() {
           onOpenChange={(open) => !open && setAddSubjectDialog(null)}
           sectionId={addSubjectDialog?.sectionId || ""}
           sectionName={addSubjectDialog?.sectionName || ""}
+        />
+
+        <AssignSectionTeachersDialog
+          open={!!assignTeachersDialog}
+          onOpenChange={(open) => !open && setAssignTeachersDialog(null)}
+          sectionId={assignTeachersDialog?.sectionId || ""}
+          sectionName={assignTeachersDialog?.sectionName || ""}
         />
 
         <DialogBox

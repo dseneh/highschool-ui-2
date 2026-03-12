@@ -38,7 +38,7 @@ const TabsTrigger = React.forwardRef<
       "disabled:pointer-events-none disabled:opacity-50",
       "hover:bg-background/50 hover:text-foreground ",
       "data-selected:bg-background/50 data-selected:text-foreground data-selected:shadow",
-      "aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:shadow",
+      "aria-selected:bg-slate-500 aria-selected:text-primary-foreground aria-selected:shadow",
       className
     )}
     {...props}

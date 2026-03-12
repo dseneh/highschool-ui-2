@@ -187,17 +187,15 @@ export default function StaffPage() {
         submitting={isSubmitting}
       />
         }
+        emptyStateTitle="No Staff created yet!"
+        emptyStateDescription="Start by adding staff to the system."
+        emptyStateAction={() => setShowCreateModal(true)}
       >
         {/* Stats Cards */}
         {!isEmpty && !isLoading && <StaffStatsCards items={stats} />}
 
-        <StaffTable data={data} />
+        {!isEmpty && <StaffTable data={data} />}
 
-        {data && data.count > 0 && !isLoading && (
-          <div className="mt-4 text-sm text-muted-foreground text-center">
-            Showing {staffList.length} of {data.count} staff members
-          </div>
-        )}
       </PageLayout>
 
       {/* Staff Form Modal */}

@@ -2,6 +2,12 @@ import { create } from "zustand";
 
 export type LayoutDensity = "default" | "compact" | "comfortable";
 
+export interface HeaderBreadcrumbItem {
+  label: string;
+  href?: string;
+  current?: boolean;
+}
+
 interface DashboardState {
   searchQuery: string;
   departmentFilter: string;
@@ -27,6 +33,9 @@ interface DashboardState {
   // Navigation
   backUrl: string | null;
   setBackUrl: (url: string | null) => void;
+  breadcrumbs: HeaderBreadcrumbItem[] | null;
+  setBreadcrumbs: (items: HeaderBreadcrumbItem[] | null) => void;
+  clearBreadcrumbs: () => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set) => ({
@@ -66,5 +75,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   // Navigation
   backUrl: null,
   setBackUrl: (url) => set({ backUrl: url }),
+  breadcrumbs: null,
+  setBreadcrumbs: (items) => set({ breadcrumbs: items }),
+  clearBreadcrumbs: () => set({ breadcrumbs: null }),
 }));
 

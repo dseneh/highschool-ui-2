@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useBillings } from "@/lib/api2/billing"
 import { useTransactions } from "@/lib/api2/transaction"
@@ -47,7 +46,9 @@ import PageLayout from "@/components/dashboard/page-layout"
 import { AddConcessionDialog } from "@/components/students/add-concession-dialog"
 import { ConcessionsTab } from "@/components/students/concessions-tab"
 import { AuthButton } from "@/components/auth/auth-button"
-import { CircleCheck } from "lucide-react"
+import {CircleCheck, Coins} from 'lucide-react';
+import EmptyStateComponent from '@/components/shared/empty-state';
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 /* ------------------------------------------------------------------ */
 /*  Skeleton                                                           */
@@ -79,8 +80,7 @@ function BillingSkeleton() {
 /* ------------------------------------------------------------------ */
 
 export default function StudentBillingPage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const subdomain = useTenantSubdomain()
   const queryClient = getQueryClient()
 
@@ -90,7 +90,7 @@ export default function StudentBillingPage() {
   const transactionsApi = useTransactions()
   
   const { data: student, isLoading: studentLoading } = studentsApi.getStudent(idNumber, {
-    enabled: !!idNumber && window.location.href.includes("/students/"), // Only fetch if idNumber is present and URL contains "/students/"
+    enabled: !!idNumber,
   })
 
   const {
@@ -685,19 +685,15 @@ export default function StudentBillingPage() {
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="p-6">
-                  <EmptyState className="h-48 border-none p-0">
-                    <EmptyStateIcon>
-                      <HugeiconsIcon icon={CreditCardIcon} />
-                    </EmptyStateIcon>
-                    <EmptyStateTitle className="text-sm font-medium">No payments yet</EmptyStateTitle>
-                    <EmptyStateDescription className="text-xs">
-                      Payments will show up here once recorded.
-                    </EmptyStateDescription>
-                  </EmptyState>
-                </CardContent>
-              </Card>
+               <Card className="gap-0 p-0">
+                      <CardContent className="p-0 ">
+                        <EmptyStateComponent
+                          icon={<Coins className="size-8 text-muted-foreground" />}
+                          title="No payments yet"
+                          description="Payments will appear here once recorded."
+                        />
+                      </CardContent>
+                    </Card>
             )}
           </TabsContent>
 

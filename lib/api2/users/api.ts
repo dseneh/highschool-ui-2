@@ -28,6 +28,13 @@ export const useUsersApi = () => {
   }
 
   /**
+   * Get the currently authenticated user
+   */
+  const getCurrentUser = async () => {
+    return get<UserDto>('/auth/users/current/')
+  }
+
+  /**
    * Get a single user by id_number
    */
   const getUser = async (idNumber: string) => {
@@ -61,8 +68,8 @@ export const useUsersApi = () => {
   /**
    * Update user details
    */
-  const updateUser = async (idNumber: string, data: UpdateUserDto) => {
-    return put<UserDto>(`/auth/users/${idNumber}/`, data)
+  const updateUser = async (idNumber: string, data: UpdateUserDto | FormData) => {
+    return patch<UserDto>(`/auth/users/${idNumber}/`, data)
   }
 
   /**
@@ -88,6 +95,7 @@ export const useUsersApi = () => {
 
   return {
     listUsers,
+    getCurrentUser,
     getUser,
     createUser,
     createGlobalUser,

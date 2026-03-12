@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { useParams } from "next/navigation"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useSectionSchedule } from "@/hooks/use-contacts"
 import { PageContent } from "@/components/dashboard/page-content"
@@ -13,6 +12,7 @@ import { AlertCircleIcon, Calendar03Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import type { SectionScheduleDto } from "@/lib/api2/contacts-types"
 import PageLayout from "@/components/dashboard/page-layout"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 const DAY_NAMES: Record<number, string> = {
   1: "Monday",
@@ -69,8 +69,7 @@ function ScheduleSkeleton() {
 }
 
 export default function StudentSchedulePage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
 
   const studentsApi = useStudentsApi()
   const { data: student, isLoading: studentLoading, error: studentError, refetch: refetchStudent, isFetching: isFetchingStudent } = studentsApi.getStudent(idNumber)

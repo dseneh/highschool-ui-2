@@ -183,12 +183,6 @@ export default function StudentsPage() {
           onDelete={handleDelete}
           />
         )}
-
-        {data && data.count > 0 && !isLoading && (
-          <div className="mt-4 text-sm text-muted-foreground text-center">
-            Showing {studentsList.length} of {data.count} students
-          </div>
-        )}
       </PageLayout>
 
       <StudentFormModal

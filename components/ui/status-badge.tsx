@@ -18,6 +18,12 @@ const DEFAULT_STATUS_VARIANTS: Record<string, BadgeVariant> = {
   suspended: "warning",
   trial: "outline",
   other: "other",
+  enrolled: "success",
+  graduated: "success",
+  dropped: "destructive",
+  withdrawn: "destructive",
+  pending: "warning",
+  'not enrolled': "destructive",
 };
 
 const DEFAULT_STATUS_LABELS: Record<string, string> = {

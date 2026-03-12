@@ -25,11 +25,9 @@ export default function ChangePasswordPage() {
     }
 
     // Check if user has default password
-    if (user.is_default_password !== true) {
-      // If user doesn't have default password, they shouldn't be here
-      // Redirect to home
-      router.replace("/");
-    }
+    // if (user.is_default_password !== true) {
+    //   router.replace("/");
+    // }
   }, [authenticated, user, loading, router]);
 
   const handlePasswordChanged = async () => {

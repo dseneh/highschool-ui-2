@@ -8,9 +8,7 @@ import pageMetaConfig from "@/config/page-meta.config";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 
-export const metadata = {
-    ...pageMetaConfig,
-}
+export const metadata: Metadata = pageMetaConfig;
 
 export const viewport: Viewport = {
     width: 'device-width',

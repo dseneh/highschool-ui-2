@@ -25,6 +25,16 @@ export function useUsers() {
     )
 
   /**
+   * Get current authenticated user
+   */
+  const getCurrentUser = (options = {}) =>
+    useApiQuery(
+      ['users', 'current'],
+      () => api.getCurrentUser().then((res: any) => res.data),
+      options,
+    )
+
+  /**
    * Get a single user by id_number
    */
   const getUser = (idNumber: string, options = {}) =>
@@ -69,7 +79,7 @@ export function useUsers() {
    */
   const updateUser = (options = {}) =>
     useApiMutation(
-      ({ idNumber, data }: { idNumber: string; data: UpdateUserDto }) =>
+      ({ idNumber, data }: { idNumber: string; data: UpdateUserDto | FormData }) =>
         api.updateUser(idNumber, data).then((res: any) => res.data),
       options,
     )
@@ -96,6 +106,7 @@ export function useUsers() {
 
   return {
     getUsers,
+    getCurrentUser,
     getUser,
     createUser,
     createGlobalUser,

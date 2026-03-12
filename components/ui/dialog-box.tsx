@@ -59,6 +59,7 @@ interface DialogBoxProps
   /** Optional form ID to associate the primary action button with a form */
   formId?: string 
   roles?: string[]
+  contentClassName?: string
 }
 
 function DialogBox({
@@ -69,6 +70,7 @@ function DialogBox({
   children,
   footer,
   className,
+  contentClassName,
   showCloseButton,
   cancelLabel = "Cancel",
   onCancel,
@@ -109,7 +111,9 @@ function DialogBox({
         </DialogHeader>
 
         {children && (
-          <div className="p-1 overflow-y-auto min-h-0 flex-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
+          <div className={cn("p-1 overflow-y-auto min-h-0 flex-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40", 
+          contentClassName
+          )}>
             {children}
           </div>
         )}

@@ -9,6 +9,9 @@ export const useGradingApi = () => {
     const getGradeBooksApi = async (yearId: string, query: any = {}) =>
         get(`${baseUrl}/academic-years/${yearId}/gradebooks/`, { params: query })
 
+    const getTeacherGradeBooksApi = async (query: any = {}) =>
+        get(`${baseUrl}/my-gradebooks/`, { params: query })
+
     const getGradeBookApi = async (gradebookId: string) =>
         get(`${baseUrl}/gradebooks/${gradebookId}/`)
 
@@ -164,6 +167,7 @@ export const useGradingApi = () => {
 
     return {
         getGradeBooksApi,
+        getTeacherGradeBooksApi,
         getGradeBookApi,
         getGradebookGradesApi,
         getAssessmentTypesApi,

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { useParams, usePathname } from "next/navigation";
 import { useNavigation } from "@/contexts/navigation-context";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
 import { getStudentNavigation } from "@/components/navigation";
 import { DetailSideNav } from "@/components/dashboard/detail-side-nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useHeaderBreadcrumbs } from "@/hooks/use-header-breadcrumbs";
 
 export default function StudentDetailLayout({
   children,
@@ -14,6 +15,7 @@ export default function StudentDetailLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   const params = useParams();
+  const pathname = usePathname();
   const { setStudentNavigation, isPortalUser } = useNavigation();
   const idNumber = params.id_number as string;
   const studentsApi = useStudentsApi();
@@ -37,6 +39,34 @@ export default function StudentDetailLayout({
       setStudentNavigation(idNumber, `Student #${idNumber}`);
     }
   }, [idNumber, student, isLoading, setStudentNavigation]);
+
+  const currentTabLabel = useMemo(() => {
+    if (!pathname) return "Overview";
+    if (pathname.endsWith(`/students/${idNumber}`)) return "Overview";
+    const lastSegment = pathname.split("/").filter(Boolean).pop() || "overview";
+    return lastSegment
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }, [pathname, idNumber]);
+
+  const breadcrumbs = useMemo(() => {
+    const studentLabel = student?.full_name || `Student #${idNumber}`;
+    const base = [
+      { label: "Students", href: "/students" },
+      { label: studentLabel, href: `/students/${idNumber}` },
+    ];
+
+    if (currentTabLabel === "Overview") {
+      return [
+        { label: "Students", href: "/students" },
+        { label: studentLabel, current: true },
+      ];
+    }
+
+    return [...base, { label: currentTabLabel, current: true }];
+  }, [student?.full_name, idNumber, currentTabLabel]);
+
+  useHeaderBreadcrumbs(breadcrumbs);
 
   // Portal users (student/staff): render children directly — sidebar handles nav
   if (isPortalUser) {

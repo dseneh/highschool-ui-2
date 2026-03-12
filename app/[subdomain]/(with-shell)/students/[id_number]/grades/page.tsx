@@ -1,6 +1,5 @@
 "use client"
 
-import { useParams } from "next/navigation"
 import { useQueryState } from "nuqs"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useStudentFinalGrades } from "@/hooks/use-grading"
@@ -29,6 +28,7 @@ import type { GradeBookRecord } from "@/lib/api2/grading-types"
 import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 import PageLayout from "@/components/dashboard/page-layout"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 /* ------------------------------------------------------------------ */
 /*  Skeletons                                                          */
@@ -84,8 +84,7 @@ function getGradeColor(grade: number | null | undefined): string {
 /* ------------------------------------------------------------------ */
 
 export default function StudentGradesPage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const { resolvedTheme } = useTheme()
 
   const studentsApi = useStudentsApi()
@@ -287,9 +286,9 @@ export default function StudentGradesPage() {
                   chartData={chartData}
                   icon={ChartIcon}
                   isDark={resolvedTheme === 'dark'}
-                  gradientId="fillScore"
-                  gradientStart="hsl(var(--primary))"
-                  gradientEnd="hsl(var(--primary))"
+                  gradientId="fillFinalAvg"
+                  gradientStart="#4ade80"
+                  gradientEnd="rgba(74, 222, 128, 0.5)"
                   gradientEndOpacity={0.5}
                   barName="Score"
                 />

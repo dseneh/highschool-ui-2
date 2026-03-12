@@ -1,4 +1,4 @@
-import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, CourseIcon, Settings01Icon} from '@hugeicons/core-free-icons';
+import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, CourseIcon, Settings01Icon, UserMultiple02Icon, BookOpen02Icon} from '@hugeicons/core-free-icons';
 import {NavItem} from '@/components/navigation/type';
 // Staff Detail Context Navigation
 export function getStaffNavigation(staffId: string): NavItem[] {
@@ -14,6 +14,18 @@ export function getStaffNavigation(staffId: string): NavItem[] {
       label: "Details",
       path: `/staff/${staffId}/details`,
       meta: "Personal information",
+    },
+    {
+      icon: UserMultiple02Icon,
+      label: "Students",
+      path: `/staff/${staffId}/students`,
+      meta: "Class students",
+    },
+    {
+      icon: BookOpen02Icon,
+      label: "Grades",
+      path: `/staff/${staffId}/grades`,
+      meta: "My classes and gradebooks",
     },
     {
       icon: Calendar01Icon,

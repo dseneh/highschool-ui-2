@@ -10,14 +10,14 @@ type NavStudentCardProps = {
 export default function NavStudentCard({ student, className }: NavStudentCardProps) {
   return (
    <div className={cn("p-3 border-b", className)}>
-        <div className="flex flex-col items-center gap-2">
-          <Avatar className="size-14 rounded-full ring-2 ring-background shadow-sm">
+        <div className="flex flex-col items-center gap-2 group-data-[collapsible=icon]:gap-0">
+          <Avatar className="size-14 rounded-full ring-2 ring-background shadow-sm group-data-[collapsible=icon]:size-10">
             <AvatarImage src={student?.photo} alt={student?.first_name} />
             <AvatarFallback className="rounded-full text-sm font-semibold">
               {student?.first_name?.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="text-center min-w-0 w-full">
+          <div className="min-w-0 w-full text-center group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-semibold truncate leading-tight">
               {student?.first_name} {student?.last_name}
             </p>

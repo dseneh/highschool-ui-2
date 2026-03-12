@@ -14,6 +14,13 @@ export function useGrading() {
             options,
         )
 
+    const getTeacherGradeBooks = (query: any = {}, options = {}) =>
+        useApiQuery(
+            ['teacher-gradebooks', query],
+            () => api.getTeacherGradeBooksApi(query).then((res: any) => res.data),
+            options,
+        )
+
     const getGradeBook = (gradebookId: string, options = {}) =>
         useApiQuery(
             ['gradebooks', gradebookId],
@@ -217,6 +224,7 @@ export function useGrading() {
     return {
         // Gradebooks
         getGradeBooks,
+        getTeacherGradeBooks,
         getGradeBook,
         getGradebookGrades,
 

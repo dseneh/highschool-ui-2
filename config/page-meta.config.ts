@@ -10,11 +10,11 @@ const pageMeta: Metadata = {
     icons: {
         icon: [
             { url: '/img/logo-light-streamline.png' },
-            {
-                url: '/img/logo-dark-streamline.png',
-                media: '(prefers-color-scheme: dark)',
-            },
+            { url: '/img/logo-light-streamline.png', media: '(prefers-color-scheme: light)' },
+            { url: '/img/logo-dark-streamline.png', media: '(prefers-color-scheme: dark)' },
         ],
+        shortcut: ['/img/logo-light-streamline.png'],
+        apple: [{ url: '/img/logo-dark-streamline.png' }],
     },
 }
 

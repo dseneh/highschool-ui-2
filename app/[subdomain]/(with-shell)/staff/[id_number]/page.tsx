@@ -44,6 +44,7 @@ export default function StaffOverviewPage() {
           is_active: staff.user_account.is_active,
         }
       : null
+    const isEmpty = !isLoading && !staff;
 
   return (
     <PageLayout
@@ -68,9 +69,9 @@ export default function StaffOverviewPage() {
         </div>
       }
       error={error}
-      noData={!staff}
+      noData={isEmpty}
     >
-      {staff && (
+      {!isEmpty && (
       <div className="space-y-4">
         {/* Staff Header */}
         <StaffDetailHeader staff={staff} />
@@ -168,7 +169,7 @@ export default function StaffOverviewPage() {
                       <div>
                         <p className="font-medium text-sm">{section.name || "Section"}</p>
                         <p className="text-xs text-muted-foreground">
-                          {section.grade_level && `Grade ${section.grade_level}`}
+                          {section.grade_level && `Grade ${section.grade_level.name}`}
                         </p>
                       </div>
                       {section.students_count && (
@@ -196,7 +197,7 @@ export default function StaffOverviewPage() {
               <div className="flex flex-wrap gap-2">
                 {staff.subjects.map((subject: any) => (
                   <Badge key={subject.id} variant="outline">
-                    {subject.name}
+                    {subject?.subject.name}
                   </Badge>
                 ))}
               </div>

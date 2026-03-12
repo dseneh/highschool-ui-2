@@ -61,6 +61,7 @@ import { hasRequiredRoles } from "@/hooks/use-authorization";
 import SidebarHeaderDropDown from "./sidebar-header";
 import NavStudentCard from "./nav-student-card";
 import { useStudentByNumber } from "@/hooks/use-student";
+import { useCurrentStudent } from "@/hooks/use-current-student";
 
 export function DashboardSidebar({
   navSections = primaryNavSections,
@@ -84,6 +85,7 @@ export function DashboardSidebar({
 
   const { data: student } = useStudentByNumber(params.id_number as string, 
     { enabled: !!params.id_number && pathname?.includes('/students/') });
+  const { student: currentStudent } = useCurrentStudent();
 
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
   const hoverCloseTimer = React.useRef<number | null>(null);
@@ -189,16 +191,16 @@ export function DashboardSidebar({
   // Menu state: "main", "student", or "staff" (but "staff" is no longer used - staff always see "main")
   const [activeMenu, setActiveMenu] = React.useState<"main" | "student">("main");
 
-  // Initialize menu based on current route
+  // Initialize menu based on current route and account type.
+  // Student accounts should always see the student portal menu by default,
+  // even when they land on `/` rather than `/student/*`.
   React.useEffect(() => {
-    if (isStudent && isOnStudentPortal) {
-      setActiveMenu("student");
-    } else if (isStudent && isOnStudentDetail && shouldSwapMenu) {
+    if (isStudent) {
       setActiveMenu("student");
     } else {
       setActiveMenu("main");
     }
-  }, [shouldSwapMenu, isOnStudentDetail, isOnStudentPortal, isStudent]);
+  }, [isStudent]);
 
   // Menu configuration
   const menuConfig = {
@@ -227,6 +229,20 @@ export function DashboardSidebar({
 
     return items.filter((item) => canViewNavItem(item));
   }, [isOnStudentDetail, params.id_number, canViewNavItem, isStudent]);
+
+  const portalStudentCardData = React.useMemo(() => {
+    if (!currentStudent) {
+      return null;
+    }
+
+    const grade = currentStudent.current_grade_level?.name || currentStudent.grade_level;
+    const section = currentStudent.current_enrollment?.section?.name;
+
+    return {
+      ...currentStudent,
+      subtitle: [grade, section].filter(Boolean).join(" - "),
+    };
+  }, [currentStudent]);
 
   const handleMenuToggle = () => {
     if (activeMenu === "main") {
@@ -444,6 +460,13 @@ export function DashboardSidebar({
           </div>
         )}
 
+        {/* Student portal card */}
+        {isStudent && activeMenu === "student" && portalStudentCardData && (
+          <div className="mb-1 animate-in fade-in slide-in-from-top-2 duration-300">
+            <NavStudentCard student={portalStudentCardData} className="relative overflow-hidden rounded-lg border bg-card p-2 shadow-xs transition-all hover:shadow-md group-data-[collapsible=icon]:p-1 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:shadow-none" />
+          </div>
+        )}
+
         {/* Main Navigation */}
         {menuConfig.main.isActive && (
           <div className="space-y-2">
@@ -608,7 +631,7 @@ function SidebarUserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push("/settings")}>
+          <DropdownMenuItem onClick={() => router.push("/account-settings")}>
             <HugeiconsIcon icon={Settings01Icon} className="mr-2 size-4" />
             <span>Settings</span>
           </DropdownMenuItem>

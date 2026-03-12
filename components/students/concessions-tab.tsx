@@ -22,8 +22,9 @@ import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import apiClient from "@/lib/api2/client"
 import { toast } from "sonner"
 import { getErrorMessage, cn } from "@/lib/utils"
-import { Pencil, Trash } from "lucide-react"
+import { Coins, Pencil, Trash } from "lucide-react"
 import { AuthButton } from "../auth/auth-button"
+import EmptyStateComponent from "../shared/empty-state"
 
 interface ConcessionsTabProps {
   concessions: StudentConcessionDto[]
@@ -171,19 +172,13 @@ export function ConcessionsTab({
 
   if (concessions.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <EmptyState className="h-64 border-none p-0">
-            <EmptyStateIcon>
-              <HugeiconsIcon icon={Coins01Icon} />
-            </EmptyStateIcon>
-            <EmptyStateTitle className="text-sm font-medium">
-              No concessions applied
-            </EmptyStateTitle>
-            <EmptyStateDescription className="text-xs">
-              Start by adding a concession for this student.
-            </EmptyStateDescription>
-          </EmptyState>
+      <Card className="gap-0 p-0">
+        <CardContent className="p-0 ">
+          <EmptyStateComponent
+            icon={<Coins className="size-8 text-muted-foreground" />}
+            title="No concessions applied"
+            description="Student concessions will appear here once they are applied."
+          />
         </CardContent>
       </Card>
     )

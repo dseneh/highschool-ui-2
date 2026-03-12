@@ -8,7 +8,7 @@ import { DashboardSkeleton } from "@/components/dashboard/loading-skeleton";
 import { useAdminWorkspace } from "@/hooks/use-admin-workspace";
 
 const StudentPortalPage = lazy(() =>
-  import("./student/page").then((mod) => ({
+  import("./(student)/page").then((mod) => ({
     default: mod.default,
   }))
 );

@@ -1,0 +1,1 @@
+export { default } from "../../students/[id_number]/contacts/page"

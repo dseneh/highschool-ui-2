@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { useParams } from "next/navigation"
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useStudentAttendance } from "@/hooks/use-billing"
@@ -51,6 +50,7 @@ import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { getQueryClient } from "@/lib/query-client"
 import PageLayout from "@/components/dashboard/page-layout"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 function AttendanceSkeleton() {
   return (
@@ -104,8 +104,7 @@ const STATUS_BADGE_VARIANT: Record<string, "default" | "secondary" | "destructiv
 }
 
 export default function StudentAttendancePage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const subdomain = useTenantSubdomain()
   const queryClient = getQueryClient()
   const { resolvedTheme } = useTheme()
@@ -113,7 +112,7 @@ export default function StudentAttendancePage() {
 
   const studentsApi = useStudentsApi()
   const { data: student, isLoading: studentLoading } = studentsApi.getStudent(idNumber, {
-    enabled: !!idNumber && window.location.href.includes("/students/"),
+    enabled: !!idNumber,
   })
 
   const enrollmentId = student?.current_enrollment?.id

@@ -148,7 +148,7 @@ export default function PageLayout({
                   <EmptyStateComponent
                     title={emptyStateTitle}
                     description={emptyStateDescription}
-                    actionTitle={emptyStateAction ? "Take Action" : undefined}
+                    actionTitle={emptyStateAction ? "Create new" : undefined}
                     handleAction={emptyStateAction}
                     icon={emptyStateIcon}
                   />

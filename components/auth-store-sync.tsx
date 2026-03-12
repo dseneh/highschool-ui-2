@@ -8,10 +8,17 @@ import { useTenantStore } from "@/store/tenant-store";
 import { getTenantInfo } from "@/lib/api2/tenant-service";
 import { Tenant } from "@/lib/tenant";
 
+function normalizeWorkspace(value?: string | null): string {
+  const workspace = (value ?? "").toLowerCase();
+  // Backend maps /tenants/admin/ to the public tenant.
+  return workspace === "admin" ? "public" : workspace;
+}
+
 export function AuthStoreSync() {
   const { user, authenticated, tenant: authTenant } = useAuth();
   const { login, logout, user: storedUser } = useAuthStore();
   const { setTenant, tenant: storedTenant } = useTenantStore();
+  const requestedWorkspace = authTenant?.workspace;
 
   // Sync Auth User to Store
   useEffect(() => {
@@ -25,23 +32,30 @@ export function AuthStoreSync() {
 
   useEffect(() => {
     async function fetchTenant() {
-        if (!authenticated || !authTenant?.workspace) return;
-        
-        if (storedTenant?.schema_name === authTenant.workspace) return;
+        if (!authenticated || !requestedWorkspace) return;
+
+        const normalizedRequestedWorkspace = normalizeWorkspace(requestedWorkspace);
+        const normalizedStoredWorkspace = normalizeWorkspace(
+          storedTenant?.workspace || storedTenant?.schema_name
+        );
+
+        if (normalizedStoredWorkspace === normalizedRequestedWorkspace) return;
 
         try {
-            const tenantInfo = await getTenantInfo(authTenant.workspace);
+            const tenantInfo = await getTenantInfo(requestedWorkspace);
             setTenant(tenantInfo as Tenant);
         } catch (error) {
             console.error("Failed to fetch tenant info:", error);
             
-            const userTenant = storedUser?.tenants?.find(t => t.schema_name === authTenant.workspace);
+            const userTenant = storedUser?.tenants?.find(
+              (t) => normalizeWorkspace(t.schema_name) === normalizedRequestedWorkspace
+            );
             if (userTenant) {
                 const fallbackTenant: Tenant = {
                     id: userTenant.id,
                     name: userTenant.name,
                     schema_name: userTenant.schema_name,
-                    workspace: authTenant.workspace,
+                    workspace: requestedWorkspace,
                     logo: userTenant.logo,
                     active: true,
                 };
@@ -51,7 +65,7 @@ export function AuthStoreSync() {
     }
     
     fetchTenant();
-  }, [authenticated, authTenant, storedTenant, setTenant, storedUser]);
+  }, [authenticated, requestedWorkspace, storedTenant, setTenant, storedUser]);
 
   return null;
 }

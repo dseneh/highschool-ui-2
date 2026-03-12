@@ -7,12 +7,15 @@ import {
   Layers01Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
+import { GradeWorkflowBadge } from "./grade-workflow-badge";
+import { cn } from "@/lib/utils";
 
 interface GradebookCardProps {
   gradebook: any;
   statusBadge?: React.ReactNode;
   secondaryInfo?: React.ReactNode;
   actionMenu?: React.ReactNode;
+    fromUrl?: string;
 }
 
 export function GradebookCard({
@@ -20,11 +23,15 @@ export function GradebookCard({
   statusBadge,
   secondaryInfo,
   actionMenu,
+    fromUrl,
 }: GradebookCardProps) {
   // Determine if using statistics object (old API) or top-level properties (API2)
   const stats = gradebook.statistics || gradebook;
   const totalEnrolled = stats.total_enrolled_students || undefined;
   const studentsGraded = stats.students_with_grades || 0;
+  
+  // Get workflow status from gradebook data
+  const workflowStatus = gradebook.workflow_status?.predominant_status || "draft";
 
   // Determine progress based on available data
   const hasStudentProgress =
@@ -39,12 +46,17 @@ export function GradebookCard({
     progressValue =
       totalEnrolled > 0 ? (studentsGraded / totalEnrolled) * 100 : 0;
     progressCurrent = String(studentsGraded);
-    progressTotal = String(totalEnrolled);
+    progressTotal = String(totalEnrolled ?? 0);
 //   }
+
+  // Build the target URL with context
+  const targetUrl = fromUrl 
+    ? `/grading/gradebooks/${gradebook.id}?section=${gradebook.section.id}&gradeLevel=${gradebook.grade_level.id}&from=${encodeURIComponent(fromUrl)}`
+    : `/grading/gradebooks/${gradebook.id}?section=${gradebook.section.id}&gradeLevel=${gradebook.grade_level.id}`;
 
   return (
     <Link
-      href={`/grading/gradebooks/${gradebook.id}?section=${gradebook.section.id}&gradeLevel=${gradebook.grade_level.id}`}
+      href={targetUrl}
     >
       <Card className="group relative h-full cursor-pointer overflow-hidden border-border/70 bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 space-y-0 p-0">
         <div className="absolute inset-0 bg-linear-to-br from-primary/3 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
@@ -73,6 +85,7 @@ export function GradebookCard({
               </div>
             </div>
             <div className="flex items-start gap-2">
+              <GradeWorkflowBadge status={workflowStatus} />
               {statusBadge}
               {actionMenu}
             </div>
@@ -85,10 +98,17 @@ export function GradebookCard({
                 icon={UserIcon}
                 className="h-4 w-4 shrink-0"
               />
+              <div className="flex items-center gap-2">
               <span className="truncate">
-                {gradebook.teacher?.full_name ||
-                  "No teacher assigned"}
+                Teacher:
               </span>
+              <span className={cn(
+                "truncate font-semibold",
+                gradebook.teacher?.full_name ? "text-muted-foreground" : "text-orange-500"
+              )}>
+                {gradebook.teacher?.full_name || "No teacher assigned"}
+              </span>
+              </div>
             </div>
 
             {/* Progress bar */}

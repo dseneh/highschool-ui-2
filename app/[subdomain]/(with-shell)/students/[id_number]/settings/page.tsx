@@ -1,6 +1,6 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useAuth } from "@/components/portable-auth/src/client"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
@@ -30,6 +30,7 @@ import { WithdrawnBanner, isStudentReadOnly } from "@/components/students/withdr
 import { EnrollmentDialog } from "@/components/students/enrollment-dialog"
 import PageLayout from "@/components/dashboard/page-layout"
 import { AuthButton } from "@/components/auth/auth-button"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 
 function SettingsSkeleton() {
   return (
@@ -44,9 +45,8 @@ function SettingsSkeleton() {
 }
 
 export default function StudentSettingsPage() {
-  const params = useParams()
   const router = useRouter()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const { user: currentUser } = useAuth()
 
   const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin" || 
@@ -55,7 +55,7 @@ export default function StudentSettingsPage() {
 
   const studentsApi = useStudentsApi()
   const { data: student, isLoading, error, refetch, isFetching } = studentsApi.getStudent(idNumber, {
-    enabled: true || window.location.pathname.includes("/students/"),
+    enabled: !!idNumber,
   })
   const { currentYear } = useStudentPageActions(student)
   const { remove, withdraw, reinstate } = useStudentMutations()
@@ -186,6 +186,7 @@ export default function StudentSettingsPage() {
         </Card>
 
         {/* Actions */}
+        {isAdmin && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -215,9 +216,10 @@ export default function StudentSettingsPage() {
             )}
           </CardContent>
         </Card>
+        )}
 
         {/* Fix Enrollment – Warning Zone */}
-        {student.is_enrolled && !isStudentReadOnly(student) && (
+        {isAdmin && student.is_enrolled && !isStudentReadOnly(student) && (
           <Card className="border-orange-500/50">
             <CardHeader>
               <CardTitle className="text-base text-orange-600 dark:text-orange-400 flex items-center gap-2">
@@ -253,6 +255,7 @@ export default function StudentSettingsPage() {
         )}
 
         {/* Danger Zone */}
+        {isAdmin && (
         <Card className="border-destructive/50">
           <CardHeader>
             <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
@@ -281,6 +284,7 @@ export default function StudentSettingsPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Fix Enrollment Dialog (re-enroll mode) */}
         {student && (

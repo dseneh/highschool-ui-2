@@ -554,3 +554,38 @@
 .animate-fade-in-up-big {
   animation: fade-in-up-big 0.8s ease-out both;
 }
+
+/* ── Accordion animations ── */
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    height: var(--accordion-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--accordion-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

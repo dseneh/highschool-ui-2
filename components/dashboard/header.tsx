@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -9,7 +10,6 @@ import { ThemeCustomizer } from "@/components/theme/theme-customizer";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon,
-  SidebarLeft01Icon,
   Tick01Icon,
   RefreshIcon,
   ArrowLeft01Icon,
@@ -25,10 +25,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import { useDashboardStore, type LayoutDensity } from "@/store/dashboard-store";
+import {
+  useDashboardStore,
+  type HeaderBreadcrumbItem,
+  type LayoutDensity,
+} from "@/store/dashboard-store";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb-nav";
 import Notification from "./notification";
 import { AcademicYearIndicator } from "./academic-year-indicator";
-import { SystemStatusIndicator } from "./system-status";
 import { Menu } from "lucide-react";
 
 const densityLabels: Record<LayoutDensity, string> = {
@@ -53,7 +57,9 @@ export function DashboardHeader({
   isAdminWorkspace = false,
 }: DashboardHeaderProps) {
   const router = useRouter();
-  const storeBackUrl = useDashboardStore((state) => state.backUrl);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const customBreadcrumbs = useDashboardStore((state) => state.breadcrumbs);
   const showAlertBanner = useDashboardStore((state) => state.showAlertBanner);
   const showStatsCards = useDashboardStore((state) => state.showStatsCards);
   const showChart = useDashboardStore((state) => state.showChart);
@@ -70,8 +76,65 @@ export function DashboardHeader({
   const setLayoutDensity = useDashboardStore((state) => state.setLayoutDensity);
   const resetLayout = useDashboardStore((state) => state.resetLayout);
 
-  // Use store backUrl if available, otherwise fall back to props
-  const backUrl = storeBackUrl || propsBackUrl;
+  const fromParam = searchParams.get("from");
+  const decodedFrom = useMemo(() => {
+    if (!fromParam) return undefined;
+    try {
+      return decodeURIComponent(fromParam);
+    } catch {
+      return fromParam;
+    }
+  }, [fromParam]);
+
+  // Allow only internal app paths for back navigation
+  const safeFromUrl = decodedFrom?.startsWith("/") ? decodedFrom : undefined;
+  const backUrl = safeFromUrl || propsBackUrl;
+
+  const humanizePath = (path: string) => {
+    const segment = path.split("?")[0].split("/").filter(Boolean).pop() || "Page";
+    if (segment === "grading") return "Grading";
+    if (segment === "gradebooks") return "Gradebooks";
+    if (segment === "grades") return "My Classes & Grades";
+    return segment
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const fallbackBreadcrumbs = useMemo<HeaderBreadcrumbItem[]>(() => {
+    if (safeFromUrl) {
+      return [
+        { label: humanizePath(safeFromUrl), href: safeFromUrl },
+        { label: title, current: true },
+      ];
+    }
+
+    // Show a minimal breadcrumb only on deeper routes.
+    const isDeepRoute = (pathname || "").split("/").filter(Boolean).length > 1;
+    if (isDeepRoute && propsBackUrl) {
+      return [
+        { label: humanizePath(propsBackUrl), href: propsBackUrl },
+        { label: title, current: true },
+      ];
+    }
+
+    return [{ label: title, current: true }];
+  }, [safeFromUrl, propsBackUrl, title, pathname]);
+
+  const breadcrumbItems = useMemo<HeaderBreadcrumbItem[]>(() => {
+    const source = customBreadcrumbs && customBreadcrumbs.length > 0
+      ? customBreadcrumbs
+      : fallbackBreadcrumbs;
+
+    if (source.length >= 2) {
+      const first = source[0]?.label?.trim().toLowerCase();
+      const second = source[1]?.label?.trim().toLowerCase();
+      if (first && second && first === second) {
+        return source.slice(1);
+      }
+    }
+
+    return source;
+  }, [customBreadcrumbs, fallbackBreadcrumbs]);
 
   return (
     <header className="w-full border-b bg-background">
@@ -99,7 +162,13 @@ export function DashboardHeader({
                 icon={<HugeiconsIcon icon={icon} className="size-6" />}
               />
             )}
-            <h1 className="font-medium text-sm sm:text-base truncate">{title}</h1>
+            <div className="min-w-0">
+              {breadcrumbItems.length > 1 ? (
+                <BreadcrumbNav items={breadcrumbItems} className="text-[15px] text-muted-foreground" />
+              ) : (
+                <h1 className="font-medium text-sm sm:text-base truncate">{title}</h1>
+              )}
+            </div>
           </div>
         </div>
 

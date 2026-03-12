@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useParams } from "next/navigation"
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain"
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import {
   useStudentContacts,
@@ -288,14 +288,13 @@ function ContactCard({
 /* ------------------------------------------------------------------ */
 
 export default function StudentContactsPage() {
-  const params = useParams()
-  const idNumber = params.id_number as string
+  const idNumber = useResolvedStudentIdNumber()
   const subdomain = useTenantSubdomain()
   const queryClient = getQueryClient()
 
   const studentsApi = useStudentsApi()
   const { data: student, isLoading: studentLoading } = studentsApi.getStudent(idNumber, {
-    enabled: !!idNumber && window.location.href.includes("/students/"),
+    enabled: !!idNumber,
   })
 
   const {

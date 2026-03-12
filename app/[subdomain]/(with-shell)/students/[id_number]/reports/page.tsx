@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useParams } from "next/navigation";
 import {
   useAcademicYears,
   useCurrentAcademicYear,
 } from "@/hooks/use-academic-year";
+import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number";
 import { getStudentReportCardPdf } from "@/lib/api2/grading-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { PageContent } from "@/components/dashboard/page-content";
@@ -36,13 +36,12 @@ function ReportsSkeleton() {
 }
 
 export default function StudentReportsPage() {
-  const params = useParams();
-  const idNumber = params.id_number as string;
+  const idNumber = useResolvedStudentIdNumber();
   const subdomain = useTenantSubdomain();
 
   const studentsApi = useStudentsApi()
     const { data: student, isLoading: studentLoading, refetch: refreshStudent, isFetching, error: studentError } = studentsApi.getStudent(idNumber, {
-      enabled: !!idNumber && window.location.href.includes("/students/"),
+      enabled: !!idNumber,
     })
 
   const { data: currentYear } = useCurrentAcademicYear();
