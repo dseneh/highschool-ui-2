@@ -28,6 +28,7 @@ import {
   NumberCondition,
 } from "./types"
 import { SelectField } from "@/components/ui/select-field"
+import { RangeFilter } from "./range-filter"
 
 const focusRing = "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 
@@ -38,6 +39,8 @@ interface AdvancedTableFilterProps<TData, TValue> {
   options?: FilterOption[]
   conditions?: NumberCondition[]
   formatter?: (value: any) => string
+  summaryMode?: "labels" | "count" | "dot"
+  disabled?: boolean
 }
 
 const ColumnFiltersLabel = ({
@@ -86,9 +89,21 @@ export function AdvancedTableFilter<TData, TValue>({
   options,
   conditions,
   formatter = (value) => value.toString(),
+  summaryMode = "labels",
+  disabled = false,
 }: AdvancedTableFilterProps<TData, TValue>) {
   const columnFilters = column?.getFilterValue() as FilterValue
   const [selectedValues, setSelectedValues] = React.useState<FilterValue>(columnFilters)
+
+  const activeFilterCount = React.useMemo(() => {
+    if (!selectedValues) return 0
+    if (Array.isArray(selectedValues)) return selectedValues.length
+    if (typeof selectedValues === "string") return selectedValues !== "" ? 1 : 0
+    if (typeof selectedValues === "object" && "condition" in selectedValues) {
+      return selectedValues.condition ? 1 : 0
+    }
+    return 0
+  }, [selectedValues])
 
   const columnFilterLabels = React.useMemo(() => {
     if (!selectedValues) return undefined
@@ -128,6 +143,7 @@ export function AdvancedTableFilter<TData, TValue>({
             value={selectedValues as string}
             onValueChange={(value: any) => setSelectedValues(value!)}
             placeholder="Select..."
+            disabled={disabled}
             items={(options ?? []).map((option) => ({
               value: option.value,
               label: option.label,
@@ -143,6 +159,7 @@ export function AdvancedTableFilter<TData, TValue>({
                 <Checkbox
                   id={option.value}
                   checked={(selectedValues as string[])?.includes(option.value) ?? false}
+                  disabled={disabled}
                   onCheckedChange={(checked) => {
                     setSelectedValues((prev) => {
                       const current = (prev as string[]) ?? []
@@ -163,10 +180,12 @@ export function AdvancedTableFilter<TData, TValue>({
 
       case "number":
         const isBetween = (selectedValues as ConditionFilter)?.condition === "is-between"
+        const hasCondition = Boolean((selectedValues as ConditionFilter)?.condition)
         return (
           <div className="space-y-3 p-2">
             <Select
               value={(selectedValues as ConditionFilter)?.condition ?? ""}
+              disabled={disabled}
               onValueChange={(value) => {
                 setSelectedValues({
                   condition: value ?? "",
@@ -186,36 +205,26 @@ export function AdvancedTableFilter<TData, TValue>({
               </SelectContent>
             </Select>
 
-            <div className="space-y-2">
-              <Input
-                type="number"
-                placeholder="Value"
-                className="h-8"
-                disabled={!(selectedValues as ConditionFilter)?.condition}
-                value={(selectedValues as ConditionFilter)?.value?.[0] ?? ""}
-                onChange={(e) => {
-                  setSelectedValues((prev) => ({
-                    condition: (prev as ConditionFilter)?.condition,
-                    value: [e.target.value, (prev as ConditionFilter)?.value?.[1] ?? ""],
-                  }))
-                }}
-              />
-
-              {isBetween && (
-                <Input
-                  type="number"
-                  placeholder="Max value"
-                  className="h-8"
-                  value={(selectedValues as ConditionFilter)?.value?.[1] ?? ""}
-                  onChange={(e) => {
-                    setSelectedValues((prev) => ({
-                      condition: (prev as ConditionFilter)?.condition,
-                      value: [(prev as ConditionFilter)?.value?.[0] ?? "", e.target.value],
-                    }))
-                  }}
-                />
-              )}
-            </div>
+            <RangeFilter
+              minValue={(selectedValues as ConditionFilter)?.value?.[0] ?? ""}
+              maxValue={(selectedValues as ConditionFilter)?.value?.[1] ?? ""}
+              onMinChange={(minValue) => {
+                setSelectedValues((prev) => ({
+                  condition: (prev as ConditionFilter)?.condition,
+                  value: [minValue, (prev as ConditionFilter)?.value?.[1] ?? ""],
+                }))
+              }}
+              onMaxChange={(maxValue) => {
+                setSelectedValues((prev) => ({
+                  condition: (prev as ConditionFilter)?.condition,
+                  value: [(prev as ConditionFilter)?.value?.[0] ?? "", maxValue],
+                }))
+              }}
+              minPlaceholder="Min value"
+              maxPlaceholder="Max value"
+              showMax={isBetween}
+              disabled={disabled || !hasCondition}
+            />
           </div>
         )
 
@@ -240,6 +249,7 @@ export function AdvancedTableFilter<TData, TValue>({
       <PopoverTrigger asChild>
         <button
           type="button"
+          disabled={disabled}
           className={cn(
             "flex w-full items-center gap-x-1.5 whitespace-nowrap rounded-md border px-2 py-1.5 font-medium hover:bg-accent sm:w-fit sm:text-xs",
             selectedValues &&
@@ -250,6 +260,7 @@ export function AdvancedTableFilter<TData, TValue>({
                 (Array.isArray(selectedValues) && selectedValues.length > 0))
               ? "border-input"
               : "border-dashed border-input",
+            disabled && "cursor-not-allowed opacity-60 hover:bg-transparent",
             focusRing,
           )}
         >
@@ -278,21 +289,31 @@ export function AdvancedTableFilter<TData, TValue>({
               aria-hidden="true"
             />
           </span>
-          {columnFilterLabels && columnFilterLabels.length > 0 ? (
+          {activeFilterCount > 0 ? (
             <span>{title}</span>
           ) : (
             <span className="w-full text-left sm:w-fit">{title}</span>
           )}
-          {columnFilterLabels && columnFilterLabels.length > 0 && (
+          {activeFilterCount > 0 && (
             <span
               className="h-4 w-px bg-border"
               aria-hidden="true"
             />
           )}
-          <ColumnFiltersLabel
-            columnFilterLabels={columnFilterLabels}
-            className="w-full text-left sm:w-fit"
-          />
+          {activeFilterCount > 0 && summaryMode === "labels" && (
+            <ColumnFiltersLabel
+              columnFilterLabels={columnFilterLabels}
+              className="w-full text-left sm:w-fit"
+            />
+          )}
+          {activeFilterCount > 0 && summaryMode === "count" && (
+            <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+              {activeFilterCount}
+            </span>
+          )}
+          {activeFilterCount > 0 && summaryMode === "dot" && (
+            <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
+          )}
           <ChevronDown
             className="size-5 shrink-0 text-muted-foreground sm:size-4"
             aria-hidden="true"
@@ -317,7 +338,7 @@ export function AdvancedTableFilter<TData, TValue>({
               </Label>
               {renderFilter()}
             </div>
-            <Button type="submit" className="w-full " size="sm">
+            <Button type="submit" className="w-full " size="sm" disabled={disabled}>
               Apply
             </Button>
             {columnFilterLabels && columnFilterLabels.length > 0 && (
@@ -327,6 +348,7 @@ export function AdvancedTableFilter<TData, TValue>({
                 className="w-full "
                 type="button"
                 onClick={handleReset}
+                disabled={disabled}
               >
                 Reset
               </Button>

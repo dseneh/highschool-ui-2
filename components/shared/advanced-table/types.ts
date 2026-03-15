@@ -66,4 +66,5 @@ export interface TableColumnMeta {
   filterOptions?: FilterOption[]
   filterConditions?: NumberCondition[]
   formatter?: (value: any) => string
+  filterSummaryMode?: "labels" | "count" | "dot"
 }

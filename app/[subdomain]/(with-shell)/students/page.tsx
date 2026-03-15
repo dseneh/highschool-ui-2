@@ -2,16 +2,15 @@
 
 import * as React from "react";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
+import { useGradeLevels } from "@/hooks/use-grade-level";
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserGroupIcon,
   UserCircleIcon,
   Invoice02Icon,
   CreditCardIcon,
-  RefreshIcon,
 } from "@hugeicons/core-free-icons";
-import { StudentTable } from "@/components/students/student-table";
+import { StudentTable } from "../../../../components/students/student-table";
 import { StudentTableSkeleton } from "@/components/students/student-table-skeleton";
 import { EmptyStudents } from "@/components/students/empty-students";
 import { StudentStatsCards } from "@/components/students/student-stats-cards";
@@ -19,7 +18,6 @@ import { StudentFormModal } from "@/components/students/student-form";
 import { EnrollmentDialog } from "@/components/students/enrollment-dialog";
 import { DeleteStudentDialog } from "@/components/students/delete-student-dialog";
 import { AddStudentDropdown } from "@/components/students/add-student-dropdown";
-import { Button } from "@/components/ui/button";
 import { useMemo, useCallback } from "react";
 import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { showToast } from "@/lib/toast";
@@ -29,6 +27,7 @@ import type { StudentDto } from "@/lib/api2/student-types";
 import type { CreateStudentCommand } from "@/lib/api2/student-types";
 import PageLayout from "@/components/dashboard/page-layout";
 import { getQueryClient } from "@/lib/query-client";
+import type { StudentTableUrlParams } from "../../../../components/students/student-table";
 
 export default function StudentsPage() {
   const studentsApi = useStudentsApi();
@@ -36,22 +35,76 @@ export default function StudentsPage() {
     "status",
     parseAsString.withDefault("enrolled"),
   );
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [gradeLevelFilter, setGradeLevelFilter] = useQueryState("grade_level", parseAsString.withDefault(""));
+  const [sectionFilter, setSectionFilter] = useQueryState("section", parseAsString.withDefault(""));
+  const [genderFilter, setGenderFilter] = useQueryState("gender", parseAsString.withDefault(""));
+  const [balanceOwedFilter, setBalanceOwedFilter] = useQueryState("balance_owed", parseAsString.withDefault(""));
+  const [balanceCondition, setBalanceCondition] = useQueryState("balance_condition", parseAsString.withDefault(""));
+  const [balanceMin, setBalanceMin] = useQueryState("balance_min", parseAsString.withDefault(""));
+  const [balanceMax, setBalanceMax] = useQueryState("balance_max", parseAsString.withDefault(""));
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [pageSize, setPageSize] = useQueryState(
     "page_size",
     parseAsInteger.withDefault(20),
   );
 
+  const urlParams = useMemo<StudentTableUrlParams>(
+    () => ({
+      search,
+      status: statusFilter,
+      grade_level: gradeLevelFilter,
+      section: sectionFilter,
+      gender: genderFilter,
+      balance_owed: balanceOwedFilter,
+      balance_condition: balanceCondition,
+      balance_min: balanceMin,
+      balance_max: balanceMax,
+    }),
+    [
+      search,
+      statusFilter,
+      gradeLevelFilter,
+      sectionFilter,
+      genderFilter,
+      balanceOwedFilter,
+      balanceCondition,
+      balanceMin,
+      balanceMax,
+    ]
+  );
+
   const studentQuery = useMemo(
     () => ({
+      search: search || undefined,
       status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+      grade_level: gradeLevelFilter || undefined,
+      section: sectionFilter || undefined,
+      gender: genderFilter || undefined,
+      balance_owed: balanceOwedFilter || undefined,
+      balance_condition: balanceCondition || undefined,
+      balance_min: balanceMin || undefined,
+      balance_max: balanceMax || undefined,
       page,
       page_size: pageSize,
     }),
-    [statusFilter, page, pageSize],
+    [
+      search,
+      statusFilter,
+      gradeLevelFilter,
+      sectionFilter,
+      genderFilter,
+      balanceOwedFilter,
+      balanceCondition,
+      balanceMin,
+      balanceMax,
+      page,
+      pageSize,
+    ],
   );
 
   const { data, isLoading, error, isFetching, refetch } = studentsApi.getStudents(studentQuery);
+  const { data: gradeLevels = [] } = useGradeLevels();
   const createMutation = studentsApi.createStudent();
   const { data: currentYear } = useCurrentAcademicYear();
   const canManageStudents = useHasRole("teacher");
@@ -136,7 +189,62 @@ export default function StudentsPage() {
     };
   }, [data, page, pageSize, setPage, setPageSize]);
 
-  const isEmpty = !isLoading && studentsList.length === 0;
+  const selectedGradeIds = useMemo(() => {
+    if (!urlParams.grade_level) return [] as string[];
+    return urlParams.grade_level
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }, [urlParams.grade_level]);
+
+  const gradeFilterOptions = useMemo(() => {
+    return [...gradeLevels]
+      .sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
+      .map((grade) => ({
+        label: grade.name,
+        value: grade.id,
+      }));
+  }, [gradeLevels]);
+
+  const sectionFilterOptions = useMemo(() => {
+    if (selectedGradeIds.length !== 1) return [] as Array<{ label: string; value: string }>;
+    const selectedGrade = gradeLevels.find((grade) => grade.id === selectedGradeIds[0]);
+    const sections = selectedGrade?.sections || [];
+    if (sections.length <= 1) return [];
+    return [...sections]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((section) => ({
+        label: section.name,
+        value: section.id,
+      }));
+  }, [gradeLevels, selectedGradeIds]);
+
+  const setUrlParams = useCallback(
+    (params: StudentTableUrlParams & { page: number }) => {
+      void setSearch(params.search || "");
+      void setStatusFilter(params.status && params.status !== "all" ? params.status : "enrolled");
+      void setGradeLevelFilter(params.grade_level || "");
+      void setSectionFilter(params.section || "");
+      void setGenderFilter(params.gender || "");
+      void setBalanceOwedFilter(params.balance_owed || "");
+      void setBalanceCondition(params.balance_condition || "");
+      void setBalanceMin(params.balance_min || "");
+      void setBalanceMax(params.balance_max || "");
+      void setPage(params.page || 1);
+    },
+    [
+      setSearch,
+      setStatusFilter,
+      setGradeLevelFilter,
+      setSectionFilter,
+      setGenderFilter,
+      setBalanceOwedFilter,
+      setBalanceCondition,
+      setBalanceMin,
+      setBalanceMax,
+      setPage,
+    ],
+  );
 
   // Calculate stats from student data
   const stats = useMemo(() => {
@@ -206,29 +314,27 @@ export default function StudentsPage() {
         }
         fetching={isFetching}
         refreshAction={handleRefresh}
-        loading={isLoading}
+        // loading={isLoading}
         error={error}
-        noData={isEmpty}
+        // noData={isEmpty}
         skeleton={<StudentTableSkeleton />}
         emptyState={<EmptyStudents onAddStudent={() => setShowCreateModal(true)} />}
       >
         {/* Stats Cards */}
-        {!isEmpty && !isLoading && <StudentStatsCards items={stats} />}
-        {!isEmpty && !isLoading && (
+        <StudentStatsCards items={stats} />
 
           <StudentTable
             data={studentsList}
             onEnroll={handleEnroll}
             onFixEnrollment={handleFixEnrollment}
             onDelete={handleDelete}
-            statusFilter={statusFilter}
-            onStatusFilterChange={(nextStatus) => {
-              void setStatusFilter(nextStatus || "all");
-              void setPage(1);
-            }}
+            urlParams={urlParams}
+            setUrlParams={setUrlParams}
+            gradeFilterOptions={gradeFilterOptions}
+            sectionFilterOptions={sectionFilterOptions}
             serverPagination={serverPagination}
+            loading={isFetching}
           />
-        )}
       </PageLayout>
 
       <StudentFormModal

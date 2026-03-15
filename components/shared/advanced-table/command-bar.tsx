@@ -89,10 +89,10 @@ export function CommandBarCommand({
     <Button
       onClick={action}
       disabled={disabled}
-      variant={'outline'}
+      variant={'ghost'}
       size="sm"
       className={cn(
-        "flex items-center gap-2 text-sm transition-colors",
+        "flex items-center gap-1 text-sm transition-colors",
         disabled
           ? "text-muted-foreground cursor-not-allowed"
           : "text-foreground hover:text-primary"

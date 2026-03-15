@@ -8,16 +8,19 @@ import { AdvancedTableFilter } from "./advanced-table-filter"
 
 interface TableFiltersInlineProps<TData> {
   table: Table<TData>
+  disabled?: boolean
 }
 
-export function TableFiltersInline<TData>({ table }: TableFiltersInlineProps<TData>) {
+export function TableFiltersInline<TData>({ table, disabled = false }: TableFiltersInlineProps<TData>) {
   const columns = table.getAllColumns()
   
   // Get filterable columns (those with filterType in meta)
   const filterableColumns = React.useMemo(() => {
     return columns.filter(column => {
       const meta = column.columnDef.meta as any
-      return meta?.filterType && meta?.filterOptions
+      if (!meta?.filterType) return false
+      if (meta.filterType === "number") return Boolean(meta?.filterConditions?.length)
+      return Boolean(meta?.filterOptions?.length)
     })
   }, [columns])
 
@@ -31,8 +34,8 @@ export function TableFiltersInline<TData>({ table }: TableFiltersInlineProps<TDa
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:gap-x-6">
-      <div className="flex w-full flex-col gap-2 sm:w-fit sm:flex-row sm:items-center">
+    <div className="w-full overflow-x-auto pb-1">
+      <div className="flex min-w-max items-center gap-2">
         {filterableColumns.map(column => {
           const meta = column.columnDef.meta as any
           const columnId = column.id
@@ -47,6 +50,8 @@ export function TableFiltersInline<TData>({ table }: TableFiltersInlineProps<TDa
               options={meta?.filterOptions}
               conditions={meta?.filterConditions}
               formatter={meta?.formatter}
+              summaryMode={meta?.filterSummaryMode}
+              disabled={disabled}
             />
           )
         })}
@@ -54,7 +59,8 @@ export function TableFiltersInline<TData>({ table }: TableFiltersInlineProps<TDa
           <Button
             variant="ghost"
             onClick={() => table.resetColumnFilters()}
-            className="border border-border px-2 font-semibold text-primary sm:border-none sm:py-1"
+            className="border border-border px-2 font-semibold text-primary sm:border-none sm:py-1 shrink-0"
+            disabled={disabled}
           >
             Clear filters
           </Button>

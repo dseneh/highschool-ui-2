@@ -1,108 +1,43 @@
 "use client";
 
 import * as React from "react";
-import {
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table";
-import {
-  EmptyState,
-  EmptyStateIcon,
-  EmptyStateTitle,
-  EmptyStateDescription,
-} from "@/components/ui/empty-state";
-import {
-  Search,
-  ChevronDown,
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
-  Filter,
-  Circle,
-  CheckCircle2,
-  XCircle,
-  Download,
-  Trash2,
-  UserX,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { FloatingSelectionPanel } from "@/components/shared/floating-selection-panel";
-import { WithdrawStudentDialog } from "@/components/students/withdraw-student-dialog";
+import type { Table } from "@tanstack/react-table";
+import type { ConditionFilter } from "@/components/shared/advanced-table";
+import { Download } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { DialogBox } from "@/components/ui/dialog-box";
+import { WithdrawStudentDialog } from "@/components/students/withdraw-student-dialog";
+import { AdvancedTable, Searchbar, TableFilters, TableFiltersInline } from "@/components/shared/advanced-table";
+import { AuthButton } from "@/components/auth/auth-button";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
 import { useStudentMutations } from "@/hooks/use-student";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { getStatusTextClass } from "@/lib/status-colors";
 import { exportStudentsToCSV } from "@/lib/export-utils";
 import { showToast } from "@/lib/toast";
-import { StudentDto } from "@/lib/api2/student-types";
-import { studentColumns, type StudentTableMeta } from "./student-columns";
-import { AdvancedTablePagination } from "@/components/shared/advanced-table/advanced-table-pagination";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { getStudentColumns } from "./student-columns";
+import type { StudentDto } from "@/lib/api2/student-types";
 
-// Define status config for filter dropdown
-const statusConfig: Record<
-  string,
-  { label: string; icon: React.ElementType }
-> = {
-  active: {
-    label: "Active",
-    icon: CheckCircle2,
-  },
-  inactive: {
-    label: "Inactive",
-    icon: XCircle,
-  },
-  graduated: {
-    label: "Graduated",
-    icon: Circle,
-  },
-  dropped: {
-    label: "Dropped",
-    icon: Circle,
-  },
-  enrolled: {
-    label: "Enrolled",
-    icon: CheckCircle2,
-  },
-  'not enrolled': {
-    label: "Not Enrolled",
-    icon: Circle,
-  }
-};
+export interface StudentTableUrlParams {
+  search: string;
+  status: string;
+  grade_level: string;
+  section: string;
+  gender: string;
+  balance_owed: string;
+  balance_condition: string;
+  balance_min: string;
+  balance_max: string;
+}
 
 interface StudentTableProps {
   data: StudentDto[];
   onEnroll?: (student: StudentDto) => void;
   onFixEnrollment?: (student: StudentDto) => void;
   onDelete?: (student: StudentDto) => void;
-  statusFilter?: string;
-  onStatusFilterChange?: (status: string) => void;
+  urlParams: StudentTableUrlParams;
+  setUrlParams: (params: StudentTableUrlParams & { page: number }) => void;
+  gradeFilterOptions?: Array<{ label: string; value: string }>;
+  sectionFilterOptions?: Array<{ label: string; value: string }>;
   serverPagination?: {
     totalCount: number;
     currentPage: number;
@@ -110,6 +45,15 @@ interface StudentTableProps {
     onPageChange: (page: number) => void;
     onPageSizeChange: (size: number) => void;
   };
+  loading?: boolean;
+}
+
+function parseCsv(value?: string): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 export function StudentTable({
@@ -117,469 +61,313 @@ export function StudentTable({
   onEnroll,
   onFixEnrollment,
   onDelete,
-  statusFilter: controlledStatusFilter,
-  onStatusFilterChange,
+  urlParams,
+  setUrlParams,
+  gradeFilterOptions = [],
+  sectionFilterOptions = [],
   serverPagination,
+  loading,
 }: StudentTableProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [localStatusFilter, setLocalStatusFilter] = React.useState<string>(
-    controlledStatusFilter || "enrolled",
-  );
-  const [gradeFilter, setGradeFilter] = React.useState<string>("all");
-  const effectiveStatusFilter =
-    controlledStatusFilter !== undefined ? controlledStatusFilter : localStatusFilter;
-  const isServerPagination = Boolean(serverPagination);
+  const user = useAuthStore((state) => state.user);
+  const studentsApi = useStudentsApi();
+  const { withdraw } = useStudentMutations();
 
-  React.useEffect(() => {
-    if (controlledStatusFilter !== undefined) {
-      setLocalStatusFilter(controlledStatusFilter);
-    }
-  }, [controlledStatusFilter]);
+  const [tableInstance, setTableInstance] = React.useState<Table<StudentDto> | null>(null);
+  const isApplyingUrlFilters = React.useRef(false);
+  const previousColumnFilters = React.useRef<string>("");
 
-  const handleStatusChange = React.useCallback(
-    (nextStatus: string) => {
-      if (onStatusFilterChange) {
-        onStatusFilterChange(nextStatus);
-        return;
-      }
-      setLocalStatusFilter(nextStatus);
-    },
-    [onStatusFilterChange],
-  );
-  
-  // Extract unique grade levels for filter
-  const gradeLevels = React.useMemo(() => {
-    const grades = new Set<string>();
-    data.forEach(student => {
-      if (student.current_grade_level?.name) {
-        grades.add(student.current_grade_level.name);
-      }
-    });
-    return Array.from(grades).sort();
-  }, [data]);
-
-  // Filter logic
-  const filteredStudents = React.useMemo(() => {
-    return data.filter((student) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.id_number.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const status = student.status || "active";
-      const matchesStatus =
-        effectiveStatusFilter === "all" ||
-        status.toLowerCase() === effectiveStatusFilter;
-
-      const matchesGrade =
-        gradeFilter === "all" ||
-        student.current_grade_level?.name === gradeFilter;
-
-      return matchesSearch && matchesStatus && matchesGrade;
-    });
-  }, [data, searchQuery, effectiveStatusFilter, gradeFilter]);
-
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [studentsToDelete, setStudentsToDelete] = React.useState<StudentDto[]>([]);
   const [withdrawDialogOpen, setWithdrawDialogOpen] = React.useState(false);
   const [studentsToWithdraw, setStudentsToWithdraw] = React.useState<StudentDto[]>([]);
-  
-  const studentsApi = useStudentsApi();
-  const { withdraw } = useStudentMutations();
-  const user = useAuthStore((state) => state.user);
+  const [searchInputValue, setSearchInputValue] = React.useState(urlParams.search);
+  const isSearchDirty = searchInputValue.trim() !== urlParams.search.trim();
 
-  const tableMeta = React.useMemo<StudentTableMeta>(
-    () => ({ onEnroll, onFixEnrollment, onDelete, user }),
-    [onEnroll, onFixEnrollment, onDelete, user]
+  React.useEffect(() => {
+    setSearchInputValue(urlParams.search);
+  }, [urlParams.search]);
+
+  const columns = React.useMemo(
+    () =>
+      getStudentColumns({
+        onEnroll,
+        onFixEnrollment,
+        onDelete,
+        user,
+        gradeFilterOptions,
+        sectionFilterOptions,
+      }),
+    [onEnroll, onFixEnrollment, onDelete, user, gradeFilterOptions, sectionFilterOptions]
   );
 
-  const table = useReactTable({
-    data: filteredStudents,
-    columns: studentColumns,
-    meta: tableMeta,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    ...(!isServerPagination ? { getPaginationRowModel: getPaginationRowModel() } : {}),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    ...(!isServerPagination
-      ? {
-          initialState: {
-            pagination: {
-              pageSize: 8,
-            },
-          },
+  React.useEffect(() => {
+    const canUseSectionFilter = sectionFilterOptions.length > 1;
+    if (!canUseSectionFilter && urlParams.section) {
+      setUrlParams({
+        ...urlParams,
+        section: "",
+        page: 1,
+      });
+    }
+  }, [sectionFilterOptions, urlParams, setUrlParams]);
+
+  React.useEffect(() => {
+    if (!tableInstance) return;
+
+    isApplyingUrlFilters.current = true;
+
+    const applyArrayFilter = (columnId: string, csv: string) => {
+      const column = tableInstance.getColumn(columnId);
+      if (!column) return;
+      const values = parseCsv(csv).filter((value) => value !== "all");
+      column.setFilterValue(values.length > 0 ? values : undefined);
+    };
+
+    const applySelectFilter = (columnId: string, value: string) => {
+      const column = tableInstance.getColumn(columnId);
+      if (!column) return;
+      column.setFilterValue(value || undefined);
+    };
+
+    applyArrayFilter("enrollment_status", urlParams.status);
+    applyArrayFilter("grade_level", urlParams.grade_level);
+    const canUseSectionFilter = sectionFilterOptions.length > 1;
+    applyArrayFilter("section", canUseSectionFilter ? urlParams.section : "");
+    applyArrayFilter("gender", urlParams.gender);
+    applySelectFilter("balance_owed", urlParams.balance_owed);
+
+    const balanceColumn = tableInstance.getColumn("balance");
+    if (balanceColumn) {
+      const hasBalanceFilter = Boolean(
+        urlParams.balance_condition || urlParams.balance_min || urlParams.balance_max
+      );
+
+      if (!hasBalanceFilter) {
+        balanceColumn.setFilterValue(undefined);
+      } else {
+        const condition = urlParams.balance_condition || "is-between";
+        const balanceFilter: ConditionFilter = {
+          condition,
+          value: [urlParams.balance_min || "", urlParams.balance_max || ""],
+        };
+        balanceColumn.setFilterValue(balanceFilter);
+      }
+    }
+
+    setTimeout(() => {
+      previousColumnFilters.current = JSON.stringify(tableInstance.getState().columnFilters);
+      isApplyingUrlFilters.current = false;
+    }, 0);
+  }, [tableInstance, urlParams, sectionFilterOptions]);
+
+  React.useEffect(() => {
+    if (!tableInstance) return;
+
+    const handleStateChange = () => {
+      if (isApplyingUrlFilters.current) return;
+
+      const columnFilters = tableInstance.getState().columnFilters;
+      const currentFiltersString = JSON.stringify(columnFilters);
+      if (currentFiltersString === previousColumnFilters.current) return;
+      previousColumnFilters.current = currentFiltersString;
+
+      const nextParams: StudentTableUrlParams & { page: number } = {
+        search: urlParams.search,
+        status: "enrolled",
+        grade_level: "",
+        section: "",
+        gender: "",
+        balance_owed: "",
+        balance_condition: "",
+        balance_min: "",
+        balance_max: "",
+        page: 1,
+      };
+
+      columnFilters.forEach((filter) => {
+        if (filter.id === "enrollment_status") {
+          const selected = Array.isArray(filter.value)
+            ? filter.value.map((value) => String(value).toLowerCase()).filter((value) => value !== "all")
+            : [];
+          nextParams.status = selected.length > 0 ? selected.join(",") : "enrolled";
+          return;
         }
-      : {}),
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
+        if (filter.id === "grade_level") {
+          nextParams.grade_level = Array.isArray(filter.value) ? filter.value.join(",") : "";
+          return;
+        }
+        if (filter.id === "section") {
+          if (sectionFilterOptions.length <= 1) return;
+          nextParams.section = Array.isArray(filter.value) ? filter.value.join(",") : "";
+          return;
+        }
+        if (filter.id === "gender") {
+          nextParams.gender = Array.isArray(filter.value) ? filter.value.join(",") : "";
+          return;
+        }
+        if (filter.id === "balance_owed") {
+          nextParams.balance_owed = String(filter.value || "");
+          return;
+        }
+        if (filter.id === "balance") {
+          const balanceFilter = filter.value as ConditionFilter | undefined;
+          if (balanceFilter?.condition) {
+            nextParams.balance_condition = balanceFilter.condition;
+            nextParams.balance_min = String(balanceFilter.value?.[0] || "");
+            nextParams.balance_max = String(balanceFilter.value?.[1] || "");
+          }
+        }
+      });
+
+      setUrlParams(nextParams);
+    };
+
+    handleStateChange();
+    const interval = setInterval(handleStateChange, 100);
+    return () => clearInterval(interval);
+  }, [tableInstance, setUrlParams, urlParams.search, sectionFilterOptions]);
+
+  const clearSelection = React.useCallback(() => {
+    tableInstance?.toggleAllRowsSelected(false);
+  }, [tableInstance]);
+
+  const handleBulkDelete = React.useCallback((selectedRows: StudentDto[]) => {
+    const deletable = selectedRows.filter((student) => student.can_delete);
+    if (deletable.length === 0) {
+      showToast.error("Cannot delete", "None of the selected students can be deleted");
+      return;
+    }
+    setStudentsToDelete(deletable);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleCustomBulkAction = React.useCallback(
+    (action: string, selectedRows: StudentDto[]) => {
+      if (action === "bulk_enroll") {
+        const enrollable = selectedRows.filter((student) => !student.is_enrolled);
+        if (enrollable.length === 0) {
+          showToast.error("Cannot enroll", "All selected students are already enrolled");
+          return;
+        }
+        enrollable.forEach((student) => onEnroll?.(student));
+        clearSelection();
+        showToast.success("Success", `${enrollable.length} student(s) ready for enrollment`);
+        return;
+      }
+
+      if (action === "bulk_withdraw") {
+        const withdrawable = selectedRows.filter((student) => student.is_enrolled);
+        if (withdrawable.length === 0) {
+          showToast.error("Cannot withdraw", "None of the selected students are enrolled");
+          return;
+        }
+        setStudentsToWithdraw(withdrawable);
+        setWithdrawDialogOpen(true);
+        return;
+      }
+
+      if (action === "bulk_export") {
+        exportStudentsToCSV(
+          selectedRows,
+          `students-selected-${new Date().toISOString().slice(0, 10)}.csv`
+        );
+        showToast.success("Exported", `${selectedRows.length} students exported to CSV`);
+      }
     },
-  });
+    [clearSelection, onEnroll]
+  );
+
+  const handleExport = React.useCallback(() => {
+    exportStudentsToCSV(data);
+    showToast.success("Exported", `${data.length} students exported to CSV`);
+  }, [data]);
 
   return (
-    <div className="rounded-xl border border-border bg-card">
-      {/* Filter Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b border-border p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
-          <div className="relative w-full md:w-auto">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-9 w-full md:w-[250px]"
-            />
-          </div>
-
-          {/* Grade Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="w-[150px] h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-              <span className="truncate">
-                {gradeFilter === "all" ? "All Grades" : gradeFilter}
-              </span>
-              <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuCheckboxItem
-                checked={gradeFilter === "all"}
-                onCheckedChange={() => setGradeFilter("all")}
-              >
-                All Grades
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              {gradeLevels.map((grade) => (
-                <DropdownMenuCheckboxItem
-                  key={grade}
-                  checked={gradeFilter === grade}
-                  onCheckedChange={() => setGradeFilter(grade)}
-                >
-                  {grade}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Status Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-              <Filter className="size-4 shrink-0" />
-              {effectiveStatusFilter === "all"
-                ? "All Status"
-                : (statusConfig[effectiveStatusFilter]?.label || effectiveStatusFilter)}
-              <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-auto overflow-y-auto">
-              <DropdownMenuCheckboxItem
-                checked={effectiveStatusFilter === "all"}
-                onCheckedChange={() => handleStatusChange("all")}
-              >
-                All Status
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              {Object.entries(statusConfig).map(([key, config]) => (
-                <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={effectiveStatusFilter === key}
-                  onCheckedChange={() => handleStatusChange(key)}
-                >
-                  <div className="flex items-center gap-2">
-                    <config.icon className={cn("size-3.5", getStatusTextClass(key))} />
-                    {config.label}
-                  </div>
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          icon={<Download />}
-          onClick={() => {
-            exportStudentsToCSV(filteredStudents)
-            showToast.success("Exported", `${filteredStudents.length} students exported to CSV`)
-          }}
-        >
-            Export
-        </Button>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="bg-muted/50">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="text-muted-foreground font-medium whitespace-nowrap"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/students/${row.original.id_number}`)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={studentColumns.length}
-                  className="h-48"
-                >
-                  <EmptyState className="border-none py-6">
-                    <EmptyStateIcon>
-                      <Search className="size-5" />
-                    </EmptyStateIcon>
-                    <EmptyStateTitle className="text-base">No students found</EmptyStateTitle>
-                    <EmptyStateDescription>
-                      Try adjusting your search or filters to find what you&apos;re looking for.
-                    </EmptyStateDescription>
-                  </EmptyState>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      {!isServerPagination && (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
-             <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-                icon={<ChevronsLeft />}
-                tooltip="First page"
-              />
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                icon={<ChevronLeft />}
-                tooltip="Previous page"
-              />
-          </div>
-          
-          <div className="flex items-center gap-1">
-            {Array.from(
-              { length: Math.min(5, table.getPageCount()) },
-              (_, i) => {
-                const pageIndex = i;
-                const isActive =
-                  table.getState().pagination.pageIndex === pageIndex;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => table.setPageIndex(pageIndex)}
-                    className={cn(
-                      "size-8 rounded-lg text-sm font-semibold",
-                      isActive
-                        ? "bg-muted text-foreground"
-                        : "text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {pageIndex + 1}
-                  </button>
-                );
-              }
-            )}
-            {table.getPageCount() > 5 && (
-               <>
-                <span className="px-2 text-muted-foreground">...</span>
-                <button
-                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                  className="size-8 rounded-lg text-sm font-semibold text-foreground hover:bg-muted"
-                >
-                  {table.getPageCount()}
-                </button>
-               </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                icon={<ChevronRight />}
-                tooltip="Next page"
-              />
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-                icon={<ChevronsRight />}
-                tooltip="Last page"
-              />
-          </div>
-        </div>
-        
-        {/* Pagination Info */}
-        <div className="text-sm text-muted-foreground">
-            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of {table.getFilteredRowModel().rows.length} entries
-        </div>
-      </div>
-      )}
-
-      {isServerPagination && serverPagination && (
-        <div className="border-t border-border p-2">
-          <AdvancedTablePagination
-            table={table}
-            totalCount={serverPagination.totalCount}
-            currentPage={serverPagination.currentPage}
-            pageSize={serverPagination.pageSize}
-            onPageChange={serverPagination.onPageChange}
-            onPageSizeChange={serverPagination.onPageSizeChange}
-          />
-        </div>
-      )}
-
-      {/* Floating Selection Panel */}
-      <FloatingSelectionPanel
-        count={Object.keys(rowSelection).length}
-        onClear={() => setRowSelection({})}
-        actions={[
-          // Export action - always available
-          {
-            label: "Export",
-            icon: <Download className="size-3.5" />,
-            variant: "outline",
-            onClick: () => {
-              const selectedStudents = table.getSelectedRowModel().rows.map((r) => r.original);
-              exportStudentsToCSV(
-                selectedStudents,
-                `students-selected-${new Date().toISOString().slice(0, 10)}.csv`
-              );
-              showToast.success("Exported", `${selectedStudents.length} students exported`);
-            },
-            shortcut: "E",
-          },
-          // Enroll action - only for admin, registrar, superadmin
-          {
-            label: `Enroll (${table.getSelectedRowModel().rows.filter((r) => !r.original.is_enrolled).length})`,
-            icon: <CheckCircle2 className="size-3.5" />,
-            variant: "default",
-            onClick: () => {
-              const selectedStudents = table.getSelectedRowModel().rows.map((r) => r.original);
-              const enrollable = selectedStudents.filter((s) => !s.is_enrolled);
-              if (enrollable.length === 0) {
-                showToast.error("Cannot enroll", "All selected students are already enrolled");
-                return;
-              }
-              enrollable.forEach((student) => onEnroll?.(student));
-              setRowSelection({});
-              showToast.success("Success", `${enrollable.length} student(s) enrolled`);
-            },
-            shortcut: "N",
-            hidden: 
-              !["admin", "registrar", "superadmin"].includes(user?.role as any) ||
-              table.getSelectedRowModel().rows.filter((r) => !r.original.is_enrolled).length === 0,
-          },
-          // Withdraw action - only for admin, registrar, superadmin
-          {
-            label: `Withdraw (${table.getSelectedRowModel().rows.filter((r) => r.original.is_enrolled).length})`,
-            icon: <UserX className="size-3.5" />,
-            variant: "secondary",
-            onClick: () => {
-              const selectedStudents = table.getSelectedRowModel().rows.map((r) => r.original);
-              const withdrawable = selectedStudents.filter((s) => s.is_enrolled);
-              if (withdrawable.length === 0) {
-                showToast.error("Cannot withdraw", "None of the selected students are enrolled");
-                return;
-              }
-              setStudentsToWithdraw(withdrawable);
-              setWithdrawDialogOpen(true);
-            },
-            shortcut: "W",
-            hidden: 
-              !["admin", "registrar", "superadmin"].includes(user?.role as any) ||
-              table.getSelectedRowModel().rows.filter((r) => r.original.is_enrolled).length === 0,
-          },
-          // Delete action - only for admin, superadmin
-          {
-            label: `Delete (${table.getSelectedRowModel().rows.filter((r) => r.original.can_delete).length})`,
-            icon: <Trash2 className="size-3.5" />,
-            variant: "destructive",
-            onClick: () => {
-              const selectedStudents = table.getSelectedRowModel().rows.map((r) => r.original);
-              const deletable = selectedStudents.filter((s) => s.can_delete);
-              if (deletable.length === 0) {
-                showToast.error("Cannot delete", "None of the selected students can be deleted");
-                return;
-              }
-              setStudentsToDelete(deletable);
-              setDeleteDialogOpen(true);
-            },
-            shortcut: "D",
-            hidden: 
-              !["admin", "superadmin"].includes(user?.role as any) ||
-              table.getSelectedRowModel().rows.filter((r) => r.original.can_delete).length === 0,
-          },
+    <>
+      <AdvancedTable
+        loading={loading}
+        columns={columns}
+        data={data}
+        pageSize={serverPagination?.pageSize ?? 8}
+        totalCount={serverPagination?.totalCount}
+        currentPage={serverPagination?.currentPage ?? 1}
+        onPageChange={serverPagination?.onPageChange}
+        onPageSizeChange={serverPagination?.onPageSizeChange}
+        onRowClick={(student) => router.push(`/students/${student.id_number}`)}
+        showPagination={true}
+        showRowSelection={true}
+        showBulkActions={true}
+        onBulkDelete={handleBulkDelete}
+        onCustomBulkAction={handleCustomBulkAction}
+        customBulkActions={[
+          { label: "Enroll", action: "bulk_enroll" },
+          { label: "Withdraw", action: "bulk_withdraw" },
+          { label: "Export", action: "bulk_export" },
         ]}
+        onTableInstanceReady={setTableInstance}
+        toolbar={(table) => (
+          <div className="p-1 space-y-4 overflow-x-auto no-scrollbar">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-2 flex-1">
+                <Searchbar
+                  value={searchInputValue}
+                  disabled={loading}
+                  onChange={(event) => {
+                    setSearchInputValue(event.target.value)
+                  }}
+                  onClear={() => {
+                    setSearchInputValue("")
+                    setUrlParams({
+                      ...urlParams,
+                      search: "",
+                      page: 1,
+                    })
+                  }}
+                  onSearch={() => {
+                    setUrlParams({
+                      ...urlParams,
+                      search: searchInputValue,
+                      page: 1,
+                    });
+                  }}
+                  showDirtyIndicator={isSearchDirty}
+                  placeholder="Search students..."
+                  className="w-full min-w-62.5 max-w-sm"
+                />
+                <div className="md:hidden">
+                  <TableFilters table={table} disabled={Boolean(loading)} />
+                </div>
+                <div className="hidden md:block">
+                  <TableFiltersInline table={table} disabled={Boolean(loading)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AuthButton roles="teacher" disable variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </AuthButton>
+              </div>
+            </div>
+          </div>
+        )}
       />
 
-      {/* Withdraw Dialog */}
       {studentsToWithdraw.length === 1 ? (
         <WithdrawStudentDialog
           open={withdrawDialogOpen}
           onOpenChange={setWithdrawDialogOpen}
           student={studentsToWithdraw[0]}
           loading={withdraw.isPending}
-          onConfirm={(data: { withdrawal_date: string; withdrawal_reason: string }) => {
+          onConfirm={(payload: { withdrawal_date: string; withdrawal_reason: string }) => {
             withdraw.mutate(
-              { id: studentsToWithdraw[0].id, payload: data },
+              { id: studentsToWithdraw[0].id, payload },
               {
                 onSuccess: () => {
                   showToast.success("Success", "Student withdrawn successfully");
                   setWithdrawDialogOpen(false);
-                  setRowSelection({});
                   setStudentsToWithdraw([]);
+                  clearSelection();
                 },
                 onError: (error: Error) => {
                   showToast.error("Error", error.message || "Failed to withdraw student");
@@ -603,7 +391,6 @@ export function StudentTable({
         />
       ) : null}
 
-      {/* Delete Confirmation Dialog */}
       <DialogBox
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -617,30 +404,28 @@ export function StudentTable({
             </span>
           </>
         }
-        actionLabel={`Delete ${studentsToDelete.length} Student${studentsToDelete.length !== 1 ? 's' : ''}`}
+        actionLabel={`Delete ${studentsToDelete.length} Student${studentsToDelete.length !== 1 ? "s" : ""}`}
         actionVariant="destructive"
         actionLoading={false}
         onAction={() => {
           studentsToDelete.forEach((student) => {
             const deleteMutation = studentsApi.deleteStudent(student.id);
-            deleteMutation.mutate(
-              false,
-              {
-                onSuccess: () => {
-                  onDelete?.(student);
-                },
-                onError: (error: Error) => {
-                  showToast.error("Error", `Failed to delete ${student.full_name}: ${error.message}`);
-                },
-              }
-            );
+            deleteMutation.mutate(false, {
+              onSuccess: () => {
+                onDelete?.(student);
+              },
+              onError: (error: Error) => {
+                showToast.error("Error", `Failed to delete ${student.full_name}: ${error.message}`);
+              },
+            });
           });
+
           setDeleteDialogOpen(false);
-          setRowSelection({});
           setStudentsToDelete([]);
+          clearSelection();
           showToast.success("Success", `${studentsToDelete.length} student(s) deleted`);
         }}
       />
-    </div>
+    </>
   );
 }

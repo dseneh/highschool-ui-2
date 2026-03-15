@@ -15,16 +15,19 @@ import { Badge } from "@/components/ui/badge"
 
 interface TableFiltersProps<TData> {
   table: Table<TData>
+  disabled?: boolean
 }
 
-export function TableFilters<TData>({ table }: TableFiltersProps<TData>) {
+export function TableFilters<TData>({ table, disabled = false }: TableFiltersProps<TData>) {
   const columns = table.getAllColumns()
   
   // Get filterable columns (those with filterType in meta)
   const filterableColumns = React.useMemo(() => {
     return columns.filter(column => {
       const meta = column.columnDef.meta as any
-      return meta?.filterType && meta?.filterOptions
+      if (!meta?.filterType) return false
+      if (meta.filterType === "number") return Boolean(meta?.filterConditions?.length)
+      return Boolean(meta?.filterOptions?.length)
     })
   }, [columns])
 
@@ -34,6 +37,9 @@ export function TableFilters<TData>({ table }: TableFiltersProps<TData>) {
       const filterValue = column.getFilterValue()
       if (Array.isArray(filterValue)) {
         return filterValue.length > 0
+      }
+      if (filterValue && typeof filterValue === "object" && "condition" in filterValue) {
+        return Boolean((filterValue as { condition?: string }).condition)
       }
       return filterValue !== undefined && filterValue !== ""
     }).length
@@ -52,7 +58,7 @@ export function TableFilters<TData>({ table }: TableFiltersProps<TData>) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 relative">
+        <Button variant="outline" size="sm" className="h-8 relative" disabled={disabled}>
           <Filter className="mr-2 h-4 w-4" />
           Filters
           {activeFilterCount > 0 && (
@@ -75,6 +81,7 @@ export function TableFilters<TData>({ table }: TableFiltersProps<TData>) {
                 size="sm"
                 onClick={clearAllFilters}
                 className="h-7 text-xs"
+                disabled={disabled}
               >
                 <X className="mr-1 h-3 w-3" />
                 Clear all
@@ -100,6 +107,8 @@ export function TableFilters<TData>({ table }: TableFiltersProps<TData>) {
                     options={meta?.filterOptions}
                     conditions={meta?.filterConditions}
                     formatter={meta?.formatter}
+                    summaryMode={meta?.filterSummaryMode}
+                    disabled={disabled}
                   />
                 </div>
               )

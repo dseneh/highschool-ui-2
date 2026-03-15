@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { DataTableColumnHeader } from "@/components/shared/data-table-column-header"
+import { AdvancedTableColumnHeader } from "@/components/shared/advanced-table"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -19,16 +19,33 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import {MoreHorizontalIcon, ViewIcon, BookOpen02Icon, Delete02Icon, Invoice01Icon, UserAdd01Icon, RepeatIcon} from '@hugeicons/core-free-icons';
 import Link from "next/link"
+import type { ConditionFilter } from "@/components/shared/advanced-table"
 
-/** Callbacks passed via table.options.meta */
-export interface StudentTableMeta {
+interface StudentColumnsProps {
   onEnroll?: (student: StudentDto) => void
   onFixEnrollment?: (student: StudentDto) => void
   onDelete?: (student: StudentDto) => void
-  user?: any
+  user?: unknown
+  gradeFilterOptions?: Array<{ label: string; value: string }>
+  sectionFilterOptions?: Array<{ label: string; value: string }>
 }
 
-export const studentColumns: ColumnDef<StudentDto>[] = [
+function getBalance(student: StudentDto): number {
+  return Number(student.current_enrollment?.billing_summary?.balance || 0)
+}
+
+export function getStudentColumns({
+  onEnroll,
+  onFixEnrollment,
+  onDelete,
+  user,
+  gradeFilterOptions = [],
+  sectionFilterOptions = [],
+}: StudentColumnsProps = {}): ColumnDef<StudentDto>[] {
+  const gradeLabelById = new Map(gradeFilterOptions.map((option) => [option.value, option.label]))
+  const sectionLabelById = new Map(sectionFilterOptions.map((option) => [option.value, option.label]))
+
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -56,7 +73,7 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
   {
     accessorKey: "id_number",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Student #" />
+      <AdvancedTableColumnHeader column={column} title="Student #" />
     ),
     cell: ({ row }) => (
       <span className="font-mono text-sm font-medium">
@@ -67,7 +84,7 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
   {
     accessorKey: "full_name",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Full Name" />
+      <AdvancedTableColumnHeader column={column} title="Full Name" />
     ),
     cell: ({ row }) => {
       const student = row.original
@@ -98,9 +115,9 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
     },
   },
   {
-    accessorKey: "current_grade_level",
+    id: "grade_level",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Grade Level" />
+      <AdvancedTableColumnHeader column={column} title="Grade Level" />
     ),
     cell: ({ row }) => {
       const gradeLevel = row.original.current_grade_level
@@ -108,30 +125,49 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
       return <Badge variant="secondary">{gradeLevel.name}</Badge>
     },
     filterFn: (row, id, value) => {
-      const gradeLevel = row.original.current_grade_level
-      return value.includes(gradeLevel?.name || "")
+      if (!value || !Array.isArray(value) || value.length === 0) return true
+      const gradeLevelId = row.original.current_grade_level?.id || ""
+      return value.includes(gradeLevelId)
     },
+    meta: {
+      displayName: "Grade Level",
+      filterType: "checkbox",
+      filterOptions: gradeFilterOptions,
+      formatter: (value: string) => gradeLabelById.get(String(value)) || String(value),
+      filterSummaryMode: "count",
+    } as any,
   },
   {
-    accessorKey: "current_enrollment",
-    header: "Section",
+    id: "section",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Section" />
+    ),
     cell: ({ row }) => {
       const enrollment = row.original.current_enrollment
       if (!enrollment?.section) return <span className="text-muted-foreground">—</span>
       return <span className="text-sm">{enrollment.section.name}</span>
     },
+    filterFn: (row, id, value) => {
+      if (!value || !Array.isArray(value) || value.length === 0) return true
+      const sectionId = row.original.current_enrollment?.section?.id || ""
+      return value.includes(sectionId)
+    },
+    meta: {
+      displayName: "Section",
+      filterType: "checkbox",
+      filterOptions: sectionFilterOptions,
+      formatter: (value: string) => sectionLabelById.get(String(value)) || String(value),
+      filterSummaryMode: "count",
+    } as any,
   },
   {
     id: "enrollment_status",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
+      <AdvancedTableColumnHeader column={column} title="Status" />
     ),
     cell: ({ row }) => {
       const student = row.original
-      // const enrollmentStatus = student.current_enrollment?.status
-      const studentStatus = student.status
-      
-      const status = studentStatus
+      const status = student.status
       const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "Unknown"
 
       return (
@@ -144,56 +180,134 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
       )
     },
     filterFn: (row, id, value) => {
-      const enrollmentStatus = row.original.current_enrollment?.status
-      const studentStatus = row.original.status
-      const status = enrollmentStatus || studentStatus
-      return value.includes(status)
+      if (!value || !Array.isArray(value) || value.length === 0) return true
+      const status = row.original.status || ""
+      return value.includes(status.toLowerCase())
     },
+    meta: {
+      displayName: "Status",
+      filterType: "checkbox",
+      filterOptions: [
+        { label: "Active", value: "active" },
+        { label: "Inactive", value: "inactive" },
+        { label: "Enrolled", value: "enrolled" },
+        { label: "Not Enrolled", value: "not_enrolled" },
+        { label: "Withdrawn", value: "withdrawn" },
+        { label: "Graduated", value: "graduated" },
+        { label: "Dropped", value: "dropped" },
+      ],
+    } as any,
+  },
+  {
+    accessorKey: "gender",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Gender" />
+    ),
+    cell: ({ row }) => {
+      const gender = (row.getValue("gender") as string | null) || ""
+      if (!gender) return <span className="text-muted-foreground">—</span>
+      return <span className="text-sm capitalize">{gender}</span>
+    },
+    filterFn: (row, id, value) => {
+      if (!value || !Array.isArray(value) || value.length === 0) return true
+      const gender = (row.getValue("gender") as string | null)?.toLowerCase() || "unknown"
+      return value.includes(gender)
+    },
+    meta: {
+      displayName: "Gender",
+      filterType: "checkbox",
+      filterOptions: [
+        { label: "Male", value: "male" },
+        { label: "Female", value: "female" },
+        { label: "Unknown", value: "unknown" },
+      ],
+    } as any,
+  },
+  {
+    id: "balance_owed",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Balance Owed" />
+    ),
+    cell: ({ row }) => {
+      const hasBalance = getBalance(row.original) > 0
+      return hasBalance ? <Badge variant="destructive">Yes</Badge> : <Badge variant="secondary">No</Badge>
+    },
+    filterFn: (row, id, value) => {
+      if (!value) return true
+      const hasBalance = getBalance(row.original) > 0
+      return (value === "owed" && hasBalance) || (value === "clear" && !hasBalance)
+    },
+    meta: {
+      displayName: "Balance Owed",
+      filterType: "select",
+      filterOptions: [
+        { label: "Yes", value: "owed" },
+        { label: "No", value: "clear" },
+      ],
+    } as any,
   },
   {
     id: "balance",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Balance" />
+      <AdvancedTableColumnHeader column={column} title="Balance" />
     ),
     cell: ({ row }) => {
-      const billing = row.original.current_enrollment?.billing_summary
-      const balance = billing?.balance
+      const balance = getBalance(row.original)
       if (balance === undefined || balance === null) {
         return <span className="text-muted-foreground">—</span>
       }
-      const currency = billing?.currency || '$'
-      const isOverdue = balance > 0 && !billing?.payment_status?.is_on_time
+      const isOverdue = balance > 0 && !row.original.current_enrollment?.billing_summary?.payment_status?.is_on_time
+
       return (
         <span className={`text-sm font-medium ${isOverdue ? 'text-destructive' : balance === 0 ? 'text-green-600' : ''}`}>
-          {currency}{balance.toLocaleString()}
+          {(row.original.current_enrollment?.billing_summary?.currency || '$')}{balance.toLocaleString()}
         </span>
       )
     },
-  },
-  {
-    accessorKey: "date_of_birth",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Date of Birth" />
-    ),
-    cell: ({ row }) => {
-      const dob = row.getValue("date_of_birth") as string
-      if (!dob) return <span className="text-muted-foreground">—</span>
-      return (
-        <span className="text-sm">
-          {new Date(dob).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
-        </span>
-      )
+    filterFn: (row, id, value) => {
+      const filter = value as ConditionFilter | undefined
+      if (!filter || !filter.condition) return true
+
+      const amount = getBalance(row.original)
+      const minRaw = filter.value?.[0]
+      const maxRaw = filter.value?.[1]
+      const min = Number(minRaw || 0)
+      const max = Number(maxRaw || 0)
+
+      switch (filter.condition) {
+        case "is-between":
+          if (!Number.isFinite(min)) return true
+          if (!Number.isFinite(max) || max === 0) return amount >= min
+          return amount >= min && amount <= max
+        case "is-greater-than":
+          return amount > min
+        case "is-less-than":
+          return amount < min
+        case "is-equal-to":
+          return amount === min
+        default:
+          return true
+      }
     },
+    meta: {
+      displayName: "Balance",
+      filterType: "number",
+      filterConditions: [
+        { label: "Is Between", value: "is-between" },
+        { label: "Is Greater Than", value: "is-greater-than" },
+        { label: "Is Less Than", value: "is-less-than" },
+        { label: "Is Equal To", value: "is-equal-to" },
+      ],
+      formatter: (amount: number | string) => {
+        const value = Number(amount || 0)
+        return value.toLocaleString()
+      },
+    } as any,
   },
   {
     id: "actions",
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const student = row.original
-      const meta = table.options.meta as StudentTableMeta | undefined
       const menuItems = [
         {
           label: "View Details",
@@ -212,11 +326,9 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
         },
       ]
 
-      const canEnroll = ["admin", "registrar", "superadmin"].includes(meta?.user?.role)
-      const canDelete = ["admin", "superadmin"].includes(meta?.user?.role)
-      
-      // Show action menu if user has any permission
-      const hasAnyPermission = canEnroll || canDelete
+      const role = (user as { role?: string } | undefined)?.role || ""
+      const canEnroll = ["admin", "registrar", "superadmin"].includes(role)
+      const canDelete = ["admin", "superadmin"].includes(role)
 
       return (
         <div onClick={(e) => e.stopPropagation()}>
@@ -232,7 +344,7 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
                 {/* <DropdownMenuSeparator /> */}
                 {!student.is_enrolled && canEnroll && (
                   <>
-                    <DropdownMenuItem onClick={() => meta?.onEnroll?.(student)}>
+                    <DropdownMenuItem onClick={() => onEnroll?.(student)}>
                       <HugeiconsIcon icon={UserAdd01Icon} className=" size-4" />
                       Enroll Student
                     </DropdownMenuItem>
@@ -252,7 +364,7 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-orange-600 focus:text-orange-600"
-                      onClick={() => meta?.onFixEnrollment?.(student)}
+                      onClick={() => onFixEnrollment?.(student)}
                     >
                       <HugeiconsIcon icon={RepeatIcon} className="size-4" />
                       Fix Enrollment
@@ -264,7 +376,7 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
-                      onClick={() => meta?.onDelete?.(student)}
+                      onClick={() => onDelete?.(student)}
                     >
                       <HugeiconsIcon icon={Delete02Icon} className=" size-4" />
                       Delete
@@ -279,3 +391,4 @@ export const studentColumns: ColumnDef<StudentDto>[] = [
     },
   },
 ]
+}
