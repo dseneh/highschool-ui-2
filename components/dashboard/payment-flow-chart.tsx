@@ -123,7 +123,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
 export function PaymentFlowChart({ data = [], paymentSummary }: PaymentFlowChartProps) {
   const { resolvedTheme } = useTheme();
   const [chartType, setChartType] = useState<ChartType>("bar");
-  const [period, setPeriod] = useState<TimePeriod>("6months");
+  const [period, setPeriod] = useState<TimePeriod>("year");
   const [showGrid, setShowGrid] = useState(true);
   const [showCollected, setShowCollected] = useState(true);
   const [showPending, setShowPending] = useState(true);
@@ -284,7 +284,7 @@ export function PaymentFlowChart({ data = [], paymentSummary }: PaymentFlowChart
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-10 flex-1 min-h-0">
         <div className="flex flex-col gap-4 w-full lg:w-50 xl:w-55 shrink-0">
           <div className="space-y-2 sm:space-y-4">
-            <p className="text-xl sm:text-2xl lg:text-[28px] font-semibold leading-tight tracking-tight">${totalCollected.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl lg:text-[28px] font-semibold leading-tight tracking-tight pt-3">${totalCollected.toLocaleString()}</p>
             <p className="text-xs sm:text-sm text-muted-foreground">Total Collected ({periodLabels[period]})</p>
           </div>
 

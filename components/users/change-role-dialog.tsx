@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,20 +21,13 @@ import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth/auth-button";
 import {
   Form,
-  FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Badge } from "@/components/ui/badge";
 
 const changeRoleSchema = z.object({
@@ -86,10 +79,10 @@ export function ChangeRoleDialog({
     },
   });
 
-  // Update form when user changes
-  if (user && form.getValues().role !== user.role?.toLowerCase()) {
+  useEffect(() => {
+    if (!open || !user) return;
     form.reset({ role: user.role?.toLowerCase() || "" });
-  }
+  }, [form, open, user]);
 
   const handleSubmit = async (data: ChangeRoleFormData) => {
     if (!user) return;
@@ -165,29 +158,16 @@ export function ChangeRoleDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>New Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
+                  <SelectField
+                    items={roleOptions.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    onValueChange={(value) => field.onChange(String(value ?? ""))}
                     value={field.value}
+                    placeholder="Select a role"
                     disabled={submitting || isCurrentUserTarget || isSuperadminTarget}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {roleOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{option.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {option.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                   <FormDescription>
                     {isCurrentUserTarget
                       ? "You cannot change your own role from this screen."

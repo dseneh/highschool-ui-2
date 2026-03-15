@@ -45,9 +45,10 @@ export function LandingContent({
 
           <LandingStatsCards summary={summary} paymentSummary={paymentSummary} />
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <EnrollmentChart data={gradeLevelData} />
-
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2">
+              <EnrollmentChart data={gradeLevelData} />
+            </div>
             <div className="space-y-6">
               <PaymentDistribution data={paymentDistribution} />
             </div>

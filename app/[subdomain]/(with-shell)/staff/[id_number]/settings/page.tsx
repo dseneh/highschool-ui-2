@@ -54,7 +54,7 @@ export default function StaffSettingsPage() {
 
   const staffApi = useStaff()
   const { data: staff, isLoading } = staffApi.getStaffMember(idNumber, {
-    enabled: !!idNumber && window.location.href.includes("/students/")
+    enabled: !!idNumber && window.location.href.includes("/staff/")
   })
   const { remove, suspend, terminate, reinstate } = useStaffMutations()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -266,10 +266,10 @@ export default function StaffSettingsPage() {
                 </div>
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/users/${staff.user_account.id}/settings`)}
+                  onClick={() => router.push(`/users/${staff.id_number}`)}
                   icon={<HugeiconsIcon icon={Settings01Icon} />}
                 >
-                  Configure
+                  Open Account
                 </Button>
               </div>
             </CardContent>

@@ -13,7 +13,21 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { BarChart3, MoreHorizontal, Download } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  PieChart,
+  Pie,
+  Sector,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  ReferenceLine,
+  type TooltipProps,
+} from "recharts";
 import type { GradeLevelDistribution } from "@/lib/api2/dashboard";
 
 import { DashboardCard } from "./dashboard-card";
@@ -25,22 +39,54 @@ interface EnrollmentChartProps {
 
 export function EnrollmentChart({ data = [] }: EnrollmentChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [showLabels, setShowLabels] = useState(true);
+  const [chartView, setChartView] = useState<"bar-line" | "donut">("bar-line");
 
-  const chartData = data.map((item, index) => ({
-    name: item.grade_level,
-    value: item.count,
-    color: chartColors[index % chartColors.length],
-  }));
+  const toShortGradeName = (gradeLevel: string) => {
+    if (!gradeLevel) return "-";
+    const normalized = gradeLevel.trim();
+    const lower = normalized.toLowerCase();
+    if (lower === "kindergarten") return "K";
 
-  const totalEnrolled = chartData.reduce((acc, item) => acc + item.value, 0);
+    const gradeMatch = normalized.match(/(\d{1,2})/);
+    if (gradeMatch) {
+      return `G${gradeMatch[1]}`;
+    }
 
-  const onPieEnter = (_: unknown, index: number) => {
-    setActiveIndex(index);
+    return normalized.length <= 4 ? normalized : normalized.slice(0, 4).toUpperCase();
   };
 
-  const onPieLeave = () => {
-    setActiveIndex(null);
+  const chartData = [...data]
+    .sort((a, b) => (a.level ?? 0) - (b.level ?? 0))
+    .map((item, index) => ({
+      name: toShortGradeName(item.short_name || item.grade_level),
+      fullName: item.grade_level,
+      students: item.count,
+      percentage: Number(item.percentage || 0),
+      color: chartColors[index % chartColors.length],
+    }));
+
+  const totalEnrolled = chartData.reduce((acc, item) => acc + item.students, 0);
+  const avgPerGrade = chartData.length > 0 ? Math.round(totalEnrolled / chartData.length) : 0;
+
+  const onBarEnter = (_: unknown, index: number) => setActiveIndex(index);
+  const onBarLeave = () => setActiveIndex(null);
+
+  const renderTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (!active || !payload?.length) return null;
+    const item = chartData.find((row) => row.name === label);
+    const count = payload[0]?.value ?? 0;
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg min-w-35">
+        <p className="text-sm font-medium text-foreground mb-2">{item?.fullName ?? String(label)}</p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="size-2 rounded-full" style={{ backgroundColor: item?.color }} />
+            <span className="text-xs text-muted-foreground">Students</span>
+          </div>
+          <span className="text-sm font-semibold text-foreground">{Number(count).toLocaleString()}</span>
+        </div>
+      </div>
+    );
   };
 
   const renderActiveShape = (props: unknown) => {
@@ -84,10 +130,19 @@ export function EnrollmentChart({ data = [] }: EnrollmentChartProps) {
           <DropdownMenuContent align="end" className="w-45">
             <DropdownMenuGroup>
               <DropdownMenuLabel>Display Options</DropdownMenuLabel>
-              <DropdownMenuCheckboxItem checked={showLabels} onCheckedChange={setShowLabels}>
-                Show labels
+              <DropdownMenuCheckboxItem
+                checked={chartView === "bar-line"}
+                onCheckedChange={() => setChartView("bar-line")}
+              >
+                Bar + Line View
               </DropdownMenuCheckboxItem>
-            </DropdownMenuGroup>
+              <DropdownMenuCheckboxItem
+                checked={chartView === "donut"}
+                onCheckedChange={() => setChartView("donut")}
+              >
+                Donut View
+              </DropdownMenuCheckboxItem>
+              </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <Download className="size-4 mr-2" />
@@ -97,9 +152,48 @@ export function EnrollmentChart({ data = [] }: EnrollmentChartProps) {
         </DropdownMenu>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-        <div className="relative shrink-0 size-55">
-          {chartData.length > 0 ? (
+      <div className="space-y-4">
+        {/* <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">Total Students</p>
+            <p className="text-xl font-semibold">{totalEnrolled.toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">Average per Grade</p>
+            <p className="text-xl font-semibold">{avgPerGrade.toLocaleString()}</p>
+          </div>
+        </div> */}
+
+        <div className="h-72 sm:h-80 w-full">
+          {chartData.length > 0 ? chartView === "bar-line" ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ top: 16, right: 20, left: 0, bottom: 8 }}>
+                {/* <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} /> */}
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip content={renderTooltip} />
+                <ReferenceLine yAxisId="left" y={avgPerGrade} stroke="#94a3b8" strokeDasharray="4 4" />
+                <Bar yAxisId="left" dataKey="students" radius={[6, 6, 0, 0]} onMouseEnter={onBarEnter} onMouseLeave={onBarLeave}>
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                      opacity={activeIndex === null || activeIndex === index ? 1 : 0.35}
+                    />
+                  ))}
+                </Bar>
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="students"
+                  stroke="#111827"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          ) : (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -107,54 +201,35 @@ export function EnrollmentChart({ data = [] }: EnrollmentChartProps) {
                   cx="50%"
                   cy="50%"
                   innerRadius="42%"
-                  outerRadius="70%"
+                  outerRadius="72%"
                   paddingAngle={2}
-                  dataKey="value"
+                  dataKey="students"
                   strokeWidth={0}
                   activeIndex={activeIndex !== null ? activeIndex : undefined}
                   activeShape={renderActiveShape}
-                  onMouseEnter={onPieEnter}
-                  onMouseLeave={onPieLeave}
+                  onMouseEnter={onBarEnter}
+                  onMouseLeave={onBarLeave}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-donut-${index}`} fill={entry.color} opacity={activeIndex === null || activeIndex === index ? 1 : 0.35} />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="size-full rounded-full border border-dashed flex items-center justify-center text-xs text-muted-foreground">
+            <div className="h-full w-full rounded-xl border border-dashed flex items-center justify-center text-xs text-muted-foreground">
               No enrollment data
             </div>
           )}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-lg sm:text-xl font-semibold">{totalEnrolled.toLocaleString()}</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground">Students</span>
-          </div>
         </div>
 
-        {showLabels && (
-          <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-4">
-            {chartData.map((item, index) => (
-              <div
-                key={item.name}
-                className={`flex items-center gap-2 sm:gap-2.5 cursor-pointer transition-opacity ${activeIndex !== null && activeIndex !== index ? "opacity-50" : ""}`}
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-              >
-                <div className="w-1 h-4 sm:h-5 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="flex-1 text-xs sm:text-sm text-muted-foreground truncate">{item.name}</span>
-                <span className="text-xs sm:text-sm font-semibold tabular-nums">{item.value.toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-        )}
+
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      {/* <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <BarChart3 className="size-3" />
         <span>Current academic year</span>
-      </div>
+      </div> */}
     </DashboardCard>
   );
 }

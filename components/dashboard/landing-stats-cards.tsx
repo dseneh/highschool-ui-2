@@ -1,7 +1,7 @@
 "use client";
 
 import { Users, CheckCircle, CreditCard, School, User } from "lucide-react";
-import { DashboardCard } from "./dashboard-card";
+import { StatCard } from "./stat-card";
 import type { DashboardStats, PaymentSummary } from "@/lib/api2/dashboard";
 
 interface LandingStatsCardsProps {
@@ -80,26 +80,17 @@ export function LandingStatsCards({ summary, paymentSummary }: LandingStatsCards
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {statsData.map((stat) => (
-        <DashboardCard
+        <StatCard
           key={stat.title}
+          title={stat.title}
+          value={stat.value}
+          subtitle={stat.subtitle}
+          icon={stat.icon}
+          bgColor={stat.bgColor}
+          iconColor={stat.iconColor}
           gradientFrom={stat.gradientFrom}
           gradientTo={stat.gradientTo}
-          className="p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div className={`size-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-              <stat.icon className={`size-5 ${stat.iconColor}`} />
-            </div>
-          </div>
-          
-          <div className="space-y-1 mt-3">
-            <p className="text-2xl font-bold text-foreground">
-              {stat.value}
-            </p>
-            <p className="text-xs font-medium text-muted-foreground">{stat.title}</p>
-            <p className="text-xs text-muted-foreground/70">{stat.subtitle}</p>
-          </div>
-        </DashboardCard>
+        />
       ))}
     </div>
   );

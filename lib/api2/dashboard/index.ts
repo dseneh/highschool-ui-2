@@ -31,6 +31,7 @@ export type SummaryCard = {
 
 export type GradeLevelDistribution = {
   grade_level: string;
+  short_name?: string;
   grade_id: string;
   count: number;
   percentage: number;

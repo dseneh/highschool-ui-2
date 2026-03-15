@@ -395,7 +395,7 @@ function buildInitialForm() {
     is_teacher: false,
     initialize_user_account: false,
     username: "",
-    role: "viewer" as "viewer" | "teacher" | "admin",
+    role: undefined as "viewer" | "teacher" | "admin" | undefined,
     photo: null as File | null,
   };
 }

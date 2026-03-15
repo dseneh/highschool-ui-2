@@ -42,6 +42,8 @@ export default function StaffOverviewPage() {
           username: staff.user_account.username,
           email: staff.user_account.email,
           is_active: staff.user_account.is_active,
+          role: staff.user_account.role,
+          last_login: staff.user_account.last_login,
         }
       : null
     const isEmpty = !isLoading && !staff;

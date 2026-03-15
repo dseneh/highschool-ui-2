@@ -75,7 +75,18 @@ const staffValidationSchema = z.object({
   initialize_user_account: z.boolean().optional(),
   username: z.string().optional(),
   role: z.enum(["admin", "teacher", "viewer"]).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.initialize_user_account) {
+      return !!data.role;
+    }
+    return true;
+  },
+  {
+    message: "User role is required",
+    path: ["role"],
+  }
+);
 
 export type StaffFormSchema = z.infer<typeof staffValidationSchema>;
 
@@ -124,7 +135,7 @@ export function StaffForm({
       photo: undefined,
       initialize_user_account: false,
       username: "",
-      role: "viewer" as const,
+      role: undefined,
     }),
     [initialData]
   );

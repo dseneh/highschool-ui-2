@@ -48,8 +48,14 @@ export default function StaffPage() {
     setIsSubmitting(true);
     try {
       const payload = new FormData();
+      const {
+        initialize_user_account,
+        username,
+        role,
+        ...staffData
+      } = formData;
 
-      Object.entries(formData).forEach(([key, value]) => {
+      Object.entries(staffData).forEach(([key, value]) => {
         if (key === "photo" && value instanceof File) {
           payload.append(key, value);
         } else if (key === "date_of_birth" && value instanceof Date) {
@@ -63,6 +69,16 @@ export default function StaffPage() {
           payload.append(key, String(value));
         }
       });
+
+      if (initialize_user_account) {
+        payload.append("initialize_user", "True");
+        if (username?.trim()) {
+          payload.append("username", username.trim());
+        }
+        if (role) {
+          payload.append("role", role);
+        }
+      }
 
       await createMutation.mutateAsync(payload as any);
       showToast.success(

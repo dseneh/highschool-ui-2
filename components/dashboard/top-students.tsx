@@ -63,7 +63,7 @@ export function TopStudents({ students = [], isLoading = false }: TopStudentsPro
         Top Performing Students
       </h3>
 
-      <ScrollArea className="flex-1 h-[25vh]  -mr-4">
+      <ScrollArea className="flex-1 h-[20vh]  -mr-4">
         <div className="space-y-3 pr-4">
           {students.map((student, index) => {
             const medal = medals[index] || medals[medals.length - 1];

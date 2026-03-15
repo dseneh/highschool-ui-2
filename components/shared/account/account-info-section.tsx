@@ -1,10 +1,15 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogBox } from "@/components/ui/dialog-box";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { ChangeRoleDialog } from "@/components/users/change-role-dialog";
 import { useUsers } from "@/lib/api2/users";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
@@ -28,6 +33,12 @@ interface AccountInfoSectionProps {
   onAccountCreated?: () => void | Promise<void>;
 }
 
+const STAFF_ROLE_ITEMS = [
+  { value: "teacher", label: "Teacher" },
+  { value: "viewer", label: "Viewer" },
+  { value: "admin", label: "Admin" },
+];
+
 function normalizeDateString(dateOfBirth?: string | null): string | null {
   if (!dateOfBirth) return null;
   if (dateOfBirth.length >= 10) return dateOfBirth.slice(0, 10);
@@ -43,12 +54,29 @@ export function AccountInfoSection({
   userAccount,
   onAccountCreated,
 }: AccountInfoSectionProps) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
+  const [changeRoleOpen, setChangeRoleOpen] = React.useState(false);
+  const [username, setUsername] = React.useState("");
+  const [selectedRole, setSelectedRole] = React.useState("");
   const usersApi = useUsers();
   const createMutation = usersApi.createUser();
+  const updateMutation = usersApi.updateUser();
 
   const hasAccount = Boolean(userAccount?.username);
   const normalizedDob = normalizeDateString(dateOfBirth);
+  const isStaffAccount = accountType === "STAFF";
+  const currentRole = userAccount?.role || null;
+  const { data: linkedUser, refetch: refetchLinkedUser } = usersApi.getUser(idNumber, {
+    enabled: hasAccount && isStaffAccount,
+  });
+
+  React.useEffect(() => {
+    if (!open) {
+      setUsername("");
+      setSelectedRole("");
+    }
+  }, [open]);
 
   const handleGenerateAccount = async () => {
     if (!normalizedDob) {
@@ -59,15 +87,31 @@ export function AccountInfoSection({
       return;
     }
 
+    if (isStaffAccount && !selectedRole) {
+      showToast.error("Role required", "Select a role before generating the staff account.");
+      return;
+    }
+
     try {
       await createMutation.mutateAsync({
         account_type: accountType,
         id_number: idNumber,
         date_of_birth: normalizedDob,
+        ...(username.trim() ? { username: username.trim() } : {}),
       });
+
+      if (isStaffAccount && selectedRole !== "teacher") {
+        await updateMutation.mutateAsync({
+          idNumber,
+          data: {
+            role: selectedRole,
+          },
+        });
+      }
 
       showToast.success("Account created", `${entityLabel} account was generated successfully.`);
       setOpen(false);
+      void refetchLinkedUser();
       await onAccountCreated?.();
     } catch (error) {
       showToast.error("Account creation failed", getErrorMessage(error));
@@ -100,7 +144,7 @@ export function AccountInfoSection({
               {userAccount?.role && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Role</span>
-                  <span className="text-sm">{userAccount.role}</span>
+                  <span className="text-sm capitalize">{userAccount.role}</span>
                 </div>
               )}
               <div className="flex items-center justify-between">
@@ -110,6 +154,26 @@ export function AccountInfoSection({
                     ? new Date(userAccount.last_login).toLocaleString()
                     : "Never"}
                 </span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <AuthButton
+                  roles="admin"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/users/${idNumber}`)}
+                >
+                  Open Account
+                </AuthButton>
+                {isStaffAccount && (
+                  <AuthButton
+                    roles="admin"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setChangeRoleOpen(true)}
+                  >
+                    Change Role
+                  </AuthButton>
+                )}
               </div>
             </>
           ) : (
@@ -142,7 +206,7 @@ export function AccountInfoSection({
         actionLabel="Generate Account"
         actionLoading={createMutation.isPending}
         actionLoadingText="Generating..."
-        actionDisabled={!normalizedDob}
+        actionDisabled={!normalizedDob || (isStaffAccount && !selectedRole)}
         onAction={handleGenerateAccount}
         roles={["admin"]}
       >
@@ -159,13 +223,48 @@ export function AccountInfoSection({
             <p className="text-xs text-muted-foreground mb-1">Date of Birth</p>
             <p className="text-sm font-medium">{normalizedDob || "Missing"}</p>
           </div>
+          <div className="space-y-2 rounded-lg border p-3">
+            <Label htmlFor={`${accountType.toLowerCase()}-username`}>Username</Label>
+            <Input
+              id={`${accountType.toLowerCase()}-username`}
+              placeholder="Defaults to ID number"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </div>
+          {isStaffAccount && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <Label htmlFor={`${accountType.toLowerCase()}-role`}>Role</Label>
+              <SelectField
+                value={selectedRole}
+                onValueChange={(value) => setSelectedRole(String(value ?? ""))}
+                items={STAFF_ROLE_ITEMS}
+                placeholder="Select a role"
+              />
+            </div>
+          )}
           {!normalizedDob && (
             <p className="text-xs text-destructive">
               Date of birth is missing. Add it first before generating the account.
             </p>
           )}
+          {isStaffAccount && !selectedRole && (
+            <p className="text-xs text-destructive">
+              Select a role for the staff account before continuing.
+            </p>
+          )}
         </div>
       </DialogBox>
+
+      <ChangeRoleDialog
+        user={linkedUser ?? null}
+        open={changeRoleOpen}
+        onOpenChange={setChangeRoleOpen}
+        onSuccess={async () => {
+          void refetchLinkedUser();
+          await onAccountCreated?.();
+        }}
+      />
     </>
   );
 }
