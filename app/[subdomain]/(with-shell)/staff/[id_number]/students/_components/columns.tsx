@@ -95,44 +95,62 @@ export const createStudentColumns = (
   {
     id: "actions",
     enableSorting: false,
-    header: "Actions",
+    header: "",
     cell: ({ row }) => {
-      const student = row.original
+      // const student = row.original
       return (
-        <div className="flex items-center justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                icon={<MoreHorizontal className="h-4 w-4" />}
-                tooltip="Student actions"
-                onClick={(event) => event.stopPropagation()}
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(event) => {
-                  event.stopPropagation()
-                  options?.onViewProfile?.(student)
-                }}
+        <div className="flex items-center justify-center">
+          <Button
+                variant="outline"
+                // onClick={(event) => event.stopPropagation()}
               >
-                <Eye className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(event) => {
-                  event.stopPropagation()
-                  options?.onViewGrades?.(student)
-                }}
-              >
-                <GraduationCap className="mr-2 h-4 w-4" />
-                Grades
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                View
+                </Button>
         </div>
       )
     },
   },
+  // {
+  //   id: "actions",
+  //   enableSorting: false,
+  //   header: "Actions",
+  //   cell: ({ row }) => {
+  //     const student = row.original
+  //     return (
+  //       <div className="flex items-center justify-end">
+  //         <DropdownMenu>
+  //           <DropdownMenuTrigger asChild>
+  //             <Button
+  //               variant="ghost"
+  //               size="icon-sm"
+  //               icon={<MoreHorizontal className="h-4 w-4" />}
+  //               tooltip="Student actions"
+  //               onClick={(event) => event.stopPropagation()}
+  //             />
+  //           </DropdownMenuTrigger>
+  //           <DropdownMenuContent align="end">
+  //             <DropdownMenuItem
+  //               onClick={(event) => {
+  //                 event.stopPropagation()
+  //                 options?.onViewProfile?.(student)
+  //               }}
+  //             >
+  //               <Eye className="mr-2 h-4 w-4" />
+  //               Profile
+  //             </DropdownMenuItem>
+  //             <DropdownMenuItem
+  //               onClick={(event) => {
+  //                 event.stopPropagation()
+  //                 options?.onViewGrades?.(student)
+  //               }}
+  //             >
+  //               <GraduationCap className="mr-2 h-4 w-4" />
+  //               Grades
+  //             </DropdownMenuItem>
+  //           </DropdownMenuContent>
+  //         </DropdownMenu>
+  //       </div>
+  //     )
+  //   },
+  // },
 ]

@@ -129,13 +129,13 @@ export const primaryNavSections: NavSection[] = [
         meta: "Attendance tracking",
         requiredRoles: ["teacher", "registrar"],
       },
-      {
-        icon: SchoolIcon,
-        label: "Classes",
-        path: "/classes",
-        meta: "Class schedules and sections",
-        requiredRoles: ["teacher", "registrar"],
-      },
+      // {
+      //   icon: SchoolIcon,
+      //   label: "Classes",
+      //   path: "/classes",
+      //   meta: "Class schedules and sections",
+      //   requiredRoles: ["teacher", "registrar"],
+      // },
       {
         icon: Calendar03Icon,
         label: "Calendar",

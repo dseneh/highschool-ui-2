@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryState } from "nuqs";
@@ -13,6 +12,7 @@ import {
   useCreateSchoolCalendarEvent,
   useDeleteSchoolCalendarEvent,
   useSchoolCalendarEvents,
+  useSchoolCalendarSettings,
   useSectionCalendarProjection,
   useUpdateSchoolCalendarEvent,
 } from "@/hooks/use-school-calendar";
@@ -25,6 +25,7 @@ import { CalendarView } from "./_components/calendar-view";
 import { EventDetailSheet } from "./_components/event-detail-sheet";
 import { CalendarEventDialog } from "./_components/create-calendar-event-dialog";
 import { SectionFilterSheet } from "./_components/section-filter-sheet";
+import { getQueryClient } from "@/lib/query-client";
 
 type SectionTimeSlotRow = {
   id: string;
@@ -49,6 +50,17 @@ function addDays(base: Date, days: number) {
   const next = new Date(base);
   next.setDate(next.getDate() + days);
   return next;
+}
+
+function parseIsoDate(value?: string | null) {
+  if (!value) return null;
+  return new Date(`${value}T00:00:00`);
+}
+
+function clampDate(target: Date, minDate: Date | null, maxDate: Date | null) {
+  if (minDate && target < minDate) return new Date(minDate);
+  if (maxDate && target > maxDate) return new Date(maxDate);
+  return target;
 }
 
 function getWeekStart(dateInput: Date) {
@@ -107,7 +119,7 @@ function getEventDatesInRange(event: SchoolCalendarEventDto, rangeStart: Date, r
 }
 
 export default function CalendarPage() {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,8 +132,51 @@ export default function CalendarPage() {
   const [sectionFilterOpen, setSectionFilterOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useQueryState("section");
 
+  const { data: calendarSettings } = useSchoolCalendarSettings();
+
+  const schoolYearStart = useMemo(
+    () => parseIsoDate(calendarSettings?.school_year_start_date),
+    [calendarSettings?.school_year_start_date]
+  );
+  const schoolYearEnd = useMemo(
+    () => parseIsoDate(calendarSettings?.school_year_end_date),
+    [calendarSettings?.school_year_end_date]
+  );
+
+  const isDateWithinSchoolYear = useMemo(
+    () =>
+      (date: Date) => {
+        const normalized = new Date(date);
+        normalized.setHours(0, 0, 0, 0);
+
+        if (schoolYearStart && normalized < schoolYearStart) return false;
+        if (schoolYearEnd && normalized > schoolYearEnd) return false;
+        return true;
+      },
+    [schoolYearStart, schoolYearEnd]
+  );
+
+  const setSelectedDateWithinBounds = (nextDate: Date | ((prev: Date) => Date)) => {
+    setSelectedDate((prev) => {
+      const resolved = typeof nextDate === "function" ? nextDate(prev) : nextDate;
+      return clampDate(resolved, schoolYearStart, schoolYearEnd);
+    });
+  };
+
+  useEffect(() => {
+    setSelectedDate((prev) => clampDate(prev, schoolYearStart, schoolYearEnd));
+  }, [schoolYearStart, schoolYearEnd]);
+
   const weekStart = useMemo(() => getWeekStart(selectedDate), [selectedDate]);
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
+  const canGoPrevWeek = useMemo(() => {
+    if (!schoolYearStart) return true;
+    return addDays(weekStart, -7) >= schoolYearStart;
+  }, [schoolYearStart, weekStart]);
+  const canGoNextWeek = useMemo(() => {
+    if (!schoolYearEnd) return true;
+    return addDays(weekStart, 7) <= schoolYearEnd;
+  }, [schoolYearEnd, weekStart]);
   const weekDates = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart]
@@ -340,10 +395,13 @@ export default function CalendarPage() {
           <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border bg-background shadow-sm">
             <CalendarControls
               selectedDate={selectedDate}
-              onSelectedDateChange={setSelectedDate}
-              onToday={() => setSelectedDate(new Date())}
-              onPrevWeek={() => setSelectedDate((prev) => addDays(prev, -7))}
-              onNextWeek={() => setSelectedDate((prev) => addDays(prev, 7))}
+              onSelectedDateChange={setSelectedDateWithinBounds}
+              onToday={() => setSelectedDateWithinBounds(new Date())}
+              onPrevWeek={() => setSelectedDateWithinBounds((prev) => addDays(prev, -7))}
+              onNextWeek={() => setSelectedDateWithinBounds((prev) => addDays(prev, 7))}
+              canGoPrevWeek={canGoPrevWeek}
+              canGoNextWeek={canGoNextWeek}
+              dateValidate={isDateWithinSchoolYear}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               eventTypeFilter={eventTypeFilter}
@@ -393,6 +451,7 @@ export default function CalendarPage() {
         onOpenChange={setCreateDialogOpen}
         saving={createEvent.isPending}
         mode="create"
+        dateValidate={isDateWithinSchoolYear}
         onSubmit={handleCreateEvent}
       />
 
@@ -403,6 +462,7 @@ export default function CalendarPage() {
         saving={updateEvent.isPending}
         mode="edit"
         initialEvent={selectedEvent}
+        dateValidate={isDateWithinSchoolYear}
         onSubmit={handleUpdateEvent}
       />
 

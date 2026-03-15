@@ -33,20 +33,37 @@ export function SectionFilterSheet({
   const [search, setSearch] = useState("");
   const { data: gradeLevels = [], isLoading } = useGradeLevels();
 
+  const activeGradeLevels = useMemo(() => {
+    return gradeLevels
+      .filter((gradeLevel) => gradeLevel.active && gradeLevel.status === "active")
+      .map((gradeLevel) => ({
+        ...gradeLevel,
+        sections: gradeLevel.sections.filter((section) => {
+          const activeSection = section as typeof section & {
+            active?: boolean;
+            status?: string;
+          };
+
+          return activeSection.active !== false && activeSection.status !== "disabled";
+        }),
+      }))
+      .filter((gradeLevel) => gradeLevel.sections.length > 0);
+  }, [gradeLevels]);
+
   const filteredGradeLevels = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return gradeLevels;
-    return gradeLevels
+    if (!q) return activeGradeLevels;
+    return activeGradeLevels
       .map((gl) => ({
         ...gl,
         sections: gl.sections.filter((s) => s.name.toLowerCase().includes(q)),
       }))
       .filter((gl) => gl.sections.length > 0);
-  }, [gradeLevels, search]);
+  }, [activeGradeLevels, search]);
 
   const totalSections = useMemo(
-    () => gradeLevels.reduce((sum, gl) => sum + gl.sections.length, 0),
-    [gradeLevels]
+    () => activeGradeLevels.reduce((sum, gl) => sum + gl.sections.length, 0),
+    [activeGradeLevels]
   );
 
   function handleSelect(id: string, name: string) {

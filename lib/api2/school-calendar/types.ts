@@ -3,6 +3,8 @@ export type SchoolCalendarSettingsDto = {
   operating_days: number[];
   operating_day_labels: string[];
   timezone: string;
+  school_year_start_date: string | null;
+  school_year_end_date: string | null;
   active: boolean;
 };
 

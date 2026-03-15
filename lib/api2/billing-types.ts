@@ -101,11 +101,43 @@ export interface StudentAttendanceDto {
   enrollment: string; // enrollment UUID
   marking_period: string; // resolved name (string)
   date: string; // ISO date
-  status: "present" | "absent" | "late" | "excused" | "holiday";
+  status: "present" | "absent" | "late" | "excused" | "holiday" | "sick" | "on_leave";
   notes: string | null;
   meta: Record<string, unknown>;
   student: string; // id_number (added in to_representation)
   student_name: string; // full name (added in to_representation)
+}
+
+export interface StudentAttendanceSummaryDto {
+  school_days_elapsed: number;
+  recorded_absences: number;
+  present_days: number;
+  attendance_rate: number;
+  status_counts: {
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+    holiday: number;
+    sick: number;
+    on_leave: number;
+  };
+}
+
+export interface StudentAttendanceResponse {
+  student: {
+    id: string;
+    id_number: string;
+    full_name: string;
+  };
+  academic_year: {
+    id: string;
+    name: string | null;
+    start_date: string;
+    end_date: string;
+  } | null;
+  summary: StudentAttendanceSummaryDto;
+  records: StudentAttendanceDto[];
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { UseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
 import * as tenantService from "@/lib/api2/admin-tenant-service";
 import { useAdminWorkspace } from "@/hooks/use-admin-workspace";
@@ -9,6 +9,7 @@ import type {
   TenantListParams,
   PaginatedTenants,
 } from "@/lib/api2/admin-tenant-types";
+import { getQueryClient } from "@/lib/query-client";
 
 // Query keys
 export const tenantKeys = {
@@ -59,7 +60,7 @@ export function useTenant(
 export function useCreateTenant(
   options?: UseMutationOptions<TenantDetail, Error, CreateTenantDto>
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateTenantDto) => tenantService.createTenant(data),
@@ -78,7 +79,7 @@ export function useUpdateTenant(
   schemaName: string,
   options?: UseMutationOptions<TenantDetail, Error, UpdateTenantDto>
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: (data: UpdateTenantDto) => tenantService.updateTenant(schemaName, data),
@@ -101,7 +102,7 @@ export function usePatchTenant(
   schemaName: string,
   options?: UseMutationOptions<TenantDetail, Error, Partial<UpdateTenantDto>>
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: (data: Partial<UpdateTenantDto>) =>
@@ -122,7 +123,7 @@ export function useDeleteTenant(
   schemaName: string,
   options?: UseMutationOptions<void, Error, void>
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: () => tenantService.deleteTenant(schemaName),
@@ -141,7 +142,7 @@ export function useToggleTenantActive(
   schemaName: string,
   options?: UseMutationOptions<TenantDetail, Error, boolean>
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: (isActive: boolean) =>
@@ -165,7 +166,7 @@ export function useUploadTenantLogo(
     { file: File; logoShape?: "square" | "landscape" }
   >
 ) {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   return useMutation({
     mutationFn: ({ file, logoShape }) =>

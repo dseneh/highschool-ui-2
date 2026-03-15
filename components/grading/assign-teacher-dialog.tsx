@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserIcon, Search01Icon } from "@hugeicons/core-free-icons";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStaffApi } from "@/lib/api2/staff/api";
 import { getErrorMessage } from "@/lib/utils";
+import { getQueryClient } from "@/lib/query-client";
 
 interface AssignTeacherDialogProps {
   open: boolean;
@@ -61,7 +62,7 @@ function AssignTeacherDialogInner({
   onSuccess,
 }: AssignTeacherDialogProps) {
   const staffApi = useStaffApi();
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
   const [selectedTeacherId, setSelectedTeacherId] = useState(
     gradebook.teacher?.id ?? ""
   );

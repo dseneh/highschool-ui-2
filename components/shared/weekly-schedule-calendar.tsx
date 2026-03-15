@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Search } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { WeekGridShell } from "@/components/shared/week-grid-shell";
+import { useSchoolCalendarSettings } from "@/hooks/use-school-calendar";
 import { cn } from "@/lib/utils";
 
 export type WeeklyScheduleItem = {
@@ -67,6 +68,17 @@ function addDays(base: Date, days: number) {
   return next;
 }
 
+function parseIsoDate(value?: string | null) {
+  if (!value) return null;
+  return new Date(`${value}T00:00:00`);
+}
+
+function clampDate(target: Date, minDate: Date | null, maxDate: Date | null) {
+  if (minDate && target < minDate) return new Date(minDate);
+  if (maxDate && target > maxDate) return new Date(maxDate);
+  return target;
+}
+
 function getWeekStart(dateInput: Date) {
   const date = new Date(dateInput);
   const day = date.getDay();
@@ -124,11 +136,53 @@ export function WeeklyScheduleCalendar({
   defaultShowMuted = true,
   mutedLabel = "Recess",
 }: WeeklyScheduleCalendarProps) {
+  const { data: calendarSettings } = useSchoolCalendarSettings();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [showMuted, setShowMuted] = useState(defaultShowMuted);
 
+  const schoolYearStart = useMemo(
+    () => parseIsoDate(calendarSettings?.school_year_start_date),
+    [calendarSettings?.school_year_start_date]
+  );
+  const schoolYearEnd = useMemo(
+    () => parseIsoDate(calendarSettings?.school_year_end_date),
+    [calendarSettings?.school_year_end_date]
+  );
+
+  const isDateWithinSchoolYear = useMemo(
+    () =>
+      (date: Date) => {
+        const normalized = new Date(date);
+        normalized.setHours(0, 0, 0, 0);
+
+        if (schoolYearStart && normalized < schoolYearStart) return false;
+        if (schoolYearEnd && normalized > schoolYearEnd) return false;
+        return true;
+      },
+    [schoolYearStart, schoolYearEnd]
+  );
+
+  const setSelectedDateWithinBounds = (nextDate: Date | ((prev: Date) => Date)) => {
+    setSelectedDate((prev) => {
+      const resolved = typeof nextDate === "function" ? nextDate(prev) : nextDate;
+      return clampDate(resolved, schoolYearStart, schoolYearEnd);
+    });
+  };
+
+  useEffect(() => {
+    setSelectedDate((prev) => clampDate(prev, schoolYearStart, schoolYearEnd));
+  }, [schoolYearStart, schoolYearEnd]);
+
   const weekStart = useMemo(() => getWeekStart(selectedDate), [selectedDate]);
+  const canGoPrevWeek = useMemo(() => {
+    if (!schoolYearStart) return true;
+    return addDays(weekStart, -7) >= schoolYearStart;
+  }, [schoolYearStart, weekStart]);
+  const canGoNextWeek = useMemo(() => {
+    if (!schoolYearEnd) return true;
+    return addDays(weekStart, 7) <= schoolYearEnd;
+  }, [schoolYearEnd, weekStart]);
   const weekDates = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
@@ -183,13 +237,14 @@ export function WeeklyScheduleCalendar({
           <div className="w-full md:w-auto md:min-w-44">
             <DatePicker
               value={selectedDate}
-              onChange={(date) => date && setSelectedDate(date)}
+              onChange={(date) => date && setSelectedDateWithinBounds(date)}
               placeholder="Pick date"
+              validate={isDateWithinSchoolYear}
             />
           </div>
 
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 md:ml-auto md:w-auto md:flex-nowrap">
-            {showMutedToggle && hasMutedItems ? (
+            {/* {showMutedToggle && hasMutedItems ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -198,14 +253,21 @@ export function WeeklyScheduleCalendar({
               >
                 {showMuted ? `Hide ${mutedLabel}` : `Show ${mutedLabel}`}
               </Button>
-            ) : null}
-            <Button size="sm" variant="outline" onClick={() => setSelectedDate(new Date())}>Today</Button>
+            ) : null} */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSelectedDateWithinBounds(new Date())}
+            >
+              Today
+            </Button>
             <div className="flex items-center gap-1 rounded-md border bg-muted/20 p-0.5 md:ml-auto">
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 px-2"
-                onClick={() => setSelectedDate((prev) => addDays(prev, -7))}
+                onClick={() => setSelectedDateWithinBounds((prev) => addDays(prev, -7))}
+                disabled={!canGoPrevWeek}
                 iconLeft={<ChevronLeft className="h-4 w-4" />}
               >
                 Prev
@@ -214,7 +276,8 @@ export function WeeklyScheduleCalendar({
                 size="sm"
                 variant="ghost"
                 className="h-8 px-2"
-                onClick={() => setSelectedDate((prev) => addDays(prev, 7))}
+                onClick={() => setSelectedDateWithinBounds((prev) => addDays(prev, 7))}
+                disabled={!canGoNextWeek}
                 iconRight={<ChevronRight className="h-4 w-4" />}
               >
                 Next
@@ -238,7 +301,8 @@ export function WeeklyScheduleCalendar({
                 size="sm"
                 variant={isSelected ? "default" : "outline"}
                 className={cn("h-auto w-full min-w-0 px-1 py-1", isToday && !isSelected && "border-primary/40")}
-                onClick={() => setSelectedDate(date)}
+                onClick={() => setSelectedDateWithinBounds(date)}
+                disabled={!isDateWithinSchoolYear(date)}
               >
                 <span className="block text-[10px] uppercase leading-none">{format(date, "EEEEE")}</span>
                 <span className="block text-xs font-semibold leading-tight">{format(date, "d")}</span>

@@ -12,6 +12,7 @@ import * as React from "react";
 import { DataTable } from "@/components/shared/data-table";
 import { useQueryState } from "nuqs";
 import { createStudentColumns } from "./_components/columns";
+import { StudentActionDialog } from "./_components/student-action-dialog";
 import { SectionItem, Student } from "./_components/types";
 
 export default function StaffStudentsPage() {
@@ -20,7 +21,16 @@ export default function StaffStudentsPage() {
   const idNumber = params.id_number as string;
   const staffApi = useStaff();
   const studentApi = useStudents();
-  
+
+  // Dialog state
+  const [dialogStudent, setDialogStudent] = React.useState<Student | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  const openStudentDialog = (student: Student) => {
+    setDialogStudent(student);
+    setDialogOpen(true);
+  };
+
   const [selectedSectionId, setSelectedSectionId] = useQueryState("section", {
     defaultValue: "",
   });
@@ -153,6 +163,7 @@ export default function StaffStudentsPage() {
           noData={students.length === 0}
           emptyStateTitle="No Students Found"
           emptyStateDescription="This class has no students enrolled."
+          onRowClick={openStudentDialog}
           filters={
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium text-nowrap">
@@ -174,6 +185,13 @@ export default function StaffStudentsPage() {
           }
         />
       </div>
+
+      {/* Student action dialog */}
+      <StudentActionDialog
+        student={dialogStudent}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </PageLayout>
   );
 }

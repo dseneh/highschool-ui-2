@@ -124,7 +124,7 @@ export function CalendarView({
                   key={`${isoDate}-${schedule.id}`}
                   className={cn(
                     "rounded-md border bg-background p-2 text-xs shadow-[0_1px_0_rgba(0,0,0,0.04)]",
-                    isRecess && "border-orange-300/70 bg-orange-50/70"
+                    isRecess && "border-orange-300/70 dark:border-orange-950/90 bg-orange-50/70 dark:bg-orange-950/50"
                   )}
                 >
                   <div className="mb-1 flex items-start justify-between gap-2">

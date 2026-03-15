@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, AlertTriangle, CheckCircle, Search } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -34,6 +34,7 @@ import { useTeacherScheduleProjection } from "@/lib/api2/schedule-projection";
 import type { TeacherScheduleProjectionDto } from "@/lib/api2/schedule-projection";
 import { getErrorMessage } from "@/lib/utils";
 import {Tooltip, TooltipTrigger, TooltipContent} from '@/components/ui/tooltip';
+import { getQueryClient } from "@/lib/query-client";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -141,7 +142,7 @@ function parseTeacherAssignments(data: unknown): TeacherSubjectAssignment[] {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 export default function SectionSubjectSchedulerPage() {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
   const staffApi = useStaffApi();
   const periodsApi = usePeriodsApi();
   const sectionSlotApi = useSectionTimeSlotsApi();

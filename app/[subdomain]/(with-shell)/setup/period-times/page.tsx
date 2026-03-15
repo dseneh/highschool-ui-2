@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@/components/dashboard/page-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,9 +36,10 @@ import {
   type PeriodType,
   type SectionTimeSlotDto,
 } from "./_components/types";
+import { getQueryClient } from "@/lib/query-client";
 
 export default function PeriodTimeSetupPage() {
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
   const periodsApi = usePeriodsApi();
   const sectionSlotsApi = useSectionTimeSlotsApi();
 

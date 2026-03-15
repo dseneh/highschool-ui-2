@@ -16,6 +16,9 @@ type CalendarControlsProps = {
   onToday: () => void;
   onPrevWeek: () => void;
   onNextWeek: () => void;
+  canGoPrevWeek?: boolean;
+  canGoNextWeek?: boolean;
+  dateValidate?: (date: Date) => boolean;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   eventTypeFilter: EventFilter;
@@ -31,6 +34,9 @@ export function CalendarControls({
   onToday,
   onPrevWeek,
   onNextWeek,
+  canGoPrevWeek = true,
+  canGoNextWeek = true,
+  dateValidate,
   searchQuery,
   onSearchQueryChange,
   eventTypeFilter,
@@ -57,6 +63,7 @@ export function CalendarControls({
             value={selectedDate}
             onChange={(date) => date && onSelectedDateChange(date)}
             placeholder="Pick date"
+            validate={dateValidate}
           />
         </div>
 
@@ -114,6 +121,7 @@ export function CalendarControls({
               variant="ghost"
               className="h-8 px-2"
               onClick={onPrevWeek}
+              disabled={!canGoPrevWeek}
               iconLeft={<ChevronLeft className="h-4 w-4" />}
             >
               Prev
@@ -123,6 +131,7 @@ export function CalendarControls({
               variant="ghost"
               className="h-8 px-2"
               onClick={onNextWeek}
+              disabled={!canGoNextWeek}
               iconRight={<ChevronRight className="h-4 w-4" />}
             >
               Next

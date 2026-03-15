@@ -1,10 +1,13 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import {
   getStudentBills,
   getStudentAttendance,
+  createStudentAttendanceRecord,
+  updateStudentAttendanceRecord,
+  deleteStudentAttendanceRecord,
   getStudentTransactions,
   getStudentConcessions,
   createStudentConcession,
@@ -13,17 +16,19 @@ import {
 import type {
   StudentBillsResponse,
   StudentAttendanceDto,
+  StudentAttendanceResponse,
   TransactionDto,
   StudentConcessionListResponse,
   CreateStudentConcessionCommand,
   UpdateStudentConcessionCommand,
 } from "@/lib/api2/billing-types";
+import { getQueryClient } from "@/lib/query-client";
 
 const billingKeys = {
   studentBills: (sub: string, studentId: string) =>
     ["billing", "student-bills", sub, studentId] as const,
-  studentAttendance: (sub: string, enrollmentId: string) =>
-    ["attendance", sub, enrollmentId] as const,
+  studentAttendance: (sub: string, studentLookup: string) =>
+    ["attendance", "student", sub, studentLookup] as const,
   studentTransactions: (sub: string, studentId: string) =>
     ["transactions", "student", sub, studentId] as const,
   studentConcessions: (sub: string, studentId: string) =>
@@ -45,18 +50,58 @@ export function useStudentBills(studentId: string | undefined) {
 }
 
 /**
- * Fetches attendance records for a student's current enrollment.
- * Must pass the enrollment ID (not student ID), because the backend
- * looks up Enrollment.objects.get(id=...).
+ * Fetches attendance records + backend-calculated summary for a student.
  */
-export function useStudentAttendance(enrollmentId: string | undefined) {
+export function useStudentAttendance(studentLookup: string | undefined) {
   const subdomain = useTenantSubdomain();
 
-  return useQuery<StudentAttendanceDto[]>({
-    queryKey: billingKeys.studentAttendance(subdomain, enrollmentId ?? ""),
-    queryFn: () => getStudentAttendance(subdomain, enrollmentId!),
-    enabled: Boolean(subdomain) && Boolean(enrollmentId),
+  return useQuery<StudentAttendanceResponse>({
+    queryKey: billingKeys.studentAttendance(subdomain, studentLookup ?? ""),
+    queryFn: () => getStudentAttendance(subdomain, studentLookup!),
+    enabled: Boolean(subdomain) && Boolean(studentLookup),
   });
+}
+
+export function useStudentAttendanceMutations(studentLookup: string | undefined) {
+  const subdomain = useTenantSubdomain();
+  const queryClient = getQueryClient();
+
+  const invalidate = () => {
+    if (!studentLookup) return;
+    void queryClient.invalidateQueries({
+      queryKey: billingKeys.studentAttendance(subdomain, studentLookup),
+    });
+  };
+
+  const create = useMutation({
+    mutationFn: (payload: Pick<StudentAttendanceDto, "date" | "status"> & { notes?: string | null }) =>
+      createStudentAttendanceRecord(subdomain, studentLookup!, payload),
+    onSuccess: () => {
+      invalidate();
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: ({
+      attendanceId,
+      payload,
+    }: {
+      attendanceId: string;
+      payload: Pick<StudentAttendanceDto, "date" | "status"> & { notes?: string | null };
+    }) => updateStudentAttendanceRecord(subdomain, attendanceId, payload),
+    onSuccess: () => {
+      invalidate();
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: (attendanceId: string) => deleteStudentAttendanceRecord(subdomain, attendanceId),
+    onSuccess: () => {
+      invalidate();
+    },
+  });
+
+  return { create, update, remove };
 }
 
 /**
@@ -87,7 +132,7 @@ export function useStudentConcessions(
 
 export function useStudentConcessionMutations(studentId: string | undefined) {
   const subdomain = useTenantSubdomain();
-  const queryClient = useQueryClient();
+  const queryClient = getQueryClient();
 
   const invalidateAfterConcessionChange = () => {
     if (!studentId) return;

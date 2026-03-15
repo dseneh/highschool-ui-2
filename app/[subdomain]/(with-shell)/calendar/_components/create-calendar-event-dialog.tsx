@@ -49,6 +49,7 @@ type CalendarEventDialogProps = {
   saving: boolean;
   mode?: "create" | "edit";
   initialEvent?: SchoolCalendarEventDto | null;
+  dateValidate?: (date: Date) => boolean;
   onSubmit: (payload: Partial<SchoolCalendarEventDto>) => Promise<void>;
 };
 
@@ -65,6 +66,7 @@ export function CalendarEventDialog({
   saving,
   mode = "create",
   initialEvent,
+  dateValidate,
   onSubmit,
 }: CalendarEventDialogProps) {
   const initialName = mode === "edit" ? initialEvent?.name || "" : "";
@@ -190,11 +192,21 @@ export function CalendarEventDialog({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Start Date</Label>
-            <DatePicker value={startDate} onChange={setStartDate} placeholder="Pick start date" />
+            <DatePicker
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Pick start date"
+              validate={dateValidate}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>End Date</Label>
-            <DatePicker value={endDate} onChange={setEndDate} placeholder="Pick end date" />
+            <DatePicker
+              value={endDate}
+              onChange={setEndDate}
+              placeholder="Pick end date"
+              validate={dateValidate}
+            />
           </div>
         </div>
 

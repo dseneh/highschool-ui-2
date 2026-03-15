@@ -2,6 +2,7 @@ import apiClient from "@/lib/api2/client";
 import type {
   StudentBillsResponse,
   StudentAttendanceDto,
+  StudentAttendanceResponse,
   TransactionDto,
   StudentConcessionListResponse,
   StudentConcessionDto,
@@ -50,18 +51,51 @@ export async function downloadStudentBillingPdf(
 /* ------------------------------------------------------------------ */
 
 /**
- * GET /students/{enrollmentId}/attendance/
- * NOTE: Despite the URL saying "students", the backend actually expects
- * an enrollment_id and looks up Enrollment.objects.get(id=...).
+ * GET /students/{studentLookup}/attendance/
+ * Accepts student UUID, id_number, and enrollment UUID for backward compatibility.
  */
 export async function getStudentAttendance(
   _subdomain: string,
-  enrollmentId: string
+  studentLookup: string
 ) {
-  const { data } = await apiClient.get<StudentAttendanceDto[]>(
-    `students/${enrollmentId}/attendance`
+  const { data } = await apiClient.get<StudentAttendanceResponse>(
+    `students/${studentLookup}/attendance`
   );
   return data;
+}
+
+/** PUT /attendance/{attendanceId}/ */
+export async function updateStudentAttendanceRecord(
+  _subdomain: string,
+  attendanceId: string,
+  payload: Pick<StudentAttendanceDto, "date" | "status"> & { notes?: string | null }
+) {
+  const { data } = await apiClient.put<StudentAttendanceDto>(
+    `attendance/${attendanceId}`,
+    payload
+  );
+  return data;
+}
+
+/** POST /students/{studentLookup}/attendance/ */
+export async function createStudentAttendanceRecord(
+  _subdomain: string,
+  studentLookup: string,
+  payload: Pick<StudentAttendanceDto, "date" | "status"> & { notes?: string | null }
+) {
+  const { data } = await apiClient.post<StudentAttendanceDto>(
+    `students/${studentLookup}/attendance`,
+    payload
+  );
+  return data;
+}
+
+/** DELETE /attendance/{attendanceId}/ */
+export async function deleteStudentAttendanceRecord(
+  _subdomain: string,
+  attendanceId: string
+) {
+  await apiClient.delete(`attendance/${attendanceId}`);
 }
 
 /* ------------------------------------------------------------------ */
