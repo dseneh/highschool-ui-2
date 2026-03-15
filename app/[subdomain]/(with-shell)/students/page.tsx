@@ -21,6 +21,7 @@ import { DeleteStudentDialog } from "@/components/students/delete-student-dialog
 import { AddStudentDropdown } from "@/components/students/add-student-dropdown";
 import { Button } from "@/components/ui/button";
 import { useMemo, useCallback } from "react";
+import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { useHasRole } from "@/hooks/use-authorization";
@@ -31,7 +32,26 @@ import { getQueryClient } from "@/lib/query-client";
 
 export default function StudentsPage() {
   const studentsApi = useStudentsApi();
-  const { data, isLoading, error, isFetching, refetch } = studentsApi.getStudents({});
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsString.withDefault("enrolled"),
+  );
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [pageSize, setPageSize] = useQueryState(
+    "page_size",
+    parseAsInteger.withDefault(20),
+  );
+
+  const studentQuery = useMemo(
+    () => ({
+      status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+      page,
+      page_size: pageSize,
+    }),
+    [statusFilter, page, pageSize],
+  );
+
+  const { data, isLoading, error, isFetching, refetch } = studentsApi.getStudents(studentQuery);
   const createMutation = studentsApi.createStudent();
   const { data: currentYear } = useCurrentAcademicYear();
   const canManageStudents = useHasRole("teacher");
@@ -96,6 +116,26 @@ export default function StudentsPage() {
     if (Array.isArray(data)) return data;
     return data?.results || [];
   }, [data]);
+
+  const serverPagination = useMemo(() => {
+    if (Array.isArray(data) || !data || typeof data.count !== "number") {
+      return undefined;
+    }
+
+    return {
+      totalCount: data.count,
+      currentPage: page,
+      pageSize,
+      onPageChange: (nextPage: number) => {
+        void setPage(nextPage);
+      },
+      onPageSizeChange: (nextPageSize: number) => {
+        void setPageSize(nextPageSize);
+        void setPage(1);
+      },
+    };
+  }, [data, page, pageSize, setPage, setPageSize]);
+
   const isEmpty = !isLoading && studentsList.length === 0;
 
   // Calculate stats from student data
@@ -177,10 +217,16 @@ export default function StudentsPage() {
         {!isEmpty && !isLoading && (
 
           <StudentTable
-          data={studentsList}
-          onEnroll={handleEnroll}
-          onFixEnrollment={handleFixEnrollment}
-          onDelete={handleDelete}
+            data={studentsList}
+            onEnroll={handleEnroll}
+            onFixEnrollment={handleFixEnrollment}
+            onDelete={handleDelete}
+            statusFilter={statusFilter}
+            onStatusFilterChange={(nextStatus) => {
+              void setStatusFilter(nextStatus || "all");
+              void setPage(1);
+            }}
+            serverPagination={serverPagination}
           />
         )}
       </PageLayout>

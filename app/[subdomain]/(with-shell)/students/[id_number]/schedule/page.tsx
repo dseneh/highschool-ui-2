@@ -251,7 +251,7 @@ export default function StudentSchedulePage() {
       }
       emptyStateIcon={<HugeiconsIcon icon={Calendar03Icon} className="size-5 text-muted-foreground" />}
     >
-      {schedules && (
+      {schedules && !enrollment && (
       <div className="space-y-4">
         <>
             <div className="overflow-hidden">
@@ -264,61 +264,6 @@ export default function StudentSchedulePage() {
                 mutedLabel="Recess"
               />
             </div>
-
-            {/* <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Subjects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-3">
-                  {Array.from(subjectColorMap.entries()).map(([name, color]) => {
-                    const count = schedules.filter((s) => !isRecess(s) && getScheduleLabel(s) === name).length
-                    return (
-                      <div key={name} className="flex items-center gap-2 text-sm">
-                        <div className={cn("size-3 rounded-sm border", color.split(" ").slice(0, 2).join(" "))} />
-                        <span>{name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          ({count} {count === 1 ? "period" : "periods"}/week)
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card> */}
-
-            {/* <Card className="sm:hidden">
-              <CardHeader>
-                <CardTitle className="text-base">Full Schedule</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y">
-                  {activeDays.map((day) => {
-                    const daySchedules = byDay.get(day) || []
-                    return daySchedules.map((item) => (
-                      (() => {
-                        const slot = getTimeSlot(item)
-                        if (!slot) return null
-
-                        return (
-                          <div key={item.id} className="px-4 py-3 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium">{getScheduleLabel(item)}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {DAY_SHORT[day]} · {item.period.name}
-                              </p>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
-                            </p>
-                          </div>
-                        )
-                      })()
-                    ))
-                  })}
-                </div>
-              </CardContent>
-            </Card> */}
         </>
       </div>
       )}

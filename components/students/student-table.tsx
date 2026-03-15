@@ -61,6 +61,7 @@ import { exportStudentsToCSV } from "@/lib/export-utils";
 import { showToast } from "@/lib/toast";
 import { StudentDto } from "@/lib/api2/student-types";
 import { studentColumns, type StudentTableMeta } from "./student-columns";
+import { AdvancedTablePagination } from "@/components/shared/advanced-table/advanced-table-pagination";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -100,13 +101,52 @@ interface StudentTableProps {
   onEnroll?: (student: StudentDto) => void;
   onFixEnrollment?: (student: StudentDto) => void;
   onDelete?: (student: StudentDto) => void;
+  statusFilter?: string;
+  onStatusFilterChange?: (status: string) => void;
+  serverPagination?: {
+    totalCount: number;
+    currentPage: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
+  };
 }
 
-export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: StudentTableProps) {
+export function StudentTable({
+  data,
+  onEnroll,
+  onFixEnrollment,
+  onDelete,
+  statusFilter: controlledStatusFilter,
+  onStatusFilterChange,
+  serverPagination,
+}: StudentTableProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<string>("all");
+  const [localStatusFilter, setLocalStatusFilter] = React.useState<string>(
+    controlledStatusFilter || "enrolled",
+  );
   const [gradeFilter, setGradeFilter] = React.useState<string>("all");
+  const effectiveStatusFilter =
+    controlledStatusFilter !== undefined ? controlledStatusFilter : localStatusFilter;
+  const isServerPagination = Boolean(serverPagination);
+
+  React.useEffect(() => {
+    if (controlledStatusFilter !== undefined) {
+      setLocalStatusFilter(controlledStatusFilter);
+    }
+  }, [controlledStatusFilter]);
+
+  const handleStatusChange = React.useCallback(
+    (nextStatus: string) => {
+      if (onStatusFilterChange) {
+        onStatusFilterChange(nextStatus);
+        return;
+      }
+      setLocalStatusFilter(nextStatus);
+    },
+    [onStatusFilterChange],
+  );
   
   // Extract unique grade levels for filter
   const gradeLevels = React.useMemo(() => {
@@ -129,8 +169,8 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
 
       const status = student.status || "active";
       const matchesStatus =
-        statusFilter === "all" ||
-        status.toLowerCase() === statusFilter;
+        effectiveStatusFilter === "all" ||
+        status.toLowerCase() === effectiveStatusFilter;
 
       const matchesGrade =
         gradeFilter === "all" ||
@@ -138,7 +178,7 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
 
       return matchesSearch && matchesStatus && matchesGrade;
     });
-  }, [data, searchQuery, statusFilter, gradeFilter]);
+  }, [data, searchQuery, effectiveStatusFilter, gradeFilter]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -165,16 +205,20 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(!isServerPagination ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    initialState: {
-      pagination: {
-        pageSize: 8,
-      },
-    },
+    ...(!isServerPagination
+      ? {
+          initialState: {
+            pagination: {
+              pageSize: 8,
+            },
+          },
+        }
+      : {}),
     state: {
       sorting,
       columnFilters,
@@ -231,15 +275,15 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
           <DropdownMenu>
             <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
               <Filter className="size-4 shrink-0" />
-              {statusFilter === "all"
+              {effectiveStatusFilter === "all"
                 ? "All Status"
-                : (statusConfig[statusFilter]?.label || statusFilter)}
+                : (statusConfig[effectiveStatusFilter]?.label || effectiveStatusFilter)}
               <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-auto overflow-y-auto">
               <DropdownMenuCheckboxItem
-                checked={statusFilter === "all"}
-                onCheckedChange={() => setStatusFilter("all")}
+                checked={effectiveStatusFilter === "all"}
+                onCheckedChange={() => handleStatusChange("all")}
               >
                 All Status
               </DropdownMenuCheckboxItem>
@@ -247,8 +291,8 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
               {Object.entries(statusConfig).map(([key, config]) => (
                 <DropdownMenuCheckboxItem
                   key={key}
-                  checked={statusFilter === key}
-                  onCheckedChange={() => setStatusFilter(key)}
+                  checked={effectiveStatusFilter === key}
+                  onCheckedChange={() => handleStatusChange(key)}
                 >
                   <div className="flex items-center gap-2">
                     <config.icon className={cn("size-3.5", getStatusTextClass(key))} />
@@ -338,6 +382,7 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
       </div>
 
       {/* Pagination */}
+      {!isServerPagination && (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border p-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
@@ -420,6 +465,20 @@ export function StudentTable({ data, onEnroll, onFixEnrollment, onDelete }: Stud
             Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of {table.getFilteredRowModel().rows.length} entries
         </div>
       </div>
+      )}
+
+      {isServerPagination && serverPagination && (
+        <div className="border-t border-border p-2">
+          <AdvancedTablePagination
+            table={table}
+            totalCount={serverPagination.totalCount}
+            currentPage={serverPagination.currentPage}
+            pageSize={serverPagination.pageSize}
+            onPageChange={serverPagination.onPageChange}
+            onPageSizeChange={serverPagination.onPageSizeChange}
+          />
+        </div>
+      )}
 
       {/* Floating Selection Panel */}
       <FloatingSelectionPanel

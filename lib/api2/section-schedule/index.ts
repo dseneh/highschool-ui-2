@@ -2,6 +2,8 @@
 import { useSectionSchedulesApi } from './api'
 import { useApiQuery, useApiMutation } from '../utils'
 
+type SectionSchedulePayload = Record<string, unknown>
+
 export function useSectionSchedules() {
     /* eslint-disable react-hooks/rules-of-hooks */
     const api = useSectionSchedulesApi()
@@ -20,19 +22,19 @@ export function useSectionSchedules() {
 
     const createSectionSchedule = (sectionId: string, options = {}) =>
         useApiMutation(
-            (data: any) => api.createSectionScheduleApi(sectionId, data).then((res) => res.data), options)
+            (data: SectionSchedulePayload) => api.createSectionScheduleApi(sectionId, data).then((res) => res.data), options)
 
     const updateSectionSchedule = (id: string, options = {}) =>
         useApiMutation(
-            (data: any) => api.editSectionScheduleApi(id, data).then((res) => res.data), options)
+            (data: SectionSchedulePayload) => api.editSectionScheduleApi(id, data).then((res) => res.data), options)
 
     const partialUpdateSectionSchedule = (id: string, options = {}) =>
         useApiMutation(
-            (data: any) => api.updateSectionScheduleApi(id, data).then((res) => res.data), options)
+            (data: SectionSchedulePayload) => api.updateSectionScheduleApi(id, data).then((res) => res.data), options)
 
     const deleteSectionSchedule = (id: string, options = {}) =>
         useApiMutation(
-            () => api.deleteSectionScheduleApi(id).then((res: any) => res.data), options)
+            () => api.deleteSectionScheduleApi(id).then((res) => res.data), options)
 
     return {
         getSectionSchedules,

@@ -1,5 +1,7 @@
 import { useAxiosAuth } from '@/hooks/use-axios-auth'
 
+type SectionSchedulePayload = Record<string, unknown>
+
 export const useSectionSchedulesApi = () => {
     const { get, post, put, patch, delete: del } = useAxiosAuth()
     const detailBase = '/class-schedules'
@@ -16,15 +18,15 @@ export const useSectionSchedulesApi = () => {
         return get(`/sections/${sectionId}/class-schedules/`)
     }
 
-    const createSectionScheduleApi = async (sectionId: string, data: any) => {
+    const createSectionScheduleApi = async (sectionId: string, data: SectionSchedulePayload) => {
         return post(`/sections/${sectionId}/class-schedules/`, data)
     }
 
-    const editSectionScheduleApi = async (id: string, data: any) => {
+    const editSectionScheduleApi = async (id: string, data: SectionSchedulePayload) => {
         return put(`${detailBase}/${id}/`, data)
     }
 
-    const updateSectionScheduleApi = async (id: string, data: any) => {
+    const updateSectionScheduleApi = async (id: string, data: SectionSchedulePayload) => {
         return patch(`${detailBase}/${id}/`, data)
     }
 
