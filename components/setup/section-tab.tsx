@@ -1,8 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { DataTable } from "@/components/shared/data-table";
-import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -27,7 +33,6 @@ import type {
   CreateSectionCommand,
   UpdateSectionCommand,
 } from "@/lib/api2/section-types";
-import type { ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,13 +47,14 @@ import {
 import { useQueryState } from "nuqs";
 import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
-import { Add01Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Pencil, Trash } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { AddSubjectDialog } from "./add-subject-dialog";
 import { AssignSectionTeachersDialog } from "./assign-section-teachers-dialog";
 import { SectionFeeList } from "@/components/finance/section-fee-list";
-import { AuthButton } from "@/components/auth/auth-button";
+import { useRouter } from "next/navigation";
+import { SelectField } from "@/components/ui/select-field";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -63,6 +69,7 @@ type FormInput = z.input<typeof formSchema>;
 type SectionStatus = "active" | "inactive";
 
 export function SectionTab() {
+  const router = useRouter();
   const { isLoading: gradeLevelsLoading } = useGradeLevels();
   const [gradeLevelId] = useQueryState("gradeLevel", { defaultValue: "" });
   const { data: sections, isLoading } = useSections(gradeLevelId || undefined);
@@ -74,6 +81,7 @@ export function SectionTab() {
   });
 
   const [showCreate, setShowCreate] = React.useState(false);
+  const [createSourceSectionId, setCreateSourceSectionId] = React.useState("");
   const [editingSection, setEditingSection] = React.useState<SectionDto | null>(null);
   const [deletingSection, setDeletingSection] = React.useState<SectionDto | null>(null);
   const [addSubjectDialog, setAddSubjectDialog] = React.useState<{
@@ -122,6 +130,11 @@ export function SectionTab() {
   const filteredSections =
     statusFilter === "inactive" ? inactiveSections : activeSections;
 
+  const timetableSourceSections = React.useMemo(
+    () => (sections || []).filter((section) => section.id),
+    [sections]
+  );
+
   const handleCreate = (data: FormInput) => {
     if (!gradeLevelId) return;
     create.mutate(
@@ -132,12 +145,14 @@ export function SectionTab() {
           description: data.description,
           max_capacity: data.max_capacity ?? undefined,
           room_number: data.room_number ?? undefined,
+          source_section_id: createSourceSectionId || undefined,
         } as CreateSectionCommand,
       },
       {
         onSuccess: () => {
           toast.success("Section created successfully");
           setShowCreate(false);
+          setCreateSourceSectionId("");
           form.reset();
         },
         onError: (error: unknown) => {
@@ -225,85 +240,7 @@ export function SectionTab() {
     setAssignTeachersDialog({ sectionId, sectionName });
   };
 
-  const columns: ColumnDef<SectionDto>[] = [
-    {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Name" />
-      ),
-    },
-    {
-      accessorKey: "students",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Students" />
-      ),
-      cell: ({ row }) => row.original.students,
-    },
-    {
-      accessorKey: "max_capacity",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Capacity" />
-      ),
-      cell: ({ row }) => row.original.max_capacity ?? "-",
-    },
-    {
-      accessorKey: "active",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <Badge variant={row.original.active ? "default" : "secondary"}>
-            {row.original.active ? "Active" : "Inactive"}
-          </Badge>
-          <Switch
-            checked={row.original.active}
-            onCheckedChange={(checked) =>
-              handleToggleActive(row.original, checked)
-            }
-            disabled={update.isPending}
-          />
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => (
-        <div className="flex gap-2 justify-end">
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => handleAddSubject(row.original.id, row.original.name)}
-          >Manage Subjects</Button>
-          <Button
-            variant="link"
-            size="sm"
-            onClick={() => handleManageFees(row.original)}
-          >Manage Fees</Button>
-          <AuthButton
-            roles={["admin", "registrar", "data_entry"]}
-            variant="link"
-            size="sm"
-            onClick={() => handleAssignTeachers(row.original.id, row.original.name)}
-          >
-            Assign Teachers
-          </AuthButton>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingSection(row.original)}
-            icon={<Pencil className="size-3" />}
-          >Edit</Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeletingSection(row.original)}
-            icon={<Trash className="size-3" />}
-          >Delete</Button>
-        </div>
-      ),
-    },
-  ];
+
 
   return (
     <PageLayout
@@ -321,6 +258,20 @@ export function SectionTab() {
             selectClassName="w-full sm:w-[200px]"
           />
           </div>
+        <Button
+          variant="outline"
+          iconLeft={<HugeiconsIcon icon={Calendar03Icon} className="h-4 w-4" />}
+          onClick={() => router.push("/setup/period-times")}
+        >
+          Periods & Times
+        </Button>
+        <Button
+          variant="outline"
+          iconLeft={<HugeiconsIcon icon={Calendar03Icon} className="h-4 w-4" />}
+          onClick={() => router.push("/setup/section-subject-scheduler")}
+        >
+          Section Scheduler
+        </Button>
         <Button
           onClick={() => setShowCreate(true)}
           icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
@@ -394,7 +345,106 @@ export function SectionTab() {
         )}
 
         {gradeLevelId && filteredSections.length > 0 && (
-          <DataTable columns={columns} data={filteredSections} showPagination={false} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredSections.map((section) => (
+              <div
+                key={section.id}
+                className="rounded-lg border bg-card p-4 shadow-sm flex flex-col gap-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-base truncate">{section.name}</h3>
+                    {section.grade_level?.name && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {section.grade_level.name}
+                      </p>
+                    )}
+                    {section.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {section.description}
+                      </p>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Open menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-48">
+                    
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          onClick={() => handleAddSubject(section.id, section.name)}
+                        >
+                          Manage Subjects
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleManageFees(section)}>
+                          Manage Fees
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleAssignTeachers(section.id, section.name)}
+                        >
+                          Assign Teachers
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(
+                              `/setup/period-times?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
+                            )
+                          }
+                        >
+                          Class Period &amp; Time
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(
+                              `/setup/section-subject-scheduler?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
+                            )
+                          }
+                        >
+                          Open Section Scheduler
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem onClick={() => setEditingSection(section)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeletingSection(section)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                  <span>{section.students ?? 0} students</span>
+                  {section.max_capacity != null && (
+                    <>
+                      <span>·</span>
+                      <span>Cap: {section.max_capacity}</span>
+                    </>
+                  )}
+
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <Badge variant={section.active ? "default" : "secondary"}>
+                    {section.active ? "Active" : "Inactive"}
+                  </Badge>
+                  <Switch
+                    checked={section.active}
+                    onCheckedChange={(checked) => handleToggleActive(section, checked)}
+                    disabled={update.isPending}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Add Subject Dialog */}
@@ -486,6 +536,27 @@ export function SectionTab() {
                   </FormItem>
                 )}
               />
+              <div className="space-y-2">
+                <FormLabel>Copy Timetable From Existing Section (Optional)</FormLabel>
+                <SelectField
+                  value={createSourceSectionId}
+                  onValueChange={(value) => setCreateSourceSectionId(String(value))}
+                  items={timetableSourceSections.map((section) => ({
+                    value: section.id,
+                    label: section.name,
+                  }))}
+                  placeholder={
+                    timetableSourceSections.length > 0
+                      ? "Select a section to copy timetable"
+                      : "No sections available in this grade"
+                  }
+                  disabled={timetableSourceSections.length === 0}
+                  searchable
+                />
+                <p className="text-xs text-muted-foreground">
+                  If not selected, the backend uses fallback template slots.
+                </p>
+              </div>
               <FormField
                 control={form.control}
                 name="description"

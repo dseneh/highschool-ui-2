@@ -126,11 +126,17 @@ export interface SectionScheduleDto {
     name: string;
     period_type?: "class" | "recess";
   };
-  period_time: {
+  period_time?: {
     id: string;
     start_time: string;
     end_time: string;
     day_of_week: number;
-  };
+  } | null;
+  section_time_slot?: {
+    id: string;
+    start_time: string;
+    end_time: string;
+    day_of_week: number;
+  } | null;
   is_recess?: boolean;
 }

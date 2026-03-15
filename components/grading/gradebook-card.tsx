@@ -5,17 +5,21 @@ import {
   BookOpen02Icon,
   UserIcon,
   Layers01Icon,
+  UserAdd01Icon,
+  UserEdit01Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { GradeWorkflowBadge } from "./grade-workflow-badge";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface GradebookCardProps {
   gradebook: any;
   statusBadge?: React.ReactNode;
   secondaryInfo?: React.ReactNode;
   actionMenu?: React.ReactNode;
-    fromUrl?: string;
+  fromUrl?: string;
+  onAssignTeacher?: (gradebook: any) => void;
 }
 
 export function GradebookCard({
@@ -23,7 +27,8 @@ export function GradebookCard({
   statusBadge,
   secondaryInfo,
   actionMenu,
-    fromUrl,
+  fromUrl,
+  onAssignTeacher,
 }: GradebookCardProps) {
   // Determine if using statistics object (old API) or top-level properties (API2)
   const stats = gradebook.statistics || gradebook;
@@ -98,17 +103,33 @@ export function GradebookCard({
                 icon={UserIcon}
                 className="h-4 w-4 shrink-0"
               />
-              <div className="flex items-center gap-2">
-              <span className="truncate">
-                Teacher:
-              </span>
-              <span className={cn(
-                "truncate font-semibold",
-                gradebook.teacher?.full_name ? "text-muted-foreground" : "text-orange-500"
-              )}>
-                {gradebook.teacher?.full_name || "No teacher assigned"}
-              </span>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="truncate">Teacher:</span>
+                <span className={cn(
+                  "truncate font-semibold",
+                  gradebook.teacher?.full_name ? "text-muted-foreground" : "text-orange-500"
+                )}>
+                  {gradebook.teacher?.full_name || "No teacher assigned"}
+                </span>
               </div>
+              {onAssignTeacher && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 ml-auto"
+                  title={gradebook.teacher ? "Change teacher" : "Assign teacher"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onAssignTeacher(gradebook);
+                  }}
+                >
+                  <HugeiconsIcon
+                    icon={gradebook.teacher ? UserEdit01Icon : UserAdd01Icon}
+                    className="h-3.5 w-3.5"
+                  />
+                </Button>
+              )}
             </div>
 
             {/* Progress bar */}

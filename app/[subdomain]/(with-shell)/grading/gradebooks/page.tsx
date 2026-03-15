@@ -31,6 +31,7 @@ import {
   Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { CreateGradebookDialog } from "@/components/grading/create-gradebook-dialog";
+import { AssignTeacherDialog } from "@/components/grading/assign-teacher-dialog";
 import { WandSparkles } from "lucide-react";
 import RefreshButton from "@/components/shared/refresh-button";
 import { GradebookCard } from "@/components/grading/gradebook-card";
@@ -64,6 +65,7 @@ export default function GradebooksPage() {
   // TODO: Implement deleteGradebook mutation in api2/grading module
   // const deleteGradebookMutation = grading.deleteGradebook();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [assignTeacherGradebook, setAssignTeacherGradebook] = useState<any>(null);
 
   const handleDelete = async () => {
     // TODO: Implement gradebook deletion once api2 mutation is available
@@ -170,6 +172,7 @@ export default function GradebooksPage() {
               <GradebookCard
                 key={gradebook.id}
                 gradebook={gradebook}
+                onAssignTeacher={(gb) => setAssignTeacherGradebook(gb)}
                 actionMenu={
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -216,6 +219,20 @@ export default function GradebooksPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
+
+      {assignTeacherGradebook && (
+        <AssignTeacherDialog
+          open={Boolean(assignTeacherGradebook)}
+          onOpenChange={(open) => {
+            if (!open) setAssignTeacherGradebook(null);
+          }}
+          gradebook={assignTeacherGradebook}
+          onSuccess={() => {
+            refetch();
+            setAssignTeacherGradebook(null);
+          }}
+        />
+      )}
     </>
   );
 }

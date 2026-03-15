@@ -1,10 +1,9 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useStaff } from "@/lib/api2/staff"
 import { AuthButton } from "@/components/auth/auth-button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Accordion,
@@ -15,7 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-    BookOpen02Icon
+  Calendar03Icon,
 } from "@hugeicons/core-free-icons"
 import PageLayout from "@/components/dashboard/page-layout"
 import { AssignTeacherSectionsDialog } from "@/components/staff/assign-teacher-sections-dialog"
@@ -70,6 +69,12 @@ type ScheduleItem = {
       end_time?: string
       day_of_week?: number
     }
+    section_time_slot?: {
+      id?: string
+      start_time?: string
+      end_time?: string
+      day_of_week?: number
+    }
     is_recess?: boolean
   }
 }
@@ -93,8 +98,15 @@ function formatTime(value?: string) {
   return `${h12}:${m} ${ampm}`
 }
 
+function getTimeSlot(schedule: ScheduleItem) {
+  const classSchedule = schedule.class_schedule
+  if (!classSchedule) return null
+  return classSchedule.section_time_slot || classSchedule.period_time || null
+}
+
 export default function StaffClassesPage() {
   const params = useParams()
+  const router = useRouter()
   const idNumber = params.id_number as string
   const staffApi = useStaff()
   const [showAssignClasses, setShowAssignClasses] = React.useState(false)
@@ -197,11 +209,12 @@ export default function StaffClassesPage() {
   }
 
   const getScheduleDay = (schedule: ScheduleItem) =>
-    schedule.class_schedule?.period_time?.day_of_week
+    getTimeSlot(schedule)?.day_of_week
 
   const getScheduleTimeRange = (schedule: ScheduleItem) => {
-    const start = schedule.class_schedule?.period_time?.start_time
-    const end = schedule.class_schedule?.period_time?.end_time
+    const slot = getTimeSlot(schedule)
+    const start = slot?.start_time
+    const end = slot?.end_time
     if (!start || !end) return "--"
     return `${formatTime(start)} - ${formatTime(end)}`
   }
@@ -222,6 +235,14 @@ export default function StaffClassesPage() {
               onClick={() => setShowAssignClasses(true)}
             >
               Manage Classes
+            </AuthButton>
+            <AuthButton
+              roles={["admin", "registrar", "data_entry"]}
+              variant="outline"
+              iconLeft={<HugeiconsIcon icon={Calendar03Icon} className="h-4 w-4" />}
+              onClick={() => router.push("/setup/period-times")}
+            >
+              Configure Period Times
             </AuthButton>
           </div>
         ) : undefined
@@ -270,8 +291,8 @@ export default function StaffClassesPage() {
                     const dayB = getScheduleDay(b) ?? 99
                     if (dayA !== dayB) return dayA - dayB
 
-                    const startA = a.class_schedule?.period_time?.start_time ?? "99:99"
-                    const startB = b.class_schedule?.period_time?.start_time ?? "99:99"
+                    const startA = getTimeSlot(a)?.start_time ?? "99:99"
+                    const startB = getTimeSlot(b)?.start_time ?? "99:99"
                     return startA.localeCompare(startB)
                   })
                   const assignedSubjects = teacherSubjectsBySection[sectionId] ?? []

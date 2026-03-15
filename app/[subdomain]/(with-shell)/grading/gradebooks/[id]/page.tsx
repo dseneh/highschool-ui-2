@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useGrading } from "@/lib/api2/grading";
+import { useGradebookScheduleProjection } from "@/lib/api2/schedule-projection";
 import { useAllMarkingPeriods } from "@/hooks/use-marking-period";
 import PageLayout from "@/components/dashboard/page-layout";
 import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateAction } from "@/components/ui/empty-state";
@@ -16,9 +17,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Add01Icon,
   FileIcon,
+  UserAdd01Icon,
+  UserEdit01Icon,
+  UserIcon,
 } from "@hugeicons/core-free-icons";
 import { GradeStatus, SectionStudentGrade } from "@/lib/api2/grading-types";
 import { CreateAssessmentDialog } from "@/components/grading/create-assessment-dialog";
+import { AssignTeacherDialog } from "@/components/grading/assign-teacher-dialog";
 import { GradeEntryTable } from "@/components/grading/grade-entry-table";
 import { AssessmentsList } from "@/components/grading/assessments-list";
 import { GradebookNav } from "@/components/grading/gradebook-nav";
@@ -69,6 +74,11 @@ export default function GradebookDetailPage() {
     }
   );
 
+  const {
+    data: scheduleProjection,
+    isLoading: scheduleProjectionLoading,
+  } = useGradebookScheduleProjection(gradebookId);
+
   const handleRefetch = () => {
     refetchGradebook();
     refetchAssessments();
@@ -79,6 +89,7 @@ export default function GradebookDetailPage() {
   const error = gradebookError || assessmentsError || finalGradesError;
 
   const [createAssessmentOpen, setCreateAssessmentOpen] = useState(false);
+  const [assignTeacherOpen, setAssignTeacherOpen] = useState(false);
 
   // Auto-select current marking period on initial load
   useEffect(() => {
@@ -307,7 +318,65 @@ export default function GradebookDetailPage() {
               </Alert>
             )}
 
+            {/* Teacher Info */}
+            <Card className="gap-0">
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                      <HugeiconsIcon icon={UserIcon} className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Teacher</p>
+                      {gradebook.teacher ? (
+                        <p className="text-sm font-semibold">{gradebook.teacher.full_name}</p>
+                      ) : (
+                        <p className="text-sm font-medium text-orange-500">No teacher assigned</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    iconLeft={
+                      <HugeiconsIcon
+                        icon={gradebook.teacher ? UserEdit01Icon : UserAdd01Icon}
+                        className="h-3.5 w-3.5"
+                      />
+                    }
+                    onClick={() => setAssignTeacherOpen(true)}
+                  >
+                    {gradebook.teacher ? "Change Teacher" : "Assign Teacher"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Gradebook Info */}
+            <Card className="gap-1">
+              <CardHeader>
+                <CardTitle className="text-base">Class Schedule</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {scheduleProjectionLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading schedule...</div>
+                ) : !scheduleProjection || scheduleProjection.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No schedule entries projected for this gradebook yet.</div>
+                ) : (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {scheduleProjection.map((slot) => (
+                      <div key={slot.id} className="rounded-md border p-2 text-sm">
+                        <div className="font-medium">{slot.period.name}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Day {slot.day_of_week} • {slot.start_time} - {slot.end_time}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* <Card className="gap-1">
               <CardHeader>
                 <CardTitle className="text-base">Gradebook Information</CardTitle>
@@ -534,6 +603,22 @@ export default function GradebookDetailPage() {
         onOpenChange={setCreateAssessmentOpen}
         gradebookId={gradebookId}
       />
+
+      {gradebook && (
+        <AssignTeacherDialog
+          open={assignTeacherOpen}
+          onOpenChange={setAssignTeacherOpen}
+          gradebook={{
+            id: gradebook.id,
+            section_subject: gradebook.section_subject,
+            subject: gradebook.subject,
+            section: gradebook.section,
+            grade_level: gradebook.grade_level,
+            teacher: gradebook.teacher,
+          }}
+          onSuccess={() => refetchGradebook()}
+        />
+      )}
     </>
   );
 }

@@ -3,9 +3,10 @@ import { useAxiosAuth } from '@/hooks/use-axios-auth'
 export const usePeriodTimesApi = () => {
     const { get, post, put, patch, delete: del } = useAxiosAuth()
     const baseUrl = '/period-times'
+    const periodsBaseUrl = '/periods'
 
-    const getPeriodTimesApi = async () => {
-        return get(`${baseUrl}/`)
+    const getPeriodTimesApi = async (periodId: string) => {
+        return get(`${periodsBaseUrl}/${periodId}/period-times/`)
     }
 
     const getPeriodTimeApi = async (id: string) => {
@@ -13,11 +14,11 @@ export const usePeriodTimesApi = () => {
     }
 
     const getPeriodTimesByPeriodApi = async (periodId: string) => {
-        return get(`${baseUrl}/by-period/${periodId}/`)
+        return get(`${periodsBaseUrl}/${periodId}/period-times/`)
     }
 
-    const createPeriodTimeApi = async (data: any) => {
-        return post(`${baseUrl}/`, data)
+    const createPeriodTimeApi = async (periodId: string, data: any) => {
+        return post(`${periodsBaseUrl}/${periodId}/period-times/`, data)
     }
 
     const editPeriodTimeApi = async (id: string, data: any) => {

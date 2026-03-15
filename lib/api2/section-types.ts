@@ -56,6 +56,7 @@ export interface CreateSectionCommand {
   description?: string;
   max_capacity?: number | null;
   room_number?: string | null;
+  source_section_id?: string;
 }
 
 export interface UpdateSectionCommand {

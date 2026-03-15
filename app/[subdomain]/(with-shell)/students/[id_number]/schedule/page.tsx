@@ -2,36 +2,37 @@
 
 import { useMemo } from "react"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
-import { useSectionSchedule } from "@/hooks/use-contacts"
+import { StudentScheduleProjectionDto, useStudentScheduleProjection } from "@/lib/api2/schedule-projection"
 import { PageContent } from "@/components/dashboard/page-content"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { AlertCircleIcon, Calendar03Icon } from "@hugeicons/core-free-icons"
-import { cn } from "@/lib/utils"
-import type { SectionScheduleDto } from "@/lib/api2/contacts-types"
+import { useStaff } from "@/lib/api2/staff"
 import PageLayout from "@/components/dashboard/page-layout"
 import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
+import { WeeklyScheduleCalendar, type WeeklyScheduleItem } from "@/components/shared/weekly-schedule-calendar"
+import { useSectionTimeSlots } from "@/lib/api2/section-time-slot"
 
-const DAY_NAMES: Record<number, string> = {
-  1: "Monday",
-  2: "Tuesday",
-  3: "Wednesday",
-  4: "Thursday",
-  5: "Friday",
-  6: "Saturday",
-  7: "Sunday",
+type StudentScheduleRow = StudentScheduleProjectionDto & { is_recess: boolean }
+
+type TeacherSubjectLookupRow = {
+  teacher?: { full_name?: string | null } | null
+  section_subject?: { id?: string | null } | null
 }
 
-const DAY_SHORT: Record<number, string> = {
-  1: "Mon",
-  2: "Tue",
-  3: "Wed",
-  4: "Thu",
-  5: "Fri",
-  6: "Sat",
-  7: "Sun",
+type TeacherSubjectLookupResponse =
+  | TeacherSubjectLookupRow[]
+  | { results?: TeacherSubjectLookupRow[] }
+  | undefined
+
+type SectionTimeSlotRow = {
+  id: string
+  day_of_week?: number
+  start_time?: string
+  end_time?: string
+  period?: { name?: string; period_type?: "class" | "recess" }
+  is_recess?: boolean
 }
 
 const SUBJECT_COLORS = [
@@ -45,23 +46,23 @@ const SUBJECT_COLORS = [
   "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
 ]
 
-function formatTime(time: string) {
-  const [h, m] = time.split(":")
-  const hour = parseInt(h, 10)
-  const ampm = hour >= 12 ? "PM" : "AM"
-  const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
-  return `${h12}:${m} ${ampm}`
-}
-
-function getScheduleLabel(item: SectionScheduleDto) {
-  if (item.is_recess || item.period.period_type === "recess" || !item.subject) {
+function getScheduleLabel(item: StudentScheduleRow) {
+  if (item.period.period_type === "recess" || !item.subject) {
     return "Recess";
   }
   return item.subject.name;
 }
 
-function isRecess(item: SectionScheduleDto) {
-  return item.is_recess || item.period.period_type === "recess" || !item.subject;
+function isRecess(item: StudentScheduleRow) {
+  return item.period.period_type === "recess" || !item.subject;
+}
+
+function getTimeSlot(item: StudentScheduleRow) {
+  return {
+    day_of_week: item.day_of_week,
+    start_time: item.start_time,
+    end_time: item.end_time,
+  }
 }
 
 function ScheduleSkeleton() {
@@ -86,22 +87,64 @@ export default function StudentSchedulePage() {
   const { data: student, isLoading: studentLoading, error: studentError, refetch: refetchStudent, isFetching: isFetchingStudent } = studentsApi.getStudent(idNumber)
 
 
-  const sectionId = student?.current_enrollment?.section?.id
   const {
-    data: schedules,
+    data: scheduleProjections,
     isLoading: scheduleLoading,
     error: scheduleError,
         refetch: refetchSchedule,
         isFetching: isFetchingSchedule,
-  } = useSectionSchedule(sectionId)
+  } = useStudentScheduleProjection(student?.id, {
+    academic_year_id: student?.current_enrollment?.academic_year?.id,
+  })
+
+  const schedules = useMemo<StudentScheduleRow[]>(() => {
+    return (scheduleProjections ?? []).map((row: StudentScheduleProjectionDto) => ({
+      ...row,
+      is_recess: row.period.period_type === "recess" || !row.subject,
+    }))
+  }, [scheduleProjections])
+
+  const enrollment = student?.current_enrollment
+
+  const sectionTimeSlotApi = useSectionTimeSlots()
+  const { data: sectionTimeSlots = [] } = sectionTimeSlotApi.getSectionTimeSlots(
+    enrollment?.section?.id ?? "",
+    { enabled: Boolean(enrollment?.section?.id) }
+  )
+
+  const staffApi = useStaff()
+  const { data: teacherSubjectsResponse } = staffApi.getTeacherSubjects(
+    {
+      section: enrollment?.section?.id,
+      page_size: 200,
+    },
+    { enabled: Boolean(enrollment?.section?.id) }
+  )
+
+  const teacherBySectionSubjectId = useMemo(() => {
+    const map = new Map<string, string>()
+    const response = teacherSubjectsResponse as TeacherSubjectLookupResponse
+    const rows = Array.isArray(response)
+      ? response
+      : response?.results ?? []
+
+    for (const row of rows) {
+      const sectionSubjectId = row?.section_subject?.id
+      const teacherName = row?.teacher?.full_name
+      if (!sectionSubjectId || !teacherName) continue
+      map.set(sectionSubjectId, teacherName)
+    }
+
+    return map
+  }, [teacherSubjectsResponse])
 
   // Build a subject → color map
   const subjectColorMap = useMemo(() => {
-    if (!schedules) return new Map<string, string>()
+    if (!schedules || schedules.length === 0) return new Map<string, string>()
     const uniqueSubjects = [...new Set(
       schedules
-        .filter((s) => !isRecess(s) && s.subject)
-        .map((s) => s.subject!.name)
+        .filter((s: StudentScheduleRow) => !isRecess(s) && Boolean(s.subject?.name))
+        .map((s: StudentScheduleRow) => s.subject?.name ?? "Subject")
     )]
     const map = new Map<string, string>()
     uniqueSubjects.forEach((name, i) => {
@@ -110,25 +153,61 @@ export default function StudentSchedulePage() {
     return map
   }, [schedules])
 
-  // Group schedules by day
-  const byDay = useMemo(() => {
-    if (!schedules) return new Map<number, SectionScheduleDto[]>()
-    const map = new Map<number, SectionScheduleDto[]>()
-    for (const s of schedules) {
-      const day = s.period_time.day_of_week
-      if (!map.has(day)) map.set(day, [])
-      map.get(day)!.push(s)
-    }
-    // Sort each day by start_time
-    for (const [, items] of map) {
-      items.sort((a, b) => a.period_time.start_time.localeCompare(b.period_time.start_time))
-    }
-    return map
-  }, [schedules])
+  const calendarItems = useMemo<WeeklyScheduleItem[]>(() => {
+    if (!schedules) return []
 
-  const activeDays = useMemo(() => {
-    return Array.from(byDay.keys()).sort((a, b) => a - b)
-  }, [byDay])
+    const slotKeys = new Set<string>()
+
+    const itemsFromProjection = schedules.reduce<WeeklyScheduleItem[]>((acc, item, index) => {
+      const slot = getTimeSlot(item)
+      if (!slot?.day_of_week || !slot.start_time || !slot.end_time) return acc
+
+      slotKeys.add(`${slot.day_of_week}-${slot.start_time}-${slot.end_time}`)
+
+      const label = getScheduleLabel(item)
+      acc.push({
+        id: item.id ?? `${slot.day_of_week}-${slot.start_time}-${index}`,
+        dayOfWeek: slot.day_of_week,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        title: label,
+        subtitle: isRecess(item)
+          ? undefined
+          : teacherBySectionSubjectId.get(item.section_subject.id) || "Teacher not assigned",
+        badge: item.period.name,
+        muted: isRecess(item),
+        cardClassName: isRecess(item) ? undefined : subjectColorMap.get(label),
+      })
+
+      return acc
+    }, [])
+
+    const slotRows = sectionTimeSlots as SectionTimeSlotRow[]
+    for (const slot of slotRows) {
+      const isRecessSlot = Boolean(slot.is_recess || slot.period?.period_type === "recess")
+      if (!isRecessSlot || !slot.day_of_week || !slot.start_time || !slot.end_time) continue
+
+      const key = `${slot.day_of_week}-${slot.start_time}-${slot.end_time}`
+      if (slotKeys.has(key)) continue
+
+      itemsFromProjection.push({
+        id: `recess-${slot.id}`,
+        dayOfWeek: slot.day_of_week,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        title: "Recess",
+        badge: slot.period?.name ?? "Recess",
+        muted: true,
+      })
+    }
+
+    itemsFromProjection.sort((a, b) => {
+      if (a.dayOfWeek !== b.dayOfWeek) return a.dayOfWeek - b.dayOfWeek
+      return a.startTime.localeCompare(b.startTime)
+    })
+
+    return itemsFromProjection
+  }, [schedules, sectionTimeSlots, subjectColorMap, teacherBySectionSubjectId])
 
   const handleRefresh = () => {
     refetchStudent()
@@ -153,8 +232,6 @@ export default function StudentSchedulePage() {
     )
   }
 
-  const enrollment = student.current_enrollment
-
   return (
     <PageLayout
       title="Class Schedule"
@@ -177,45 +254,18 @@ export default function StudentSchedulePage() {
       {schedules && (
       <div className="space-y-4">
         <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {activeDays.map((day) => {
-                const daySchedules = byDay.get(day) || []
-                return (
-                  <Card key={day}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold">
-                        {DAY_NAMES[day] || `Day ${day}`}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {daySchedules.map((item) => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "rounded-lg border p-3 space-y-1",
-                            isRecess(item)
-                              ? "bg-muted text-muted-foreground border-border"
-                              : subjectColorMap.get(getScheduleLabel(item)) || "bg-muted"
-                          )}
-                        >
-                          <p className="font-medium text-sm leading-tight">
-                            {getScheduleLabel(item)}
-                          </p>
-                          <p className="text-xs opacity-80">
-                            {formatTime(item.period_time.start_time)} – {formatTime(item.period_time.end_time)}
-                          </p>
-                          <Badge variant="outline" className="text-[10px] px-1.5 mt-1">
-                            {item.period.name}
-                          </Badge>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )
-              })}
+            <div className="overflow-hidden">
+              <WeeklyScheduleCalendar
+                items={calendarItems}
+                searchPlaceholder="Search subjects"
+                emptyDayText="No classes"
+                showMutedToggle
+                defaultShowMuted
+                mutedLabel="Recess"
+              />
             </div>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="text-base">Subjects</CardTitle>
               </CardHeader>
@@ -235,9 +285,9 @@ export default function StudentSchedulePage() {
                   })}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            <Card className="sm:hidden">
+            {/* <Card className="sm:hidden">
               <CardHeader>
                 <CardTitle className="text-base">Full Schedule</CardTitle>
               </CardHeader>
@@ -246,22 +296,29 @@ export default function StudentSchedulePage() {
                   {activeDays.map((day) => {
                     const daySchedules = byDay.get(day) || []
                     return daySchedules.map((item) => (
-                      <div key={item.id} className="px-4 py-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{getScheduleLabel(item)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {DAY_SHORT[day]} · {item.period.name}
-                          </p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {formatTime(item.period_time.start_time)} – {formatTime(item.period_time.end_time)}
-                        </p>
-                      </div>
+                      (() => {
+                        const slot = getTimeSlot(item)
+                        if (!slot) return null
+
+                        return (
+                          <div key={item.id} className="px-4 py-3 flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">{getScheduleLabel(item)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {DAY_SHORT[day]} · {item.period.name}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
+                            </p>
+                          </div>
+                        )
+                      })()
                     ))
                   })}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
         </>
       </div>
       )}

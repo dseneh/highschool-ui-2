@@ -6,9 +6,9 @@ export function usePeriodTimes() {
     /* eslint-disable react-hooks/rules-of-hooks */
     const api = usePeriodTimesApi()
 
-    const getPeriodTimes = (options = {}) =>
+    const getPeriodTimes = (periodId: string, options = {}) =>
         useApiQuery(
-            ['period-times'], () => api.getPeriodTimesApi().then((res) => res.data), options)
+            ['period-times', periodId], () => api.getPeriodTimesApi(periodId).then((res) => res.data), options)
 
     const getPeriodTime = (id: string, options = {}) =>
         useApiQuery(
@@ -18,9 +18,9 @@ export function usePeriodTimes() {
         useApiQuery(
             ['period-times', 'by-period', periodId], () => api.getPeriodTimesByPeriodApi(periodId).then((res) => res.data), options)
 
-    const createPeriodTime = (options = {}) =>
+    const createPeriodTime = (periodId: string, options = {}) =>
         useApiMutation(
-            (data: any) => api.createPeriodTimeApi(data).then((res) => res.data), options)
+            (data: any) => api.createPeriodTimeApi(periodId, data).then((res) => res.data), options)
 
     const updatePeriodTime = (id: string, options = {}) =>
         useApiMutation(

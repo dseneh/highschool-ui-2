@@ -160,9 +160,19 @@ export const primaryNavSections: NavSection[] = [
             icon: BookOpen02Icon,
           },
           {
-            label: "Sections",
+            label: "Class Sections",
             path: "/setup/sections",
             icon: CourseIcon,
+          },
+          {
+            label: "Periods & Times",
+            path: "/setup/period-times",
+            icon: Calendar03Icon,
+          },
+          {
+            label: "Section Scheduler",
+            path: "/setup/section-subject-scheduler",
+            icon: Calendar03Icon,
           },
           {
             label: "Subjects",

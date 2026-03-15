@@ -2,34 +2,34 @@ import { useAxiosAuth } from '@/hooks/use-axios-auth'
 
 export const useSectionSchedulesApi = () => {
     const { get, post, put, patch, delete: del } = useAxiosAuth()
-    const baseUrl = '/section-schedules'
+    const detailBase = '/class-schedules'
 
     const getSectionSchedulesApi = async () => {
-        return get(`${baseUrl}/`)
+        return get(`${detailBase}/`)
     }
 
     const getSectionScheduleApi = async (id: string) => {
-        return get(`${baseUrl}/${id}/`)
+        return get(`${detailBase}/${id}/`)
     }
 
     const getSectionSchedulesBySectionApi = async (sectionId: string) => {
-        return get(`${baseUrl}/by-section/${sectionId}/`)
+        return get(`/sections/${sectionId}/class-schedules/`)
     }
 
-    const createSectionScheduleApi = async (data: any) => {
-        return post(`${baseUrl}/`, data)
+    const createSectionScheduleApi = async (sectionId: string, data: any) => {
+        return post(`/sections/${sectionId}/class-schedules/`, data)
     }
 
     const editSectionScheduleApi = async (id: string, data: any) => {
-        return put(`${baseUrl}/${id}/`, data)
+        return put(`${detailBase}/${id}/`, data)
     }
 
     const updateSectionScheduleApi = async (id: string, data: any) => {
-        return patch(`${baseUrl}/${id}/`, data)
+        return patch(`${detailBase}/${id}/`, data)
     }
 
     const deleteSectionScheduleApi = async (id: string) => {
-        return del(`${baseUrl}/${id}/`)
+        return del(`${detailBase}/${id}/`)
     }
 
     return {

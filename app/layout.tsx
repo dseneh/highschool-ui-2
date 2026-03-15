@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f3f3f3] dark:bg-background`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f3f3f3] dark:bg-background overflow-hidden`}
       >
         <AppProviders>{children}</AppProviders>
       </body>

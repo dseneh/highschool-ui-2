@@ -106,6 +106,7 @@ export interface NestedStudent {
 
 export interface GradebookDto {
   id: string;
+  section_subject: string; // ID of the SectionSubject record
   subject: NestedSubject;
   section: NestedSection;
   grade_level: NestedGradeLevel;
@@ -120,6 +121,22 @@ export interface GradebookDto {
   calculated_assessments?: number;
   overall_average?: number;
   students_with_grades?: number;
+  // Optional workflow status summary (include_stats=true)
+  workflow_status?: {
+    predominant_status?: string;
+    [key: string]: unknown;
+  };
+  // Legacy statistics wrapper
+  statistics?: {
+    total_enrolled_students?: number;
+    students_with_grades?: number;
+    total_assessments?: number;
+    calculated_assessments?: number;
+    overall_average?: number;
+  };
+  total_enrolled_students?: number;
+  name?: string;
+  active?: boolean;
 }
 
 export interface GradebookListParams {
