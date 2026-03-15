@@ -18,9 +18,9 @@ export function useSectionSchedules() {
         useApiQuery(
             ['section-schedules', 'by-section', sectionId], () => api.getSectionSchedulesBySectionApi(sectionId).then((res) => res.data), options)
 
-    const createSectionSchedule = (options = {}) =>
+    const createSectionSchedule = (sectionId: string, options = {}) =>
         useApiMutation(
-            (data: any) => api.createSectionScheduleApi(data).then((res) => res.data), options)
+            (data: any) => api.createSectionScheduleApi(sectionId, data).then((res) => res.data), options)
 
     const updateSectionSchedule = (id: string, options = {}) =>
         useApiMutation(
