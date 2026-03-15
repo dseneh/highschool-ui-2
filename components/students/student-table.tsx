@@ -7,7 +7,7 @@ import { Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DialogBox } from "@/components/ui/dialog-box";
 import { WithdrawStudentDialog } from "@/components/students/withdraw-student-dialog";
-import { AdvancedTable, Searchbar, TableFilters, TableFiltersInline } from "@/components/shared/advanced-table";
+import { AdvancedTable, Searchbar, TableFilters, TableFiltersInline, ViewOptions } from "@/components/shared/advanced-table";
 import { AuthButton } from "@/components/auth/auth-button";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
 import { useStudentMutations } from "@/hooks/use-student";
@@ -27,6 +27,10 @@ export interface StudentTableUrlParams {
   balance_condition: string;
   balance_min: string;
   balance_max: string;
+  show_rank: string;
+  show_grade_average: string;
+  show_balance: string;
+  include_billing: string;
 }
 
 interface StudentTableProps {
@@ -182,6 +186,10 @@ export function StudentTable({
         balance_condition: "",
         balance_min: "",
         balance_max: "",
+        show_rank: urlParams.show_rank,
+        show_grade_average: urlParams.show_grade_average,
+        show_balance: urlParams.show_balance,
+        include_billing: urlParams.include_billing,
         page: 1,
       };
 
@@ -226,7 +234,54 @@ export function StudentTable({
     handleStateChange();
     const interval = setInterval(handleStateChange, 100);
     return () => clearInterval(interval);
-  }, [tableInstance, setUrlParams, urlParams.search, sectionFilterOptions]);
+  }, [
+    tableInstance,
+    setUrlParams,
+    urlParams.search,
+    urlParams.show_rank,
+    urlParams.show_grade_average,
+    urlParams.show_balance,
+    urlParams.include_billing,
+    sectionFilterOptions,
+  ]);
+
+  React.useEffect(() => {
+    if (!tableInstance) return;
+
+    const syncVisibleMetricParams = () => {
+      const isRankVisible = tableInstance.getColumn("rank")?.getIsVisible() ?? false;
+      const isGradeAverageVisible = tableInstance.getColumn("grade_average")?.getIsVisible() ?? false;
+      const isBalanceVisible = tableInstance.getColumn("balance")?.getIsVisible() ?? false;
+      const isBalanceOwedVisible = tableInstance.getColumn("balance_owed")?.getIsVisible() ?? false;
+
+      const nextShowRank = isRankVisible ? "1" : "0";
+      const nextShowGradeAverage = isGradeAverageVisible ? "1" : "0";
+      const nextShowBalance = isBalanceVisible || isBalanceOwedVisible ? "1" : "0";
+      const nextIncludeBilling = "0";
+
+      if (
+        urlParams.show_rank === nextShowRank &&
+        urlParams.show_grade_average === nextShowGradeAverage &&
+        urlParams.show_balance === nextShowBalance &&
+        urlParams.include_billing === nextIncludeBilling
+      ) {
+        return;
+      }
+
+      setUrlParams({
+        ...urlParams,
+        show_rank: nextShowRank,
+        show_grade_average: nextShowGradeAverage,
+        show_balance: nextShowBalance,
+        include_billing: nextIncludeBilling,
+        page: serverPagination?.currentPage ?? 1,
+      });
+    };
+
+    syncVisibleMetricParams();
+    const interval = setInterval(syncVisibleMetricParams, 200);
+    return () => clearInterval(interval);
+  }, [tableInstance, urlParams, setUrlParams, serverPagination?.currentPage]);
 
   const clearSelection = React.useCallback(() => {
     tableInstance?.toggleAllRowsSelected(false);
@@ -343,6 +398,7 @@ export function StudentTable({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <ViewOptions table={table} />
                 <AuthButton roles="teacher" disable variant="outline" size="sm" onClick={handleExport}>
                   <Download className="mr-2 h-4 w-4" />
                   Export

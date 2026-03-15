@@ -31,6 +31,9 @@ interface StudentColumnsProps {
 }
 
 function getBalance(student: StudentDto): number {
+  if (typeof student.balance === "number" && Number.isFinite(student.balance)) {
+    return Number(student.balance)
+  }
   return Number(student.current_enrollment?.billing_summary?.balance || 0)
 }
 
@@ -73,7 +76,7 @@ export function getStudentColumns({
   {
     accessorKey: "id_number",
     header: ({ column }) => (
-      <AdvancedTableColumnHeader column={column} title="Student #" />
+      <AdvancedTableColumnHeader column={column} title="ID #" />
     ),
     cell: ({ row }) => (
       <span className="font-mono text-sm font-medium">
@@ -221,6 +224,41 @@ export function getStudentColumns({
         { label: "Female", value: "female" },
         { label: "Unknown", value: "unknown" },
       ],
+    } as any,
+  },
+  {
+    accessorKey: "grade_average",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Grade Avg" />
+    ),
+    cell: ({ row }) => {
+      const rawValue = row.getValue("grade_average") as number | null | undefined
+      if (rawValue === null || rawValue === undefined) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
+      const value = Number(rawValue)
+      return <span className="text-sm font-medium">{value.toFixed(1)}%</span>
+    },
+    meta: {
+      displayName: "Grade Avg",
+    } as any,
+  },
+  {
+    accessorKey: "rank",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Rank" />
+    ),
+    cell: ({ row }) => {
+      const rawValue = row.getValue("rank") as number | null | undefined
+      if (rawValue === null || rawValue === undefined) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
+      return <span className="text-sm font-medium">#{rawValue}</span>
+    },
+    meta: {
+      displayName: "Rank",
     } as any,
   },
   {

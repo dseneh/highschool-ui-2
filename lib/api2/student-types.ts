@@ -187,6 +187,9 @@ export interface StudentDto {
     username: string;
     email: string;
   } | null;
+  balance?: number | null;
+  grade_average?: number | null;
+  rank?: number | null;
   total_average: number;
   total_subjects: number;
 }
@@ -289,6 +292,10 @@ export interface ListStudentsParams {
   enrollmentStatus?: string;
   academicYearId?: string;
   search?: string;
+  include_billing?: "0" | "1" | "true" | "false";
+  show_rank?: "0" | "1" | "true" | "false";
+  show_grade_average?: "0" | "1" | "true" | "false";
+  show_balance?: "0" | "1" | "true" | "false";
   pageNumber?: number;
   pageSize?: number;
 }

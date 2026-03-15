@@ -43,6 +43,10 @@ export default function StudentsPage() {
   const [balanceCondition, setBalanceCondition] = useQueryState("balance_condition", parseAsString.withDefault(""));
   const [balanceMin, setBalanceMin] = useQueryState("balance_min", parseAsString.withDefault(""));
   const [balanceMax, setBalanceMax] = useQueryState("balance_max", parseAsString.withDefault(""));
+  const [includeBilling, setIncludeBilling] = useQueryState("include_billing", parseAsString.withDefault("0"));
+  const [showRank, setShowRank] = useQueryState("show_rank", parseAsString.withDefault("1"));
+  const [showGradeAverage, setShowGradeAverage] = useQueryState("show_grade_average", parseAsString.withDefault("1"));
+  const [showBalance, setShowBalance] = useQueryState("show_balance", parseAsString.withDefault("1"));
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [pageSize, setPageSize] = useQueryState(
     "page_size",
@@ -60,6 +64,10 @@ export default function StudentsPage() {
       balance_condition: balanceCondition,
       balance_min: balanceMin,
       balance_max: balanceMax,
+      include_billing: includeBilling,
+      show_rank: showRank,
+      show_grade_average: showGradeAverage,
+      show_balance: showBalance,
     }),
     [
       search,
@@ -71,6 +79,10 @@ export default function StudentsPage() {
       balanceCondition,
       balanceMin,
       balanceMax,
+      includeBilling,
+      showRank,
+      showGradeAverage,
+      showBalance,
     ]
   );
 
@@ -85,6 +97,10 @@ export default function StudentsPage() {
       balance_condition: balanceCondition || undefined,
       balance_min: balanceMin || undefined,
       balance_max: balanceMax || undefined,
+      include_billing: includeBilling || "0",
+      show_rank: showRank || "0",
+      show_grade_average: showGradeAverage || "0",
+      show_balance: showBalance || "0",
       page,
       page_size: pageSize,
     }),
@@ -98,6 +114,10 @@ export default function StudentsPage() {
       balanceCondition,
       balanceMin,
       balanceMax,
+      includeBilling,
+      showRank,
+      showGradeAverage,
+      showBalance,
       page,
       pageSize,
     ],
@@ -230,6 +250,10 @@ export default function StudentsPage() {
       void setBalanceCondition(params.balance_condition || "");
       void setBalanceMin(params.balance_min || "");
       void setBalanceMax(params.balance_max || "");
+      void setIncludeBilling(params.include_billing || "0");
+      void setShowRank(params.show_rank || "0");
+      void setShowGradeAverage(params.show_grade_average || "0");
+      void setShowBalance(params.show_balance || "0");
       void setPage(params.page || 1);
     },
     [
@@ -242,6 +266,10 @@ export default function StudentsPage() {
       setBalanceCondition,
       setBalanceMin,
       setBalanceMax,
+      setIncludeBilling,
+      setShowRank,
+      setShowGradeAverage,
+      setShowBalance,
       setPage,
     ],
   );
