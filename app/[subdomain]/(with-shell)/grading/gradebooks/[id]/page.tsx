@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useGrading } from "@/lib/api2/grading";
-import { useGradebookScheduleProjection } from "@/lib/api2/schedule-projection";
+import { type GradebookScheduleProjectionDto, useGradebookScheduleProjection } from "@/lib/api2/schedule-projection";
 import { useAllMarkingPeriods } from "@/hooks/use-marking-period";
 import PageLayout from "@/components/dashboard/page-layout";
 import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateAction } from "@/components/ui/empty-state";
@@ -364,7 +364,7 @@ export default function GradebookDetailPage() {
                   <div className="text-sm text-muted-foreground">No schedule entries projected for this gradebook yet.</div>
                 ) : (
                   <div className="grid gap-2 md:grid-cols-2">
-                    {scheduleProjection.map((slot) => (
+                    {scheduleProjection.map((slot: GradebookScheduleProjectionDto) => (
                       <div key={slot.id} className="rounded-md border p-2 text-sm">
                         <div className="font-medium">{slot.period.name}</div>
                         <div className="text-muted-foreground text-xs">

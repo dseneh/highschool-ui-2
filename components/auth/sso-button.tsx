@@ -12,7 +12,7 @@ export function SSOButton({ disabled, className }: SSOButtonProps) {
       variant="outline"
       className={className}
       size="lg"
-      disabled//={disabled}
+      disabled={disabled}
       icon={
         <svg 
         className="mr-2 h-4 w-4" 

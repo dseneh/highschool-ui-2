@@ -16,7 +16,7 @@ interface PasswordChangeFormProps {
   onSuccess?: () => void;
 }
 
-export function PasswordChangeForm({ idNumber, onSuccess }: PasswordChangeFormProps) {
+export function PasswordChangeForm({ idNumber, isDefaultPassword, onSuccess }: PasswordChangeFormProps) {
   const router = useRouter();
   const { updateUserPassword } = useUsers();
 
@@ -85,11 +85,12 @@ export function PasswordChangeForm({ idNumber, onSuccess }: PasswordChangeFormPr
         // If no custom success handler, redirect to dashboard
         router.push("/");
       }
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.detail || 
-                          err?.response?.data?.current_password?.[0] ||
-                          err?.response?.data?.new_password?.[0] ||
-                          err?.message || 
+    } catch (err) {
+      const e = err as { response?: { data?: { detail?: string; current_password?: string[]; new_password?: string[] } }; message?: string };
+      const errorMessage = e?.response?.data?.detail ||
+                          e?.response?.data?.current_password?.[0] ||
+                          e?.response?.data?.new_password?.[0] ||
+                          e?.message ||
                           "Failed to change password";
       setError(errorMessage);
     } finally {
@@ -98,25 +99,14 @@ export function PasswordChangeForm({ idNumber, onSuccess }: PasswordChangeFormPr
   };
 
   return (
-    // <Card className="w-full max-w-md mx-auto">
-    //   <CardHeader>
-    //     <CardTitle>Change Password</CardTitle>
-    //     <CardDescription>
-    //       {isDefaultPassword 
-    //         ? "You are using a default password. Please change it to secure your account."
-    //         : "Update your password to keep your account secure"
-    //       }
-    //     </CardDescription>
-    //   </CardHeader>
-    //   <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* {isDefaultPassword && (
-            <Alert>
-              <AlertDescription>
-                Your temporary password is your ID number. Please change it immediately.
-              </AlertDescription>
-            </Alert>
-          )} */}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {isDefaultPassword && (
+        <Alert>
+          <AlertDescription>
+            Your temporary password is your ID number. Please change it immediately.
+          </AlertDescription>
+        </Alert>
+      )}
 
           {error && (
             <Alert variant="destructive">
@@ -206,8 +196,6 @@ export function PasswordChangeForm({ idNumber, onSuccess }: PasswordChangeFormPr
           >
             Change Password
           </Button>
-        </form>
-    //   </CardContent>
-    // </Card>
+    </form>
   );
 }
