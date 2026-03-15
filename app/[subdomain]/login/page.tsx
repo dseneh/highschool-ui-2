@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useEffect, forwardRef } from "react";
+import { Suspense, useMemo, forwardRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,9 @@ import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { useSubdomainValidation } from "@/hooks/use-subdomain-validation";
 import { useTenantLoginForm } from "@/hooks/use-tenant-login-form";
 import { buildDomainUrlFromWindow } from "@/lib/tenant/index";
-import { EyeIcon, EyeOffIcon, Triangle, TriangleAlert } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, EyeIcon, EyeOffIcon, TriangleAlert } from "lucide-react";
 import { LoadingSkeleton } from "./_components/loading-skeleton";
+import { djangoPublicApiClient } from "@/lib/api2/http-clients";
 
 export default function TenantLoginPage() {
   return (
@@ -29,9 +29,11 @@ function TenantLoginContent() {
   const subdomain = useTenantSubdomain();
   const { loading } = useAuth();
 
-  // Refs for form fields to manage focus programmatically
-  const usernameRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
+  const [showForgotForm, setShowForgotForm] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState("");
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // Get redirect URL and prefill username from query params
   const redirectUrl = useMemo(
@@ -84,12 +86,74 @@ function TenantLoginContent() {
     window.location.href = mainDomainUrl;
   };
 
+  const openForgotForm = useCallback(() => {
+    setShowForgotForm(true);
+    setForgotError(null);
+    setForgotSuccess(null);
+    setForgotIdentifier(username.trim() || prefillUsername);
+  }, [username, prefillUsername]);
+
+  const handleBackToLogin = useCallback(() => {
+    setShowForgotForm(false);
+    setForgotError(null);
+    setForgotSuccess(null);
+  }, []);
+
+  const handleForgotSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      const identifier = forgotIdentifier.trim();
+      if (!identifier) {
+        setForgotError("Please enter your email, school ID, or username.");
+        return;
+      }
+
+      setIsSendingReset(true);
+      setForgotError(null);
+      setForgotSuccess(null);
+
+      try {
+        const response = await djangoPublicApiClient.post(
+          "/auth/password/forgot",
+          { user_identifier: identifier },
+          {
+            headers: resolvedSubdomain ? { "x-tenant": resolvedSubdomain } : undefined,
+          }
+        );
+
+        const data = response.data;
+        setForgotSuccess(
+          data?.detail ||
+            "If a matching account exists, we sent password reset instructions to its email address."
+        );
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail;
+        if (detail) {
+          const message = Array.isArray(detail)
+            ? detail.join(" ")
+            : typeof detail === "string"
+              ? detail
+              : "Unable to process your request. Please try again.";
+          setForgotError(message);
+        } else {
+          setForgotError("Network error. Please check your connection and try again.");
+        }
+      } finally {
+        setIsSendingReset(false);
+      }
+    },
+    [forgotIdentifier, resolvedSubdomain]
+  );
+
   return (
     <AuthLayout
-      title="Welcome back!"
+      title={showForgotForm ? "Forgot your password?" : "Welcome back!"}
       subtitle={
         validationError ? (
           "Unable to access workspace"
+        ) : showForgotForm ? (
+          <small>Enter your email, school ID, or username and we will send reset instructions.</small>
         ) : resolvedSubdomain ? (
           <span>
             Sign in to your{" "}
@@ -121,78 +185,131 @@ function TenantLoginContent() {
       ) : isValidating ? (
         <LoadingSkeleton />
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="username" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Email, School ID or Username
-            </Label>
-            <Input
-              // ref={usernameRef}
-              autoFocus
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="you@school.com, ID123, or your username"
-              required
-              autoComplete="username"
-              className="h-11"
-              disabled={isValidating}
-            />
-          </div>
-
-          <PasswordInput
-            // ref={passwordRef}
-            // autoFocus={!isValidating && !!username}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            showPassword={showPassword}
-            onToggleVisibility={toggleShowPassword}
-            disabled={isValidating}
-          />
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none group">
-              <Checkbox
-                checked={remember}
-                onCheckedChange={(v) => setRemember(v === true)}
-                disabled={isValidating}
-              />
-              <span className="group-hover:text-foreground transition-colors">
-                Remember for 30 days
-              </span>
-            </label>
-            <button
-              type="button"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              disabled={isValidating}
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {error && <ErrorAlert message={error} />}
-
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            loading={isSubmitting || loading}
-            loadingText={"Signing in..."}
-            disabled={isValidating}
+        <div className="overflow-hidden">
+          <div
+            className="flex w-[200%] p-1 transition-transform duration-500 ease-out"
+            style={{ transform: showForgotForm ? "translateX(-50%)" : "translateX(0%)" }}
           >
-            Sign in
-          </Button>
+            <div className="w-1/2 pr-1">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="username" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Email, School ID or Username
+                  </Label>
+                  <Input
+                    // ref={usernameRef}
+                    autoFocus
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="you@school.com, ID123, or your username"
+                    required
+                    autoComplete="username"
+                    className="h-11"
+                    disabled={isValidating}
+                  />
+                </div>
 
-          {/* <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+                <PasswordInput
+                  // ref={passwordRef}
+                  // autoFocus={!isValidating && !!username}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  showPassword={showPassword}
+                  onToggleVisibility={toggleShowPassword}
+                  disabled={isValidating}
+                />
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none group">
+                    <Checkbox
+                      checked={remember}
+                      onCheckedChange={(v) => setRemember(v === true)}
+                      disabled={isValidating}
+                    />
+                    <span className="group-hover:text-foreground transition-colors">
+                      Remember for 30 days
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={openForgotForm}
+                    disabled={isValidating}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                {error && <ErrorAlert message={error} />}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  loading={isSubmitting || loading}
+                  loadingText={"Signing in..."}
+                  disabled={isValidating}
+                >
+                  Sign in
+                </Button>
+              </form>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
+
+            <div className="w-1/2 pl-1">
+              <form onSubmit={handleForgotSubmit} className="space-y-5">
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="forgotIdentifier" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Email, School ID or Username
+                  </Label>
+                  <Input
+                    id="forgotIdentifier"
+                    type="text"
+                    value={forgotIdentifier}
+                    onChange={(e) => setForgotIdentifier(e.target.value)}
+                    placeholder="you@school.com, ID123, or your username"
+                    required
+                    autoComplete="username"
+                    className="h-11"
+                    disabled={isValidating || isSendingReset}
+                  />
+                </div>
+
+                {forgotError && <ErrorAlert message={forgotError} />}
+
+                {forgotSuccess && (
+                  <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-2.5">
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300">{forgotSuccess}</p>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  loading={isSendingReset}
+                  loadingText={"Sending..."}
+                  disabled={isValidating || isSendingReset}
+                >
+                  Send reset instructions
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full -mt-2"
+                  variant="outline"
+                  size="lg"
+                  disabled={isValidating || isSendingReset}
+                  onClick={handleBackToLogin}
+                  icon={<ArrowLeft className="size-4" />}
+                >
+                  Back to login
+                </Button>
+              </form>
             </div>
-          </div> */}
-        </form>
+          </div>
+        </div>
       )}
     </AuthLayout>
   );
@@ -272,11 +389,10 @@ interface PasswordInputProps {
   showPassword: boolean;
   onToggleVisibility: () => void;
   disabled?: boolean;
-  autoFocus?: boolean;
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ value, onChange, showPassword, onToggleVisibility, disabled = false, autoFocus = false }, ref) => {
+  ({ value, onChange, showPassword, onToggleVisibility, disabled = false }, ref) => {
     return (
       <div className="space-y-1.5">
         <Label htmlFor="password" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">

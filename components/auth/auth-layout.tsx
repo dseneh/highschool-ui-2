@@ -293,7 +293,7 @@ function FormPanel({
     <div className="relative flex w-full flex-col mx-auto lg:w-xl bg-background">
       <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:px-16 xl:px-20">
         {/* Logo */}
-        <div className="animate-fade-up mb-12">
+        <div className="animate-fade-up mb-5">
           <AuthBrandLogo />
         </div>
 
