@@ -2,7 +2,7 @@
 
 import React from 'react'
 import {HugeiconsIcon} from '@hugeicons/react';
-import {BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, TooltipProps} from 'recharts';
+import {ComposedChart, Bar, Line, XAxis, Tooltip, ResponsiveContainer, TooltipProps} from 'recharts';
 import {cn, getGradeTextColorClass} from '@/lib/utils';
 
 type StatCardProps = {
@@ -22,14 +22,16 @@ type StatCardProps = {
 function GradeTooltip({ active, payload }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null
   const fullName = (payload[0]?.payload as { fullName?: string })?.fullName
+  const firstValueEntry = payload.find((entry) => typeof entry.value === 'number')
+
   return (
     <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-sm">
       {fullName && <p className="text-xs text-muted-foreground mb-1">{fullName}</p>}
-      {payload.map((entry, index) => (
-        <p key={index} className="text-xs font-medium" style={{ color: entry.color }}>
-          {entry.name}: {entry.value?.toFixed(1)}%
+      {firstValueEntry && (
+        <p className="text-xs font-medium" style={{ color: firstValueEntry.color }}>
+          {firstValueEntry.name}: {firstValueEntry.value?.toFixed(1)}%
         </p>
-      ))}
+      )}
     </div>
   )
 }
@@ -68,7 +70,7 @@ export default function StatCard({
 
         <div className="w-full min-[520px]:w-70 lg:w-full xl:w-70 h-20">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <ComposedChart data={chartData} margin={{ top: 4, right: 2, left: 2, bottom: 0 }}>
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={gradientStart} />
@@ -79,7 +81,7 @@ export default function StatCard({
                 dataKey="subject"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 11, fill: isDark ? "#9ca3af" : "#868c98" }}
+                tick={{ fontSize: 10, fill: isDark ? "#9ca3af" : "#868c98" }}
                 interval={0}
               />
               <Tooltip content={<GradeTooltip />} cursor={false} />
@@ -89,8 +91,27 @@ export default function StatCard({
                 fill={`url(#${gradientId})`}
                 radius={[2, 2, 0, 0]}
                 maxBarSize={14}
+                fillOpacity={0.9}
+                activeBar={{
+                  fill: `url(#${gradientId})`,
+                  fillOpacity: 1,
+                  stroke: 'hsl(var(--primary))',
+                  strokeWidth: 1.5,
+                  cursor: 'pointer',
+                }}
               />
-            </BarChart>
+              <Line
+                type="monotone"
+                dataKey="average"
+                stroke="#f59e0b"
+                strokeWidth={3}
+                strokeOpacity={1}
+                // strokeDasharray="5 4"
+                dot={false}
+                activeDot={{ r: 4, fill: '#f59e0b', stroke: isDark ? '#020817' : '#ffffff', strokeWidth: 1.5 }}
+                connectNulls
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

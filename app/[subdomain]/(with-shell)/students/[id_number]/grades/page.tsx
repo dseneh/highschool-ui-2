@@ -37,8 +37,8 @@ import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-numb
 /** Get initials from a subject name, e.g. "Social Studies" → "SS" */
 function getSubjectInitials(name: string): string {
   const words = name.trim().split(/\s+/)
-  if (words.length === 1) return words[0].slice(0, 3).toUpperCase()
-  return words.map((w) => w[0]).join("").toUpperCase().slice(0, 4)
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return words.map((w) => w[0]).join("").toUpperCase().slice(0, 2)
 }
 
 /* ------------------------------------------------------------------ */
