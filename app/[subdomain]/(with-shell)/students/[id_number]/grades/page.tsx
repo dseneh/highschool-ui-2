@@ -23,7 +23,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { AlertCircleIcon, BookOpen02Icon, Medal01Icon, ChartIcon } from "@hugeicons/core-free-icons"
 import { CircularProgress } from "@/components/ui/circular-progress"
 import { useTheme } from "next-themes"
-import { cn } from "@/lib/utils"
+import { cn, getGradeTextColorClass } from "@/lib/utils"
 import type { GradeBookRecord } from "@/lib/api2/grading-types"
 import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
@@ -40,17 +40,6 @@ function getSubjectInitials(name: string): string {
   if (words.length === 1) return words[0].slice(0, 3).toUpperCase()
   return words.map((w) => w[0]).join("").toUpperCase().slice(0, 4)
 }
-
-function getGradeColor(grade: number | null | undefined): string {
-  if (grade === null || grade === undefined) return "text-muted-foreground"
-  if (grade >= 90) return "text-emerald-600"
-  if (grade >= 80) return "text-blue-600"
-  if (grade >= 70) return "text-amber-600"
-  if (grade >= 60) return "text-orange-600"
-  return "text-red-600"
-}
-
-
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
@@ -90,24 +79,37 @@ export default function StudentGradesPage() {
   // Chart data — one bar per subject (initials for labels, full name in tooltip)
   const chartData = gradebooks.map((gb: GradeBookRecord) => ({
     subject: getSubjectInitials(gb.subject.name),
-    average: gb.marking_period.final_percentage ?? 0,
+    average: gb.marking_period.final_percentage,
     fullName: gb.subject.name,
   }))
 
   const passingCount = gradebooks.filter(
-    (gb: GradeBookRecord) => (gb.marking_period.final_percentage ?? 0) >= 50
+    (gb: GradeBookRecord) =>
+      gb.marking_period.final_percentage != null && gb.marking_period.final_percentage >= 50
   ).length
+
+  const periodScores = gradebooks
+    .map((gb: GradeBookRecord) => gb.marking_period.final_percentage)
+    .filter((value): value is number => value !== null && value !== undefined)
+
+  const periodAvg = periodScores.length
+    ? periodScores.reduce((sum, value) => sum + value, 0) / periodScores.length
+    : null
 
   // Final averages chart data (across all marking periods)
   const finalAvgChartData = gradebooks.map((gb: GradeBookRecord) => ({
     subject: getSubjectInitials(gb.subject.name),
-    average: gb.averages.final_average ?? 0,
+    average: gb.averages.final_average,
     fullName: gb.subject.name,
   }))
 
-  const highestAvg = gradebooks.length
-    ? Math.max(...gradebooks.map((gb: GradeBookRecord) => gb.averages.final_average ?? 0))
-    : undefined
+  const finalAverageValues = gradebooks
+    .map((gb: GradeBookRecord) => gb.averages.final_average)
+    .filter((value): value is number => value !== null && value !== undefined)
+
+  const highestAvg = finalAverageValues.length
+    ? Math.max(...finalAverageValues)
+    : null
 
     const loading = isFetching || gradesLoading
   return (
@@ -159,8 +161,8 @@ export default function StudentGradesPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Overall Average</p>
-                  <p className={cn("text-2xl font-bold", getGradeColor(overallAvg))}>
-                    {overallAvg != null ? `${overallAvg.toFixed(1)}%` : "N/A"}
+                  <p className={cn("text-2xl font-bold", getGradeTextColorClass(overallAvg))}>
+                    {overallAvg != null ? `${overallAvg.toFixed(1)}%` : "-"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {totalGradebooks} Subject{totalGradebooks !== 1 ? "s" : ""}
@@ -171,7 +173,7 @@ export default function StudentGradesPage() {
                     value={overallAvg}
                     size={56}
                     strokeWidth={5.2}
-                    className={getGradeColor(overallAvg)}
+                    className={getGradeTextColorClass(overallAvg)}
                   />
                 ) : (
                   <div className="size-12 rounded-full bg-muted flex items-center justify-center">
@@ -256,8 +258,8 @@ export default function StudentGradesPage() {
                 {/* Marking Period Scores */}
                 <StatCard
                   title="Period Scores"
-                  value={overallAvg ?? null}
-                  subtitle={`${passingCount}/${totalGradebooks} subjects passing`}
+                  value={periodAvg}
+                  subtitle={`${passingCount}/${totalGradebooks} subjects passing in selected period`}
                   chartData={chartData}
                   icon={ChartIcon}
                   isDark={resolvedTheme === 'dark'}
@@ -271,8 +273,8 @@ export default function StudentGradesPage() {
                 {/* Final Averages */}
                 <StatCard
                   title="Final Averages"
-                  value={highestAvg ?? null}
-                  subtitle="Highest subject avg"
+                  value={highestAvg}
+                  subtitle="Highest subject year-to-date avg"
                   chartData={finalAvgChartData}
                   icon={BookOpen02Icon}
                   isDark={resolvedTheme === 'dark'}
@@ -308,7 +310,7 @@ export default function StudentGradesPage() {
                         )}
                         <th className="border border-border px-3 py-2 text-center font-semibold text-muted-foreground min-w-24">Status</th>
                         <th className="border border-border px-3 py-2 text-center font-semibold text-muted-foreground min-w-20">Rank</th>
-                        <th className="border border-border px-3 py-2 text-center font-semibold text-muted-foreground min-w-24">Final Avg</th>
+                        <th className="border border-border px-3 py-2 text-center font-semibold text-muted-foreground min-w-24">Final Avg (YTD)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -326,14 +328,14 @@ export default function StudentGradesPage() {
                             </td>
                             <td className={cn(
                               "border border-border px-3 py-2 text-center tabular-nums",
-                              score != null ? cn("font-semibold", getGradeColor(score)) : ""
+                              score != null ? cn("font-semibold", getGradeTextColorClass(score)) : ""
                             )}>
                               {score != null ? score.toFixed(1) : "-"}
                             </td>
                             {useLetterGrades && (
                               <td className={cn(
                                 "border border-border px-3 py-2 text-center font-medium",
-                                mp.letter_grade ? getGradeColor(score) : ""
+                                mp.letter_grade ? getGradeTextColorClass(score) : ""
                               )}>
                                 {mp.letter_grade || "-"}
                               </td>
@@ -357,7 +359,7 @@ export default function StudentGradesPage() {
                             </td>
                             <td className={cn(
                               "border border-border px-3 py-2 text-center tabular-nums",
-                              finalAvg != null ? cn("font-bold", getGradeColor(finalAvg)) : ""
+                              finalAvg != null ? cn("font-bold", getGradeTextColorClass(finalAvg)) : ""
                             )}>
                               {finalAvg != null ? finalAvg.toFixed(1) : "-"}
                             </td>
@@ -374,9 +376,9 @@ export default function StudentGradesPage() {
                           </td>
                           <td className={cn(
                             "border border-border px-3 py-2 text-center tabular-nums",
-                            overallAvg != null ? getGradeColor(overallAvg) : ""
+                            periodAvg != null ? getGradeTextColorClass(periodAvg) : ""
                           )}>
-                            {overallAvg != null ? overallAvg.toFixed(1) : "-"}
+                            {periodAvg != null ? periodAvg.toFixed(1) : "-"}
                           </td>
                           {useLetterGrades && (
                             <td className="border border-border px-3 py-2 text-center">-</td>
@@ -387,7 +389,7 @@ export default function StudentGradesPage() {
                           </td>
                           <td className={cn(
                             "border border-border px-3 py-2 text-center tabular-nums",
-                            overallAvg != null ? getGradeColor(overallAvg) : ""
+                            overallAvg != null ? getGradeTextColorClass(overallAvg) : ""
                           )}>
                             {overallAvg != null ? overallAvg.toFixed(1) : "-"}
                           </td>

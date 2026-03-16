@@ -1,22 +1,24 @@
 import React from 'react'
 import {cn} from '@/lib/utils';
 import {getStatusDotClass, getStatusBadgeClass} from '@/lib/status-colors';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import AvatarImg from '../shared/avatar-img';
 
 type NavStudentCardProps = {
     student: any
     className?: string
 }
 export default function NavStudentCard({ student, className }: NavStudentCardProps) {
+  console.log('NavStudentCard student:', student);
+  const gradeLevelName = student.is_enrolled ? student.current_enrollment.grade_level?.name || student?.grade_level_name : null;
+
+  const sectionName = student.is_enrolled ? student.current_enrollment.section?.name || student?.section_name : null;
+
+  const classInfo = [gradeLevelName, sectionName].filter(Boolean).join(' • ');
+
   return (
-   <div className={cn("p-3 border-b", className)}>
+   <div className={cn("pt-3 mb-1 border-b", className)}>
         <div className="flex flex-col items-center gap-2 group-data-[collapsible=icon]:gap-0">
-          <Avatar className="size-14 rounded-full ring-2 ring-background shadow-sm group-data-[collapsible=icon]:size-10">
-            <AvatarImage src={student?.photo} alt={student?.first_name} />
-            <AvatarFallback className="rounded-full text-sm font-semibold">
-              {student?.first_name?.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarImg src={student?.photo} name={student?.full_name} className='size-14' />
           <div className="min-w-0 w-full text-center group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-semibold truncate leading-tight">
               {student?.first_name} {student?.last_name}
@@ -26,6 +28,7 @@ export default function NavStudentCard({ student, className }: NavStudentCardPro
                 ID: {student.id_number}
               </p>
             )}
+            
             {student?.subtitle && (
               <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                 {student.subtitle}
@@ -46,6 +49,13 @@ export default function NavStudentCard({ student, className }: NavStudentCardPro
                 />
                 {student.status}
               </span>
+            )}
+            {classInfo && (
+          <div className="py-1 mt-1 border-t bg-primary /20 font-semibold text-primary-foreground">
+              <p className="text-[11px] ftext-muted-foreground truncate mt-0.5">
+                {classInfo}
+              </p>
+          </div>
             )}
           </div>
         </div>

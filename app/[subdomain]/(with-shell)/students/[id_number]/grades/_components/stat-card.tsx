@@ -3,13 +3,13 @@
 import React from 'react'
 import {HugeiconsIcon} from '@hugeicons/react';
 import {BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, TooltipProps} from 'recharts';
-import {cn} from '@/lib/utils';
+import {cn, getGradeTextColorClass} from '@/lib/utils';
 
 type StatCardProps = {
   title: string;
   value: number | null;
   subtitle: string;
-  chartData: { subject: string; average: number }[];
+  chartData: { subject: string; average: number | null; fullName?: string }[];
   icon: readonly (readonly [string, { readonly [key: string]: string | number }])[];
   isDark: boolean;
   gradientId: string;
@@ -34,15 +34,6 @@ function GradeTooltip({ active, payload }: TooltipProps<number, string>) {
   )
 }
 
-function getGradeColor(grade: number | null | undefined): string {
-  if (grade === null || grade === undefined) return "text-muted-foreground"
-  if (grade >= 90) return "text-emerald-600"
-  if (grade >= 80) return "text-blue-600"
-  if (grade >= 70) return "text-amber-600"
-  if (grade >= 60) return "text-orange-600"
-  return "text-red-600"
-}
-
 export default function StatCard({ 
   title, 
   value, 
@@ -65,8 +56,8 @@ export default function StatCard({
 
       <div className="flex flex-col min-[520px]:flex-row min-[520px]:items-end min-[520px]:justify-between lg:flex-col lg:items-stretch xl:flex-row xl:items-end xl:justify-between gap-4">
         <div className="space-y-2 min-[520px]:space-y-3">
-          <p className={cn("text-3xl font-semibold tracking-tight", getGradeColor(value))}>
-            {value != null ? `${value.toFixed(1)}%` : "N/A"}
+          <p className={cn("text-3xl font-semibold tracking-tight", getGradeTextColorClass(value))}>
+            {value != null ? `${value.toFixed(1)}%` : "-"}
           </p>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-muted-foreground">

@@ -400,12 +400,12 @@ export interface GradeBookRecord {
       name: string;
       average: number;
     }>;
-    final_average: number;
+    final_average: number | null;
   };
   marking_period: {
     id: string;
     name: string;
-    final_percentage: number;
+    final_percentage: number | null;
     letter_grade: string;
     status: GradeStatusType | null;
     semester: {
@@ -422,7 +422,7 @@ export interface OverallAverages {
     name: string;
     average: number;
   }>;
-  final_average: number;
+  final_average: number | null;
 }
 
 export interface StudentFinalGradesResponse {

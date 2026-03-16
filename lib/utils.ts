@@ -32,21 +32,21 @@ export const getErrorMessage = (error: any) => {
     )
 }
 
-export const getGradeBGColorClass = (percentage: number | null) => {
+export const getGradeBGColorClass = (percentage: number | null | undefined) => {
     return colorClass('bg', percentage)
 }
 
-export const getGradeTextColorClass = (percentage: number | null) => {
+export const getGradeTextColorClass = (percentage: number | null | undefined) => {
     return colorClass('text', percentage)
 }
 
-export const colorClass = (type: string, percentage: number | null) => {
+export const colorClass = (type: string, percentage: number | null | undefined) => {
     if (percentage === null || percentage === undefined) return `${type}-gray-500`
     const numPercentage = Number(percentage)
     if (isNaN(numPercentage)) return `${type}-gray-500`
-    if (numPercentage < 70) return `${type}-red-500`
-    // if (numPercentage >= 70 && numPercentage < 80) return `${type}-orange-500`
-    if (numPercentage >= 70 && numPercentage < 90) return `${type}-green-500`
     if (numPercentage >= 90) return `${type}-blue-600`
+    if (numPercentage >= 85) return `${type}-green-500`
+    if (numPercentage >= 70) return `${type}-orange-500`
+    if (numPercentage < 70) return `${type}-red-500`
     return `${type}-gray-500`
 }

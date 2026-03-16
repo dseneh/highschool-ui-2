@@ -10,7 +10,7 @@ import {
   Calendar03Icon,
 } from "@hugeicons/core-free-icons"
 import type { StudentDto } from "@/lib/api2/student-types"
-import { cn } from "@/lib/utils"
+import { cn, getGradeBGColorClass, getGradeTextColorClass } from "@/lib/utils"
 
 interface StudentDashboardMetricsProps {
   student: StudentDto
@@ -26,7 +26,7 @@ export function StudentDashboardMetrics({ student }: StudentDashboardMetricsProp
   const balancePercentage = totalBill > 0 ? Math.round((balance / totalBill) * 100) : 0
   
   // Format grade average
-  const gradeAverage = student?.total_average || 0
+  const gradeAverage = student?.total_average ?? null
   
   // Get academic year dates
   const academicYear = student?.current_enrollment?.academic_year
@@ -60,12 +60,15 @@ export function StudentDashboardMetrics({ student }: StudentDashboardMetricsProp
     {
       icon: Medal01Icon,
       label: "Grade Average",
-      value: `${gradeAverage.toFixed(1)}%`,
+      value: gradeAverage != null ? `${gradeAverage.toFixed(1)}%` : "N/A",
       subtext: "Cumulative Average",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100 dark:bg-emerald-950",
-      progress: gradeAverage,
-      progressColor: gradeAverage >= 70 ? "text-emerald-600" : gradeAverage >= 50 ? "text-amber-600" : "text-red-600",
+      color: getGradeTextColorClass(gradeAverage),
+      bgColor:
+        gradeAverage != null
+          ? cn(getGradeBGColorClass(gradeAverage), "dark:bg-opacity-20")
+          : "bg-muted",
+      progress: gradeAverage ?? 0,
+      progressColor: getGradeTextColorClass(gradeAverage),
     },
     {
       icon: Calendar03Icon,

@@ -20,6 +20,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {MoreHorizontalIcon, ViewIcon, BookOpen02Icon, Delete02Icon, Invoice01Icon, UserAdd01Icon, RepeatIcon} from '@hugeicons/core-free-icons';
 import Link from "next/link"
 import type { ConditionFilter } from "@/components/shared/advanced-table"
+import { cn, getGradeTextColorClass } from "@/lib/utils"
 
 interface StudentColumnsProps {
   onEnroll?: (student: StudentDto) => void
@@ -108,7 +109,7 @@ export function getStudentColumns({
           <div>
             <div className="font-medium">{displayName}</div>
             {student.email && (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {student.email}
               </div>
             )}
@@ -229,16 +230,16 @@ export function getStudentColumns({
   {
     accessorKey: "grade_average",
     header: ({ column }) => (
-      <AdvancedTableColumnHeader column={column} title="Grade Avg" />
+      <AdvancedTableColumnHeader column={column} title="Grade Avg" className="justify-center" />
     ),
     cell: ({ row }) => {
       const rawValue = row.getValue("grade_average") as number | null | undefined
       if (rawValue === null || rawValue === undefined) {
-        return <span className="text-muted-foreground">—</span>
+        return <span className="text-muted-foreground flex justify-center">-</span>
       }
 
       const value = Number(rawValue)
-      return <span className="text-sm font-medium">{value.toFixed(1)}%</span>
+      return <span className={cn("text-sm flex justify-center font-semibold", getGradeTextColorClass(value))}>{value.toFixed(1)}%</span>
     },
     meta: {
       displayName: "Grade Avg",
@@ -247,15 +248,17 @@ export function getStudentColumns({
   {
     accessorKey: "rank",
     header: ({ column }) => (
-      <AdvancedTableColumnHeader column={column} title="Rank" />
+      <AdvancedTableColumnHeader column={column} title="Rank" className="justify-center" />
     ),
     cell: ({ row }) => {
       const rawValue = row.getValue("rank") as number | null | undefined
       if (rawValue === null || rawValue === undefined) {
-        return <span className="text-muted-foreground">—</span>
+        return <span className="text-muted-foreground flex justify-center">-</span>
       }
 
-      return <span className="text-sm font-medium">#{rawValue}</span>
+      return <span className="text-sm font-medium flex justify-center items-center ">
+        {rawValue}
+        </span>
     },
     meta: {
       displayName: "Rank",
