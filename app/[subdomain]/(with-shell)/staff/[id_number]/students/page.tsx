@@ -145,7 +145,7 @@ export default function StaffStudentsPage() {
       emptyStateTitle={"Not a Teacher"}
       emptyStateDescription={"This staff member is not marked as a teacher."}
     >
-      {staff.is_teacher && (
+      {staff && staff?.is_teacher && (
         <>
       <div className="space-y-2">
         <DataTable

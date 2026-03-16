@@ -1,16 +1,9 @@
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {ColumnDef} from '@tanstack/react-table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ColumnDef } from '@tanstack/react-table';
 import StatusBadge from '@/components/ui/status-badge';
 import { Student } from './types';
 import { Button } from '@/components/ui/button';
-import { Eye, GraduationCap, MoreHorizontal } from 'lucide-react';
 import { cn, getGradeTextColorClass } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { DataTableColumnHeader } from '@/components/shared/data-table-column-header';
 
 
@@ -21,6 +14,7 @@ type CreateStudentColumnsOptions = {
 
 export const createStudentColumns = (
   getInitials: (firstName: string, lastName: string) => string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   options?: CreateStudentColumnsOptions
 ): ColumnDef<Student>[] => [
   {
@@ -96,18 +90,12 @@ export const createStudentColumns = (
     id: "actions",
     enableSorting: false,
     header: "",
-    cell: ({ row }) => {
-      // const student = row.original
+    cell: () => {
       return (
         <div className="flex items-center justify-center">
-          <Button
-                variant="link"
-                // onClick={(event) => event.stopPropagation()}
-              >
-                View
-                </Button>
+          <Button variant="link">View</Button>
         </div>
-      )
+      );
     },
   },
   // {
