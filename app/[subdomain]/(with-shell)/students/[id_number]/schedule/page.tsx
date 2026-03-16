@@ -251,7 +251,7 @@ export default function StudentSchedulePage() {
       }
       emptyStateIcon={<HugeiconsIcon icon={Calendar03Icon} className="size-5 text-muted-foreground" />}
     >
-      {schedules && !enrollment && (
+      {schedules && enrollment && (
       <div className="space-y-4">
         <>
             <div className="overflow-hidden">

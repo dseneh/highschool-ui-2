@@ -183,10 +183,11 @@ export default function StaffSchedulePage() {
       }
       emptyStateTitle={!staff.is_teacher ? "Not a Teacher" : "No Schedule Entries"}
       emptyStateDescription={!staff.is_teacher
-        ? "This staff member is not marked as a teacher."
+        ? "This staff member is not marked as a teaching staff."
         : "No class schedule has been configured for this teacher yet."}
       emptyStateIcon={<HugeiconsIcon icon={Calendar03Icon} className="size-5 text-muted-foreground" />}
     >
+      {staff.is_teacher && (
       <div className="overflow-hidden">
         <WeeklyScheduleCalendar
           items={calendarItems}
@@ -197,6 +198,7 @@ export default function StaffSchedulePage() {
           mutedLabel="Recess"
         />
       </div>
+      )}
     </PageLayout>
   )
 }

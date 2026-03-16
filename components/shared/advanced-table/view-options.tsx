@@ -28,7 +28,7 @@ import {
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview"
 import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview"
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder"
-import { Columns, GripVertical, SlidersHorizontal, Tally4 } from "lucide-react"
+import { GripVertical, Tally4 } from "lucide-react"
 
 type CleanupFn = () => void
 type ItemEntry = { itemId: string; element: HTMLElement }

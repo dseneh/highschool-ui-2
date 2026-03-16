@@ -875,7 +875,7 @@ export function StudentActionDialog({
                 <TabsTrigger
                   key={value}
                   value={value}
-                  className="px-3 py-2"
+                  className="px-3 fpy-2"
                 >
                   {label}
                 </TabsTrigger>

@@ -51,10 +51,10 @@ export default function StaffStudentsPage() {
 
   const sections = React.useMemo(
     () => (staff?.sections as SectionItem[] | undefined) ?? [],
-    [staff?.sections],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [staff?.sections, staff]
   );
 
-  // Auto-select first section when sections load
   React.useEffect(() => {
     if (sections.length > 0 && !selectedSectionId) {
       const firstSectionId = sections[0].id;
@@ -96,16 +96,11 @@ export default function StaffStudentsPage() {
     return `${getSectionGradeLevel(section)} - ${getSectionName(section)}`;
   }, []);
 
-  //   const getSectionStudentsCount = (section: SectionItem) =>
-  //     typeof section.students_count === "number" ? section.students_count : 0
-
-  //   const selectedSection = sections.find(s => s.id === selectedSectionId)
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
   };
 
-  // Prepare section options for SelectField
   const sectionOptions: SelectFieldItem[] = React.useMemo(
     () =>
       sections.map((section, idx) => ({
@@ -115,7 +110,6 @@ export default function StaffStudentsPage() {
     [sections, getSectionGroupName],
   );
 
-  // Define columns with getInitials callback
   const columns = React.useMemo(
     () =>
       createStudentColumns(getInitials, {
@@ -151,6 +145,8 @@ export default function StaffStudentsPage() {
       emptyStateTitle={"Not a Teacher"}
       emptyStateDescription={"This staff member is not marked as a teacher."}
     >
+      {staff.is_teacher && (
+        <>
       <div className="space-y-2">
         <DataTable
           columns={columns}
@@ -185,13 +181,13 @@ export default function StaffStudentsPage() {
           }
         />
       </div>
-
-      {/* Student action dialog */}
       <StudentActionDialog
         student={dialogStudent}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
+       </>
+      )}
     </PageLayout>
   );
 }

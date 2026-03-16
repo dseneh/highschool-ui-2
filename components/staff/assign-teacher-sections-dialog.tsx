@@ -21,6 +21,7 @@ import { getQueryClient } from "@/lib/query-client";
 import { getErrorMessage } from "@/lib/utils";
 import { Check, Circle, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import EmptyStateComponent from "../shared/empty-state";
 
 interface AssignTeacherSectionsDialogProps {
   open: boolean;
@@ -248,12 +249,10 @@ export function AssignTeacherSectionsDialog({
                   ))}
                 </div>
               ) : currentAssignments.length === 0 ? (
-                <EmptyState className="border-none py-3">
-                  <EmptyStateTitle>No classes assigned</EmptyStateTitle>
-                  <EmptyStateDescription>
-                    Assign classes from the right panel.
-                  </EmptyStateDescription>
-                </EmptyState>
+                <EmptyStateComponent
+                  title="No classes assigned"
+                  description="Assign classes from the right panel."
+                />
               ) : (
                 currentAssignments.map((item) => {
                   const sectionName = typeof item.sectionName === 'string' ? item.sectionName : String(item.sectionName || 'Unknown');

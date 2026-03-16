@@ -5,7 +5,6 @@ import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useStudentFinalGrades } from "@/hooks/use-grading"
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year"
 import { useStudentPageActions, StudentPageDialogs } from "@/hooks/use-student-page-actions"
-import { PageContent } from "@/components/dashboard/page-content"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +17,7 @@ import {
 import AcademicYearSelect from "@/components/shared/data-reusable/academic-year-select"
 import MarkingPeriodSelect from "@/components/shared/data-reusable/marking-period-select"
 import StatCard from "./_components/stat-card"
+import GradesSkeleton from "./_components/grades-skeleton"
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import { AlertCircleIcon, BookOpen02Icon, Medal01Icon, ChartIcon } from "@hugeicons/core-free-icons"
@@ -29,33 +29,6 @@ import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 import PageLayout from "@/components/dashboard/page-layout"
 import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
-
-/* ------------------------------------------------------------------ */
-/*  Skeletons                                                          */
-/* ------------------------------------------------------------------ */
-
-function GradesSkeleton() {
-  return (
-    <PageContent>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Skeleton className="h-32 rounded-xl" />
-          <Skeleton className="h-32 rounded-xl" />
-          <Skeleton className="h-32 rounded-xl" />
-        </div>
-        <Skeleton className="h-72 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    </PageContent>
-  )
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -155,6 +128,8 @@ export default function StudentGradesPage() {
           </div>
     }
     error={error || gradesError}
+    skeleton={<GradesSkeleton />}
+    loading={studentLoading || gradesLoading}
     noData={gradebooks.length === 0 && !gradesLoading && !gradesError}
     >
       <div className="space-y-4">

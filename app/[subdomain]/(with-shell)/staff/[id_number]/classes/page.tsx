@@ -2,6 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useStaff } from "@/lib/api2/staff"
+import {
+  TeacherScheduleProjectionDto,
+  useTeacherScheduleProjection,
+} from "@/lib/api2/schedule-projection"
 import { AuthButton } from "@/components/auth/auth-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -20,11 +24,7 @@ import PageLayout from "@/components/dashboard/page-layout"
 import { AssignTeacherSectionsDialog } from "@/components/staff/assign-teacher-sections-dialog"
 import { AssignTeacherSubjectsDialog } from "@/components/staff/assign-teacher-subjects-dialog"
 import * as React from "react"
-import {
-    EmptyState,
-    EmptyStateTitle,
-    EmptyStateDescription,
-} from "@/components/ui/empty-state"
+import { cn } from "@/lib/utils"
 
 type SectionItem = {
   id?: string
@@ -58,25 +58,15 @@ type TeacherSubjectItem = {
 
 type ScheduleItem = {
   id?: string
-  class_schedule?: {
-    id?: string
-    section?: string | { id?: string; name?: string }
-    subject?: { id?: string; name?: string } | null
-    period?: string | { id?: string; name?: string; period_type?: "class" | "recess" }
-    period_time?: {
-      id?: string
-      start_time?: string
-      end_time?: string
-      day_of_week?: number
-    }
-    section_time_slot?: {
-      id?: string
-      start_time?: string
-      end_time?: string
-      day_of_week?: number
-    }
-    is_recess?: boolean
-  }
+  section?: { id?: string; name?: string } | null
+  subject?: { id?: string; name?: string } | null
+  period?: { id?: string; name?: string; period_type?: "class" | "recess" } | null
+  time_window?: {
+    day_of_week?: number | null
+    start_time?: string | null
+    end_time?: string | null
+  } | null
+  is_recess?: boolean
 }
 
 const DAY_NAMES: Record<number, string> = {
@@ -99,9 +89,7 @@ function formatTime(value?: string) {
 }
 
 function getTimeSlot(schedule: ScheduleItem) {
-  const classSchedule = schedule.class_schedule
-  if (!classSchedule) return null
-  return classSchedule.section_time_slot || classSchedule.period_time || null
+  return schedule.time_window || null
 }
 
 export default function StaffClassesPage() {
@@ -118,9 +106,16 @@ export default function StaffClassesPage() {
   const { data: staff, isLoading, error, refetch, isFetching } = staffApi.getStaffMember(idNumber, {
     enabled: !!idNumber && window.location.href.includes("/staff/"), 
   })
+  const {
+    data: projectedSchedules,
+    isFetching: projectionFetching,
+    error: projectionError,
+    refetch: refetchProjection,
+  } = useTeacherScheduleProjection(staff?.id)
 
   const handleRefresh = () => {
     void refetch()
+    void refetchProjection()
   }
 
   const sections = React.useMemo(
@@ -129,8 +124,18 @@ export default function StaffClassesPage() {
   )
 
   const schedules = React.useMemo(
-    () => ((staff?.schedules as ScheduleItem[] | undefined) ?? []),
-    [staff?.schedules]
+    () =>
+      ((projectedSchedules as TeacherScheduleProjectionDto[] | undefined) ?? []).map(
+        (schedule): ScheduleItem => ({
+          id: schedule.id,
+          section: schedule.section,
+          subject: schedule.subject,
+          period: schedule.period,
+          time_window: schedule.time_window,
+          is_recess: schedule.period?.period_type === "recess" || !schedule.subject,
+        })
+      ),
+    [projectedSchedules]
   )
 
   const teacherSubjects = React.useMemo(
@@ -162,6 +167,11 @@ export default function StaffClassesPage() {
     typeof section.id === "string" && section.id.trim().length > 0
       ? section.id
       : `section-${index}`
+  
+      // get section id in an array
+  const getSectionIds = (sections: SectionItem[]) => {
+    return sections.map((section, index) => getSectionId(section, index))
+  }
 
   const getSectionGradeLevel = (section: SectionItem) => {
     if (typeof section.grade_level === "string") return section.grade_level
@@ -175,36 +185,51 @@ export default function StaffClassesPage() {
     return `${getSectionGradeLevel(section)} - ${getSectionName(section)}`
   }
 
-  const getSectionStudentsCount = (section: SectionItem) =>
-    typeof section.students_count === "number" ? section.students_count : 0
+  const scheduleMatchesSection = (
+    schedule: ScheduleItem,
+    section: SectionItem,
+    index: number
+  ) => {
+    const scheduleSectionId = getScheduleSectionId(schedule)
+    const currentSectionId = getSectionId(section, index)
+
+    // Prefer exact section-id matching so repeated section names across grade
+    // levels do not leak schedules into the wrong accordion.
+    if (scheduleSectionId && currentSectionId) {
+      return scheduleSectionId === currentSectionId
+    }
+
+    // Only fall back to name matching when neither side has a usable id.
+    if (scheduleSectionId || section.id) {
+      return false
+    }
+
+    return getScheduleSectionName(schedule) === getSectionName(section)
+  }
 
   const getScheduleSectionName = (schedule: ScheduleItem) => {
-    const section = schedule.class_schedule?.section
-    if (typeof section === "string") return section
+    const section = schedule.section
     if (section && typeof section.name === "string") return section.name
     return ""
   }
 
   const getScheduleSectionId = (schedule: ScheduleItem) => {
-    const section = schedule.class_schedule?.section
-    if (typeof section === "string") return undefined
-    return section?.id
+    return schedule.section?.id
   }
 
   const getSchedulePeriodName = (schedule: ScheduleItem) => {
-    const period = schedule.class_schedule?.period
-    if (typeof period === "string") return period
+    const period = schedule.period
     if (period && typeof period.name === "string") return period.name
     return "Period"
   }
 
   const getScheduleSubjectName = (schedule: ScheduleItem) => {
-    const subjectName = schedule.class_schedule?.subject?.name
+    const subjectName = schedule.subject?.name
     if (subjectName) return subjectName
-    const period = schedule.class_schedule?.period
+    const period = schedule.period
     const isRecess =
-      schedule.class_schedule?.is_recess ||
-      (typeof period !== "string" && period?.period_type === "recess")
+      schedule.is_recess ||
+      period?.period_type === "recess"
     return isRecess ? "Recess" : "Unassigned"
   }
 
@@ -224,7 +249,7 @@ export default function StaffClassesPage() {
       title="Teaching Assignments"
       description="Teaching assignments and classes"
       loading={isLoading}
-      fetching={isFetching}
+      fetching={isFetching || projectionFetching}
       refreshAction={handleRefresh}
       actions={
         staff?.is_teacher ? (
@@ -253,38 +278,25 @@ export default function StaffClassesPage() {
           <Skeleton className="h-64 rounded-xl" />
         </div>
       }
-      error={error}
+      error={error || projectionError}
       noData={!staff || !staff.is_teacher}
-      emptyStateTitle={"Not a Teacher"}
-      emptyStateDescription={"This staff member is not marked as a teacher."}
+      emptyStateTitle={"Not a Teaching Staff"}
+      emptyStateDescription={"This staff member is not marked as a teaching staff."}
     >
       <div className="space-y-6 max-w-4xl">
-        {/* Classes Header */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon icon={BookOpen02Icon} className="h-5 w-5" />
-              Teaching Assignments
-            </CardTitle>
-          </CardHeader>
-          
-        </Card> */}
         <div>
-            {sections.length > 0 ? (
+            {sections.length > 0 && (
               <Accordion
                 key={sections.length > 0 ? getSectionId(sections[0], 0) : 'no-sections'}
-                defaultValue={sections.length > 0 ? [getSectionId(sections[0], 0)] : []}
+                defaultValue={sections.length > 0 ? getSectionIds(sections) : []}
                 className="space-y-3"
                 multiple
               >
                 {sections.map((section, idx) => {
-                  const sectionName = getSectionName(section)
                   const sectionId = getSectionId(section, idx)
                   const groupName = getSectionGroupName(section)
                   const sectionSchedules = schedules.filter(
-                    (schedule) =>
-                      getScheduleSectionId(schedule) === sectionId ||
-                      getScheduleSectionName(schedule) === sectionName
+                    (schedule) => scheduleMatchesSection(schedule, section, idx)
                   )
                   const sortedSectionSchedules = [...sectionSchedules].sort((a, b) => {
                     const dayA = getScheduleDay(a) ?? 99
@@ -304,14 +316,27 @@ export default function StaffClassesPage() {
                           <div className="text-left">
                             <p className="font-semibold">{groupName}</p>
                           </div>
-                          <Badge variant="secondary">
+                          {/* <Badge variant="secondary">
                             {getSectionStudentsCount(section)} students
-                          </Badge>
+                          </Badge> */}
+                          <AuthButton
+                            roles={["admin", "registrar", "data_entry"]}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSubjectDialogSection({
+                                id: sectionId,
+                                label: groupName,
+                              })}
+                            }
+                            variant="link"
+                          >
+                            Assign Subjects
+                          </AuthButton>
                         </div>
                       </AccordionTrigger>
 
                       <AccordionContent>
-                        <div className="mb-3">
+                        {/* <div className="mb-3">
                           <AuthButton
                             roles={["admin", "registrar", "data_entry"]}
                             onClick={() =>
@@ -324,15 +349,15 @@ export default function StaffClassesPage() {
                           >
                             Assign Subjects
                           </AuthButton>
-                        </div>
+                        </div> */}
 
                         <Tabs defaultValue="subjects" className="w-full" >
-                          <TabsList className="mb-2 grid w-full grid-cols-2 max-w-md">
+                          <TabsList className="mb-2 fgrid w-full fgrid-cols-2 fmax-w-md" variant="default">
                             <TabsTrigger value="subjects">Subjects</TabsTrigger>
                             <TabsTrigger value="schedule">Schedule</TabsTrigger>
                           </TabsList>
 
-                          <TabsContent value="subjects" className="space-y-2">
+                          <TabsContent value="subjects" className="fspace-y-1 border rounded-lg divide-y">
                             {isLoading ? (
                               <div className="space-y-2">
                                 {Array.from({ length: 3 }).map((_, loadingIdx) => (
@@ -348,11 +373,18 @@ export default function StaffClassesPage() {
                                 return (
                                   <div
                                     key={teacherSubject.id ?? `subject-${subjectIdx}`}
-                                    className="rounded-lg border p-4 hover:bg-muted"
+                                    className={cn("frounded-lg fborder fp-4 hover:bg-muted",
+                                      subjectIdx === 0 ? "hover:rounded-tl-lg rounded-tr-lg" : "",
+                                      subjectIdx === assignedSubjects.length - 1 ? "hover:rounded-bl-lg rounded-br-lg" : "",
+                                    )}
                                   >
-                                    <p className="text-sm font-medium">
-                                      {subjectName}
-                                    </p>
+                                    <div className="grid grid-cols-12 divide-x">
+                                      <div className={cn("text-center p-4 bg-muted text-muted-foreground/50 font-semibold",
+                                        subjectIdx === 0 ? "rounded-tl-lg" : "",
+                                        subjectIdx === assignedSubjects.length - 1 ? "rounded-bl-lg" : "",
+                                      )}>{subjectIdx + 1}</div>
+                                       <div className="col-span-11 p-4 w-full text-sm font-medium">{subjectName}</div>
+                                    </div>
                                   </div>
                                 )
                               })
@@ -378,13 +410,13 @@ export default function StaffClassesPage() {
                                   <tbody>
                                     {sortedSectionSchedules.map((schedule, scheduleIdx) => {
                                       const day = getScheduleDay(schedule)
-                                      const period = schedule.class_schedule?.period
+                                      const period = schedule.period
                                       const recess =
-                                        schedule.class_schedule?.is_recess ||
-                                        (typeof period !== "string" && period?.period_type === "recess")
+                                        schedule.is_recess ||
+                                        period?.period_type === "recess"
 
                                       return (
-                                        <tr key={schedule.id ?? `schedule-${scheduleIdx}`} className="border-t">
+                                        <tr key={schedule.id ?? `schedule-${scheduleIdx}`} className="border-t hover:bg-muted">
                                           <td className="px-3 py-2 text-muted-foreground">
                                             {day ? DAY_NAMES[day] ?? `Day ${day}` : "--"}
                                           </td>
@@ -417,14 +449,7 @@ export default function StaffClassesPage() {
                   )
                 })}
               </Accordion>
-            ) : (
-              <EmptyState className="border-none py-8">
-                <EmptyStateTitle>No Classes Assigned</EmptyStateTitle>
-                <EmptyStateDescription>
-                  This teacher has not been assigned to any classes yet.
-                </EmptyStateDescription>
-              </EmptyState>
-            )}
+            )} 
           </div>
 
         {staff && (

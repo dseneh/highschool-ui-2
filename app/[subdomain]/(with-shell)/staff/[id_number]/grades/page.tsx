@@ -10,9 +10,6 @@ import { useQueryState } from "nuqs";
 import { SelectField } from "@/components/ui/select-field";
 import type { SelectFieldItem } from "@/components/ui/select-field";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState, EmptyStateDescription, EmptyStateIcon, EmptyStateTitle } from "@/components/ui/empty-state";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { BookOpen02Icon } from "@hugeicons/core-free-icons";
 import { GradebookCard } from "@/components/grading/gradebook-card";
 
 
@@ -191,16 +188,6 @@ export default function StaffGradesPage() {
             <Skeleton key={index} className="h-44 w-full rounded-xl" />
           ))}
         </div>
-      ) : gradebooks.length === 0 ? (
-        <EmptyState>
-          <EmptyStateIcon>
-            <HugeiconsIcon icon={BookOpen02Icon} className="h-10 w-10" />
-          </EmptyStateIcon>
-          <EmptyStateTitle>No Gradebooks Found</EmptyStateTitle>
-          <EmptyStateDescription>
-            No gradebooks are available for the selected class in the current academic year.
-          </EmptyStateDescription>
-        </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {gradebooks.map((gradebook) => (

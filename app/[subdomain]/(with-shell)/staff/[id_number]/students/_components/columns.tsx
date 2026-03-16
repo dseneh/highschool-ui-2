@@ -101,7 +101,7 @@ export const createStudentColumns = (
       return (
         <div className="flex items-center justify-center">
           <Button
-                variant="outline"
+                variant="link"
                 // onClick={(event) => event.stopPropagation()}
               >
                 View
