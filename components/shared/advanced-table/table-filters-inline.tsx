@@ -99,7 +99,7 @@ export function TableFiltersInline<TData>({ table, disabled = false }: TableFilt
   }
 
   return (
-    <div className="w-full overflow-x-auto pb-1">
+    <div className="w-full overflow-x-auto no-scrollbar pb-px">
       <div className="flex min-w-max items-center gap-2">
         {renderedColumns.map(column => {
           const meta = column.columnDef.meta as any
@@ -141,7 +141,7 @@ export function TableFiltersInline<TData>({ table, disabled = false }: TableFilt
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0 border border-primary text-xs font-semibold rounded-sm flex items-center gap-1 text-muted-foreground cursor-pointer hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 border-dashed"
+                className="fp-1 shrink-0 border border-primary text-xs font-semibold rounded-sm flex items-center gap-1 text-muted-foreground cursor-pointer hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 border-dotted"
                 disabled={disabled}
                 // iconLeft={<Plus className="size-3.5" />}
               >

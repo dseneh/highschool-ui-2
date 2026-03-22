@@ -3,8 +3,6 @@
 import { useCallback, useState } from "react"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useBillings } from "@/lib/api2/billing"
-import { useTransactions } from "@/lib/api2/transaction"
-import { useAccounts } from "@/lib/api2/bankAccount"
 import { useAxiosAuth } from "@/hooks/use-axios-auth"
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain"
 import { PageContent } from "@/components/dashboard/page-content"
@@ -32,7 +30,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import type { CreateTransactionCommand, TransactionDto } from "@/lib/api2/finance-types"
+import type { TransactionDto } from "@/lib/api2/finance-types"
 import type { StudentConcessionDto } from "@/lib/api2/billing-types"
 import { TuitionPaymentDialog } from "@/components/finance/tuition-payment-dialog"
 import { TransactionActionButtons, TransactionDetailDialog } from "@/components/finance/transaction-detail-dialog"
@@ -86,7 +84,6 @@ export default function StudentBillingPage() {
   const { put, post } = useAxiosAuth()
   const studentsApi = useStudentsApi()
   const billingsApi = useBillings()
-  const transactionsApi = useTransactions()
   
   const { data: student, isLoading: studentLoading } = studentsApi.getStudent(idNumber, {
     enabled: !!idNumber,
@@ -120,16 +117,6 @@ export default function StudentBillingPage() {
     enabled: !!academicYearId,
   })
   
-  // Finance data for payment dialog
-  const { data: transactionTypesData } = transactionsApi.getTransactionTypes()
-  const transactionTypes = (Array.isArray(transactionTypesData) ? transactionTypesData : transactionTypesData?.results) || []
-  const { data: paymentMethodsData } = transactionsApi.getPaymentMethods()
-  const paymentMethods = (Array.isArray(paymentMethodsData) ? paymentMethodsData : paymentMethodsData?.results) || []
-  const { data: bankAccountsData } = useAccounts().getAccounts()
-  const bankAccounts = (Array.isArray(bankAccountsData) ? bankAccountsData : bankAccountsData?.results) || []
-  
-  // Transaction mutation
-  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false)
   const [isCreatingConcession, setIsCreatingConcession] = useState(false)
 
   const [showAllBills, setShowAllBills] = useState(false)
@@ -211,31 +198,20 @@ export default function StudentBillingPage() {
     // toast.info("Refreshing billing data...")
   }
 
-  // Handle payment submission
-  const handlePaymentSubmit = async (payload: CreateTransactionCommand) => {
-    try {
-      setIsCreatingTransaction(true)
-      await post("/transactions/", payload)
-      setShowPaymentDialog(false)
+  const handlePaymentRecorded = async () => {
+    setShowPaymentDialog(false)
 
-      // Invalidate all related student billing caches so summary/payment plan/payment status
-      // are recalculated from backend immediately after posting a payment.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["students", student?.id, "bills"] }),
-        queryClient.invalidateQueries({ queryKey: ["students", student?.id, "transactions"] }),
-        queryClient.invalidateQueries({ queryKey: ["students", student?.id] }),
-        queryClient.invalidateQueries({ queryKey: ["students", subdomain, student?.id] }),
-        queryClient.invalidateQueries({ queryKey: ["concessions", "academicYear", academicYearId] }),
-      ])
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id, "bills"] }),
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id, "transactions"] }),
+      queryClient.invalidateQueries({ queryKey: ["students", student?.id] }),
+      queryClient.invalidateQueries({ queryKey: ["students", subdomain, student?.id] }),
+      queryClient.invalidateQueries({ queryKey: ["concessions", "academicYear", academicYearId] }),
+      queryClient.invalidateQueries({ queryKey: ["accounting", subdomain, "cash-transactions"] }),
+    ])
 
-      toast.success("Payment recorded successfully")
-      void refetchBills()
-      void refetchTransactions()
-    } catch (err) {
-      toast.error(getErrorMessage(err))
-    } finally {
-      setIsCreatingTransaction(false)
-    }
+    void refetchBills()
+    void refetchTransactions()
   }
 
   const handleConcessionSubmit = async (payload: {
@@ -343,8 +319,8 @@ export default function StudentBillingPage() {
   const paymentStateBadgeClass = paymentStatus?.is_paid_in_full
     ? "bg-emerald-100 text-emerald-700"
     : paymentStatus?.is_on_time
-      ? "bg-blue-100 text-blue-700"
-      : "bg-amber-100 text-amber-700"
+      ? "bg-blue-100 text-blue-700 border-blue-300"
+      : "bg-amber-100 text-amber-700 border-amber-300"
   const feeItemsCount = tuitionItems.length + feeItems.length
 
   if (loading) return <BillingSkeleton />
@@ -361,9 +337,9 @@ export default function StudentBillingPage() {
             size="sm"
             onClick={() => setShowPaymentDialog(true)}
             disabled={disableButtons}
-            icon={<HugeiconsIcon icon={Coins01Icon} className="size-4" />}
+            // icon={<HugeiconsIcon icon={Coins01Icon} className="size-4" />}
           >
-            <span className="hidden sm:inline">Make Payment</span>
+            <span className="hidden sm:inline">Record Payment</span>
           </AuthButton>
           <AuthButton
             roles={["finance", "registrar", "accountant"]}
@@ -410,11 +386,7 @@ export default function StudentBillingPage() {
       <TuitionPaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
-        transactionTypes={transactionTypes ?? []}
-        paymentMethods={paymentMethods ?? []}
-        bankAccounts={bankAccounts ?? []}
-        onSubmit={handlePaymentSubmit}
-        submitting={isCreatingTransaction}
+        onPaymentRecorded={handlePaymentRecorded}
         student={student}
         skipSearch={true}
       />
@@ -608,7 +580,7 @@ export default function StudentBillingPage() {
         )}
 
         <Tabs defaultValue="overview">
-          <TabsList className="">
+          <TabsList className="" variant="line">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="payments">Payment History</TabsTrigger>
             <TabsTrigger value="concessions">Concessions</TabsTrigger>
@@ -704,7 +676,7 @@ export default function StudentBillingPage() {
                     {/* Total */}
                     <div className="flex items-center justify-between pt-3 mt-2 border-t px-3">
                       <span className="text-sm font-semibold">Gross Total</span>
-                      <span className="text-sm font-bold">{currency}{totalBill.toLocaleString()}</span>
+                      <span className="text-sm font-bold">{currency}{grossTotalBill.toLocaleString()}</span>
                     </div>
 
                     {totalConcession > 0 && (

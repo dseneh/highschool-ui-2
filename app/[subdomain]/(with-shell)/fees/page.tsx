@@ -4,8 +4,10 @@ import * as React from "react";
 import PageLayout from "@/components/dashboard/page-layout";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useGeneralFees } from "@/lib/api2/general-fee";
+import { useGeneralFees, useGeneralFeeMutations } from "@/hooks/use-finance";
+import { useGradeLevels } from "@/hooks/use-grade-level";
 import type {
   GeneralFeeDto,
   CreateGeneralFeeCommand,
@@ -13,6 +15,8 @@ import type {
 } from "@/lib/api2/finance-types";
 import { getGeneralFeeColumns } from "@/components/finance/general-fee-columns";
 import { GeneralFeeFormDialog } from "@/components/finance/general-fee-form-dialog";
+import { SectionFeeList } from "@/components/finance/section-fee-list";
+import ClassSectionSidebar from "../setup/period-times/_components/class-section-sidebar";
 import { DialogBox } from "@/components/ui/dialog-box";
 import { Add01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -20,18 +24,37 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils";
 import { getQueryClient } from "@/lib/query-client";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import {
+  EmptyState,
+  EmptyStateTitle,
+  EmptyStateDescription,
+} from "@/components/ui/empty-state";
 
 
 export default function GeneralFeesPage() {
-  // Data
-  const feesApi = useGeneralFees();
-  const { data: fees, isLoading, refetch, isFetching } = feesApi.getGeneralFees();
-  const createMutation = feesApi.createGeneralFee();
-  const updateMutation = feesApi.updateGeneralFee();
-  const deleteMutation = feesApi.deleteGeneralFee();
-  const queryClient = getQueryClient();
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(["general", "class"]).withDefault("general")
+  );
+  const [showInactive, setShowInactive] = React.useState(false);
+  const [selectedSectionId] = useQueryState("section", { defaultValue: "" });
 
-  const [activeTab, setActiveTab] = React.useState<string>("active");
+  // Data
+  const {
+    data: fees,
+    isLoading: loadingFees,
+    refetch: refetchFees,
+    isFetching: fetchingFees,
+  } = useGeneralFees();
+  const {
+    data: gradeLevels,
+    isLoading: loadingGradeLevels,
+    refetch: refetchGradeLevels,
+    isFetching: fetchingGradeLevels,
+  } = useGradeLevels();
+  const { create: createMutation, update: updateMutation, remove: deleteMutation } = useGeneralFeeMutations();
+  const queryClient = getQueryClient();
 
   // Dialog states
   const [showCreate, setShowCreate] = React.useState(false);
@@ -40,18 +63,41 @@ export default function GeneralFeesPage() {
   const [deletingFee, setDeletingFee] = React.useState<GeneralFeeDto | null>(null);
   const [syncingFeeId, setSyncingFeeId] = React.useState<string | null>(null);
 
-  // Separate fees by active status
-  const activeFees = React.useMemo(
-    () => (fees || []).filter((fee: any) => fee.active),
-    [fees]
+  const allFees = React.useMemo(() => fees || [], [fees]);
+  const visibleFees = React.useMemo(
+    () => (showInactive ? allFees : allFees.filter((fee) => fee.active)),
+    [allFees, showInactive]
   );
 
-  const inactiveFees = React.useMemo(
-    () => (fees || []).filter((fee: any) => !fee.active),
-    [fees]
+  const activeFeesCount = React.useMemo(
+    () => allFees.filter((fee) => fee.active).length,
+    [allFees]
   );
 
-  const currentFees = activeTab === "active" ? activeFees : inactiveFees;
+  const gradeLevelsWithSections = React.useMemo(
+    () => (gradeLevels || []).filter((gradeLevel) => gradeLevel.sections.length > 0),
+    [gradeLevels]
+  );
+
+  const selectedSection = (() => {
+    if (!selectedSectionId) return null;
+    for (const gradeLevel of gradeLevelsWithSections) {
+      const section = gradeLevel.sections.find((candidate) => candidate.id === selectedSectionId);
+      if (section) {
+        return {
+          id: section.id,
+          name: section.name,
+          section_class: section.section_class,
+          gradeLevelName: gradeLevel.name,
+          students: section.students,
+        };
+      }
+    }
+    return null;
+  })();
+
+  const isLoadingGeneralTab = loadingFees;
+  const isLoadingClassTab = loadingFees || loadingGradeLevels;
 
   /* ------------------------------------------------------------------ */
   /*  Handlers                                                           */
@@ -72,7 +118,7 @@ export default function GeneralFeesPage() {
   const handleUpdate = (data: UpdateGeneralFeeCommand) => {
     if (!editingFee) return;
     updateMutation.mutate(
-      { id: editingFee.id, data },
+      { id: editingFee.id, payload: data },
       {
         onSuccess: () => {
           toast.success("Fee updated successfully");
@@ -87,7 +133,7 @@ export default function GeneralFeesPage() {
 
   const handleDelete = () => {
     if (!deletingFee) return;
-    deleteMutation.mutate({ id: deletingFee.id }, {
+    deleteMutation.mutate(deletingFee.id, {
       onSuccess: () => {
         toast.success("Fee deleted successfully");
         setDeletingFee(null);
@@ -100,7 +146,7 @@ export default function GeneralFeesPage() {
 
   const handleToggleActive = React.useCallback((id: string, active: boolean) => {
     updateMutation.mutate(
-      { id, data: { active } },
+      { id, payload: { active } },
       {
         onSuccess: () => {
           toast.success(`Fee ${active ? "activated" : "deactivated"} successfully`);
@@ -115,7 +161,7 @@ export default function GeneralFeesPage() {
   const handleSyncToSections = React.useCallback((fee: GeneralFeeDto) => {
     setSyncingFeeId(fee.id);
     updateMutation.mutate(
-      { id: fee.id, data: { amount: fee.amount, apply_to_all_sections: true } },
+      { id: fee.id, payload: { amount: fee.amount, apply_to_all_sections: true } },
       {
         onSuccess: () => {
           toast.success(`Fee "${fee.name}" synced to all sections successfully!`);
@@ -134,7 +180,7 @@ export default function GeneralFeesPage() {
 
   const handleUpdateAmount = React.useCallback((id: string, amount: number, applyToAllSections: boolean) => {
     updateMutation.mutate(
-      { id, data: { amount, apply_to_all_sections: applyToAllSections } },
+      { id, payload: { amount, apply_to_all_sections: applyToAllSections } },
       {
         onSuccess: () => {
           if (applyToAllSections) {
@@ -153,7 +199,7 @@ export default function GeneralFeesPage() {
 
   const handleUpdateTarget = React.useCallback((id: string, studentTarget: string, applyToAllSections: boolean) => {
     updateMutation.mutate(
-      { id, data: { student_target: studentTarget, apply_to_all_sections: applyToAllSections } },
+      { id, payload: { student_target: studentTarget, apply_to_all_sections: applyToAllSections } },
       {
         onSuccess: () => {
           if (applyToAllSections) {
@@ -172,7 +218,15 @@ export default function GeneralFeesPage() {
 
   const handleRefresh = async () => {
     try {
-      await refetch();
+      await Promise.all([
+        refetchFees(),
+        refetchGradeLevels(),
+      ]);
+
+      if (selectedSectionId) {
+        await queryClient.invalidateQueries({ queryKey: ["sectionFees"] });
+      }
+
       toast.success("Data refreshed successfully!");
     } catch (error) {
       toast.error(`Failed to refresh data. ${getErrorMessage(error)}`);
@@ -233,19 +287,21 @@ export default function GeneralFeesPage() {
   /*  Render                                                             */
   /* ------------------------------------------------------------------ */
 
-  const isEmpty = currentFees.length === 0;
+  const isGeneralTabEmpty = visibleFees.length === 0;
+  const isClassTabEmpty = !loadingGradeLevels && gradeLevelsWithSections.length === 0;
 
   return (
     <>
       <PageLayout
         title="Fee Structure"
-        description="Manage general fees for your school"
+        description="Configure general fees and class fee assignments in one place"
+        className="overflow-visible!"
         actions={
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={handleRefresh}
-              loading={isFetching}
+              loading={fetchingFees || fetchingGradeLevels}
               icon={<HugeiconsIcon icon={RefreshIcon} className="h-5 w-5" />}
             >
               Refresh
@@ -253,38 +309,110 @@ export default function GeneralFeesPage() {
             <Button
               onClick={() => setShowCreate(true)}
               icon={<HugeiconsIcon icon={Add01Icon} className="h-5 w-5" />}
+              disabled={activeTab !== "general"}
             >
               Create Fee
             </Button>
           </div>
         }
-        loading={isLoading}
+        loading={activeTab === "general" ? isLoadingGeneralTab : isLoadingClassTab}
         skeleton={
           <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-64 w-full" />
           </div>
         }
-        noData={isEmpty}
-        emptyState={<div className="text-center text-muted-foreground py-8">No fees found</div>}
+        noData={activeTab === "general" ? isGeneralTabEmpty : isClassTabEmpty}
+        emptyState={
+          activeTab === "general" ? (
+            <div className="text-center text-muted-foreground py-8">No fees found</div>
+          ) : (
+            <EmptyState>
+              <EmptyStateTitle>No Class Sections Found</EmptyStateTitle>
+              <EmptyStateDescription>
+                Add sections to grade levels before assigning class fees.
+              </EmptyStateDescription>
+            </EmptyState>
+          )
+        }
       >
         <div className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="active">
-                Active Fees ({activeFees.length})
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value === "class" ? "class" : "general")
+            }
+          >
+            <TabsList className={'w-full max-w-md'}>
+              <TabsTrigger value="general">
+                General Fees ({allFees.length})
               </TabsTrigger>
-              <TabsTrigger value="inactive">
-                Inactive Fees ({inactiveFees.length})
+              <TabsTrigger value="class">
+                Class Fees
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="active" className="mt-6">
-              <DataTable columns={columns} data={currentFees} />
+            <TabsContent value="general" className="mt-6 space-y-4">
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="text-sm text-muted-foreground">
+                  Showing {visibleFees.length} of {allFees.length} fee{allFees.length !== 1 ? "s" : ""}
+                  <span className="mx-2">|</span>
+                  Active: {activeFeesCount}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Show inactive</span>
+                  <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+                </div>
+              </div>
+              <DataTable columns={columns} data={visibleFees} />
             </TabsContent>
 
-            <TabsContent value="inactive" className="mt-6">
-              <DataTable columns={columns} data={currentFees} />
+            <TabsContent value="class" className="mt-6">
+              <div className="flex items-start gap-0 -mx-1">
+                <div className="sticky top-16 z-20 self-start shrink-0">
+                  <ClassSectionSidebar
+                    loading={loadingGradeLevels}
+                    selectedSectionId={selectedSectionId || null}
+                    filteredGradeLevels={gradeLevelsWithSections}
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0 pl-5">
+                  {!selectedSection ? (
+                    <div className="flex items-center justify-center rounded-xl border border-dashed py-16 text-center text-muted-foreground">
+                      <div className="space-y-2">
+                        <p className="font-medium">Select a class section to manage class fees</p>
+                        <p className="text-sm">Choose a section from the left sidebar to continue.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* <div className="flex items-center justify-between rounded-md border p-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{selectedSection.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedSection.gradeLevelName}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {selectedSection.students} students
+                          </Badge>
+                        </div>
+                      </div>
+                       */}
+                      <SectionFeeList
+                        section={{
+                          id: selectedSection.id,
+                          name: selectedSection.name,
+                          section_class: selectedSection.section_class ?? undefined,
+                        }}
+                        availableFees={allFees}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
@@ -300,7 +428,6 @@ export default function GeneralFeesPage() {
         onSubmit={handleCreate}
         loading={createMutation.isPending}
         initialData={duplicateData || undefined}
-        // initialData={editingFee || undefined}
       />
 
       {/* Edit Dialog */}

@@ -24,6 +24,9 @@ export interface User {
     schema_name: string;
     name: string;
     logo?: string;
+    workspace?: string;
+    status?: string;
+    active?: boolean;
   }>;
   workspace?: string; // From portable-auth
   

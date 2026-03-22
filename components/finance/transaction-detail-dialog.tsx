@@ -331,23 +331,27 @@ export function TransactionActionButtons({
           )}
         </div>
       )}
-
+    {pendingAction && (
       <DialogBox
         open={pendingAction !== null}
         onOpenChange={(open) => {
           if (!open) setPendingAction(null);
         }}
-        title={pendingAction ? actionMeta[pendingAction].title : "Confirm Action"}
-        description={pendingAction ? actionMeta[pendingAction].description : undefined}
-        actionLabel={pendingAction ? actionMeta[pendingAction].actionLabel : undefined}
-        actionVariant={pendingAction ? actionMeta[pendingAction].actionVariant : "default"}
+        title={actionMeta[pendingAction].title || "Confirm Action"}
+        // description={actionMeta[pendingAction].description}
+        actionLabel={actionMeta[pendingAction].actionLabel}
+        actionVariant={actionMeta[pendingAction].actionVariant}
         actionLoading={isActionLoading}
         actionLoadingText="Processing..."
         onAction={() => {
           void executePendingAction();
         }}
         cancelLabel="Cancel"
-      />
+      >
+        {actionMeta[pendingAction].description}
+        <p>Do you want to continue?</p>
+        </DialogBox>
+        )}
     </>
   );
 }

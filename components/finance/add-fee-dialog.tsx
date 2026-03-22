@@ -77,7 +77,7 @@ export function AddFeeDialog({
   ) : (
     <>
       {/* Select All */}
-      <div className="flex items-center space-x-2 py-2 border-b">
+      <div className="flex items-center space-x-2 pb-2 border-b">
         <Checkbox
           checked={allSelected}
           indeterminate={someSelected}
@@ -94,7 +94,7 @@ export function AddFeeDialog({
 
             {/* Fee List */}
             {/* <ScrollArea className="max-h-[400px] pr-4"> */}
-              <div className="space-y-3 py-2">
+              <div className="space-y-2 py-2">
                 {availableFees.map((fee) => {
                   const isChecked = selectedFeeIds.includes(fee.id);
                   return (
@@ -119,11 +119,11 @@ export function AddFeeDialog({
                             {formatCurrency(fee.amount)}
                           </span>
                         </div>
-                        {fee.description && (
-                          <p className="text-xs text-muted-foreground">
+                        {/* {fee.description && (
+                          <p className="text-xs -mt-1 text-muted-foreground">
                             {fee.description}
                           </p>
-                        )}
+                        )} */}
                         {fee.student_target && (
                           <p className="text-xs text-muted-foreground">
                             Target: {fee.student_target}

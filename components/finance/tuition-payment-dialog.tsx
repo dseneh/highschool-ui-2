@@ -6,27 +6,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { SelectField } from "@/components/ui/select-field";
 import { DatePicker } from "@/components/ui/date-picker";
-import type {
-  CreateTransactionCommand,
-  TransactionTypeDto,
-  PaymentMethodDto,
-  BankAccountDto,
-} from "@/lib/api2/finance-types";
+import { AccountingAmountField } from "@/components/accounting/accounting-amount-field";
+import {
+  AccountingBankAccountSelect,
+  AccountingPaymentMethodSelect,
+} from "@/components/shared/data-reusable";
+import {
+  useAccountingCurrencies,
+  useJournalEntryMutations,
+  useTransactionTypes,
+} from "@/hooks/use-accounting";
 import type { StudentDto } from "@/lib/api2/student-types";
 import { useStudents } from "@/lib/api2/student";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import AvatarImg from '@/components/shared/avatar-img';
 
 interface TuitionPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transactionTypes: TransactionTypeDto[];
-  paymentMethods: PaymentMethodDto[];
-  bankAccounts: BankAccountDto[];
-  onSubmit: (payload: CreateTransactionCommand) => void;
+  transactionTypes?: unknown[];
+  paymentMethods?: unknown[];
+  bankAccounts?: unknown[];
+  onSubmit?: (payload: unknown) => void;
+  onPaymentRecorded?: () => void;
   submitting?: boolean;
   student?: StudentDto; // Optional: pre-populate student
   skipSearch?: boolean; // Optional: skip search step entirely
@@ -35,15 +40,15 @@ interface TuitionPaymentDialogProps {
 export function TuitionPaymentDialog({
   open,
   onOpenChange,
-  transactionTypes,
-  paymentMethods,
-  bankAccounts,
-  onSubmit,
+  onPaymentRecorded,
   submitting,
   student: initialStudent,
   skipSearch = false,
 }: TuitionPaymentDialogProps) {
   const studentsApi = useStudents();
+  const { postStudentPayment } = useJournalEntryMutations();
+  const { data: accountingCurrencies = [] } = useAccountingCurrencies();
+  const { data: accountingTransactionTypes = [] } = useTransactionTypes();
 
   // Step: "search" | "form"
   const [step, setStep] = React.useState<"search" | "form">(skipSearch ? "form" : "search");
@@ -73,13 +78,34 @@ export function TuitionPaymentDialog({
   const [reference, setReference] = React.useState("");
   const [accountId, setAccountId] = React.useState("");
   const [methodId, setMethodId] = React.useState("");
+  const [currencyId, setCurrencyId] = React.useState("");
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [notes, setNotes] = React.useState("");
 
-  // Find TUITION type id
-  const tuitionType = transactionTypes.find(
-    (t) => t.type_code === "TUITION" || t.name.toLowerCase() === "tuition"
+  const tuitionType = React.useMemo(
+    () =>
+      accountingTransactionTypes.find(
+        (t) => t.code === "TUITION" || t.name.toLowerCase().includes("tuition")
+      ),
+    [accountingTransactionTypes]
   );
+
+  const defaultCurrency = React.useMemo(
+    () =>
+      accountingCurrencies.find((currency) => currency.is_base_currency && currency.is_active) ??
+      accountingCurrencies.find((currency) => currency.is_active) ??
+      null,
+    [accountingCurrencies]
+  );
+
+  const amountNumber = React.useMemo(() => {
+    const parsed = Number.parseFloat(amount);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [amount]);
+
+  const currentBalance = student?.current_enrollment?.billing_summary?.balance ?? 0;
+  const projectedBalance = currentBalance - amountNumber;
+  const currencySymbol = student?.current_enrollment?.billing_summary?.currency || "$";
 
   // Reset on open/close
   React.useEffect(() => {
@@ -99,10 +125,18 @@ export function TuitionPaymentDialog({
       setReference("");
       setAccountId("");
       setMethodId("");
+      setCurrencyId("");
       setDate(new Date());
       setNotes("");
     }
   }, [open, initialStudent, skipSearch]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (currencyId) return;
+    if (!defaultCurrency) return;
+    setCurrencyId(defaultCurrency.id);
+  }, [open, currencyId, defaultCurrency]);
 
   async function handleSearch() {
     if (!searchId.trim()) {
@@ -116,28 +150,42 @@ export function TuitionPaymentDialog({
     refetch();
   }
 
-  function handleSubmit() {
-    if (!student || !amount || !accountId || !methodId || !date) return;
+  async function handleSubmit() {
+    if (!student || !accountId || !methodId || !date || !reference || !currencyId || !tuitionType?.id || amountNumber <= 0) {
+      return;
+    }
 
-    const payload: CreateTransactionCommand = {
-      type: tuitionType?.id ?? "",
-      student: student.id_number,
-      account: accountId,
-      payment_method: methodId,
-      amount: parseFloat(amount),
-      date: format(date, "yyyy-MM-dd"),
-      description: `Tuition payment for ${student.full_name}`,
-      reference: reference || undefined,
-      notes: notes || undefined,
-    };
-    onSubmit(payload);
+    try {
+      await postStudentPayment.mutateAsync({
+        bank_account: accountId,
+        transaction_date: format(date, "yyyy-MM-dd"),
+        reference_number: reference,
+        transaction_type: tuitionType.id,
+        payment_method: methodId,
+        amount: amountNumber,
+        currency: currencyId,
+        payer_payee: student.full_name,
+        description: notes?.trim() || `Tuition payment for ${student.full_name}`,
+        source_reference: student.id,
+      });
+
+      toast.success("Payment recorded successfully");
+      onOpenChange(false);
+      onPaymentRecorded?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to record payment");
+    }
   }
 
   const isValid =
-    student && amount && parseFloat(amount) > 0 && accountId && methodId && date;
-
-  const activeAccounts = bankAccounts.filter((a) => a.active);
-  const activeMethods = paymentMethods.filter((m) => m.active);
+    student &&
+    amountNumber > 0 &&
+    accountId &&
+    methodId &&
+    date &&
+    reference.trim() &&
+    currencyId &&
+    tuitionType?.id;
 
   return (
     <DialogBox
@@ -151,7 +199,7 @@ export function TuitionPaymentDialog({
       }
       actionLabel={step === "form" ? "Record Payment" : undefined}
       onAction={step === "form" ? handleSubmit : undefined}
-      actionLoading={submitting}
+      actionLoading={Boolean(submitting || postStudentPayment.isPending)}
       actionLoadingText="Recording…"
       actionDisabled={step === "form" ? !isValid : true}
       footer={step === "search" ? null : undefined}
@@ -228,22 +276,6 @@ export function TuitionPaymentDialog({
             </div>
           </div>
 
-          {/* Amount */}
-          <div className="grid gap-2">
-            <Label htmlFor="tuition-amount">Payment Amount *</Label>
-            <Input
-              id="tuition-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              max="9999999"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              autoFocus
-            />
-          </div>
-
           {/* Reference */}
           <div className="grid gap-2">
             <Label htmlFor="tuition-ref">Reference Number *</Label>
@@ -262,28 +294,70 @@ export function TuitionPaymentDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Payment Method *</Label>
-              <SelectField
-                value={methodId}
-                onValueChange={(v) => setMethodId(String(v))}
-                items={activeMethods.map((m) => ({
-                  value: m.id,
-                  label: m.name,
-                }))}
+              <AccountingPaymentMethodSelect
+                useUrlState={false}
+                noTitle
+                value={methodId || ""}
+                onChange={(v) => setMethodId(String(v || ""))}
                 placeholder="Select method"
               />
             </div>
 
             <div className="grid gap-2">
               <Label>Account *</Label>
-              <SelectField
-                value={accountId}
-                onValueChange={(v) => setAccountId(String(v ?? ""))}
-                items={activeAccounts.map((a) => ({
-                  value: a.id,
-                  label: a.name,
-                }))}
+              <AccountingBankAccountSelect
+                useUrlState={false}
+                noTitle
+                value={accountId || ""}
+                onChange={(v) => setAccountId(String(v || ""))}
                 placeholder="Select account"
               />
+            </div>
+          </div>
+
+          {/* Amount */}
+          <div className="grid gap-2">
+            <Label htmlFor="tuition-amount">Payment Amount *</Label>
+            <AccountingAmountField
+              field={{
+                value: amount === "" ? "" : Number.parseFloat(amount),
+                onChange: (value: number | "") => setAmount(value === "" ? "" : String(value)),
+                onBlur: () => {},
+                name: "tuition-amount",
+                ref: () => {},
+              } as any}
+              currencyCode={defaultCurrency?.code}
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Balance Preview */}
+          <div className="rounded-xl border bg-muted/20 p-3 space-y-4">
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Current Balance
+                </p>
+                <p className="mt-1 text-lg font-semibold">
+                  {currencySymbol}{Number(currentBalance).toLocaleString()}
+                </p>
+              </div>
+
+              <div className="">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Projected Balance
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 text-lg font-semibold",
+                    projectedBalance < 0 ? "text-red-600" : "text-emerald-600"
+                  )}
+                >
+                  {currencySymbol}{Math.abs(projectedBalance).toLocaleString()}
+                  {projectedBalance < 0 ? " (Overpaid)" : ""}
+                </p>
+              </div>
             </div>
           </div>
 

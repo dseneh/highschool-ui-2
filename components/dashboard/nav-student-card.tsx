@@ -8,11 +8,9 @@ type NavStudentCardProps = {
     className?: string
 }
 export default function NavStudentCard({ student, className }: NavStudentCardProps) {
-  console.log('NavStudentCard student:', student);
+
   const gradeLevelName = student.is_enrolled ? student.current_enrollment.grade_level?.name || student?.grade_level_name : null;
-
   const sectionName = student.is_enrolled ? student.current_enrollment.section?.name || student?.section_name : null;
-
   const classInfo = [gradeLevelName, sectionName].filter(Boolean).join(' • ');
 
   return (

@@ -1,6 +1,5 @@
 "use client";
 
-import { DialogBox2 as DialogBox } from "@/components/ui/dialog-box2";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +10,7 @@ import { Calendar, Tag, Target, DollarSign, Info, CreditCard } from "lucide-reac
 import type { LucideIcon } from "lucide-react";
 import { useStudentsApi } from "@/lib/api2/student/api";
 import AvatarImg from "../shared/avatar-img";
+import { ActionSheet } from "@/components/shared/action-sheet";
 
 interface ViewConcessionDialogProps {
   open: boolean;
@@ -40,7 +40,7 @@ function InfoRow({ icon: Icon, label, value, valueClassName = "" }: InfoRowProps
   );
 }
 
-export function ViewConcessionDialog({
+export function ViewConcessionSheet({
   open,
   onOpenChange,
   concession,
@@ -65,13 +65,11 @@ export function ViewConcessionDialog({
   if (!concession) return null;
 
   return (
-    <DialogBox
+    <ActionSheet
       open={open}
       onOpenChange={onOpenChange}
       title="Concession Details"
       description="View detailed information about this concession"
-      size="sm"
-      cancelLabel="Close"
     >
       <div className="space-y-4 p-2">
         {/* Student Information */}
@@ -212,6 +210,8 @@ export function ViewConcessionDialog({
           )}
         </Card>
       </div>
-    </DialogBox>
+    </ActionSheet>
   );
 }
+
+export const ViewConcessionDialog = ViewConcessionSheet;

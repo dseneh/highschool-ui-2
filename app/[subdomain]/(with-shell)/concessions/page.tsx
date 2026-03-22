@@ -5,7 +5,14 @@ import { useMutation } from "@tanstack/react-query";
 import PageLayout from "@/components/dashboard/page-layout";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  Coins01Icon,
+  UserAccountIcon,
+  DollarCircleIcon,
+  PieChart01Icon,
+  Calendar03Icon,
+} from "@hugeicons/core-free-icons";
 import type { StudentConcessionDto } from "@/lib/api2/billing-types";
 import { useBillingsApi } from "@/lib/api2/billing/api";
 import { toast } from "sonner";
@@ -13,16 +20,20 @@ import { getErrorMessage } from "@/lib/utils";
 import { AddConcessionDialog } from "@/components/students/add-concession-dialog";
 import type { StudentSearchResult } from "@/components/concessions/student-search-card";
 import { DeleteConcessDialog } from "@/components/concessions/delete-concession-dialog";
-import { DataTable } from "@/components/shared/data-table";
 import { useBillings } from "@/lib/api2";
 import { AcademicYearSelect } from "@/components/shared/data-reusable";
 import { useQueryState } from "nuqs";
 import { getConcessionsColumns } from "@/components/concessions/concession-columns";
 import { getQueryClient } from "@/lib/query-client";
-import { ConcessionStatsCards } from "@/components/concessions/concession-stats-cards";
-import { ConcessionFilters } from "@/components/concessions/concession-filters";
-import { ViewConcessionDialog } from "@/components/concessions/view-concession-dialog";
+import { ViewConcessionSheet } from "@/components/concessions/view-concession-dialog";
 import { useMemo } from "react";
+import { StatsCards } from "@/components/shared/stats-cards";
+import { AdvancedTable } from "@/components/shared/advanced-table";
+import { useAcademicYears } from "@/hooks/use-academic-year";
+import { Searchbar } from "@/components/shared/advanced-table/searchbar";
+import { TableFilters } from "@/components/shared/advanced-table/table-filters";
+import { TableFiltersInline } from "@/components/shared/advanced-table/table-filters-inline";
+import { ViewOptions } from "@/components/shared/advanced-table/view-options";
 
 export default function ConcessionsPage() {
   const [selectedStudent] = useState<StudentSearchResult | null>(null);
@@ -32,17 +43,15 @@ export default function ConcessionsPage() {
   const [editingConcession, setEditingConcession] =
     useState<StudentConcessionDto | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isViewSheetOpen, setIsViewSheetOpen] = useState(false);
   const [viewingConcession, setViewingConcession] =
     useState<StudentConcessionDto | null>(null);
 
-  // Filter states
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [targetFilter, setTargetFilter] = useState<string>("all");
-  const [minAmount, setMinAmount] = useState<string>("");
-  const [maxAmount, setMaxAmount] = useState<string>("");
+  const [searchInputValue, setSearchInputValue] = useState("");
+  const [appliedSearchValue, setAppliedSearchValue] = useState("");
 
   const [academicYear] = useQueryState("year");
+  const { data: academicYears = [] } = useAcademicYears();
 
   const { createStudentConcessionApi, updateStudentConcessionApi } =
     useBillingsApi();
@@ -146,49 +155,11 @@ export default function ConcessionsPage() {
 
   const handleView = (concession: StudentConcessionDto) => {
     setViewingConcession(concession);
-    setIsViewDialogOpen(true);
+    setIsViewSheetOpen(true);
   };
 
-  // Filter logic
-  const filteredData = useMemo(() => {
-    if (!concessionsData) return [];
-
-    return concessionsData.filter((concession: StudentConcessionDto) => {
-      // Type filter
-      if (typeFilter !== "all" && concession.concession_type !== typeFilter) {
-        return false;
-      }
-
-      // Target filter
-      if (targetFilter !== "all" && concession.target !== targetFilter) {
-        return false;
-      }
-
-      // Amount filter
-      const amount = Number(concession.amount || 0);
-      if (minAmount && amount < Number(minAmount)) {
-        return false;
-      }
-      if (maxAmount && amount > Number(maxAmount)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [concessionsData, typeFilter, targetFilter, minAmount, maxAmount]);
-
-  const hasActiveFilters =
-    typeFilter !== "all" ||
-    targetFilter !== "all" ||
-    minAmount !== "" ||
-    maxAmount !== "";
-
-  const handleClearFilters = () => {
-    setTypeFilter("all");
-    setTargetFilter("all");
-    setMinAmount("");
-    setMaxAmount("");
-  };
+  const rows = concessionsData ?? [];
+  const isSearchDirty = searchInputValue !== appliedSearchValue;
 
   const columns = getConcessionsColumns({
     currencySymbol: "$",
@@ -196,6 +167,55 @@ export default function ConcessionsPage() {
     onDelete: handleOpenDeleteDialog,
     onView: handleView,
   });
+
+  const selectedAcademicYearName = useMemo(() => {
+    if (!academicYears.length) return null;
+
+    if (academicYear) {
+      return academicYears.find((year) => year.id === academicYear)?.name ?? academicYear;
+    }
+
+    return academicYears.find((year) => year.current)?.name ?? null;
+  }, [academicYears, academicYear]);
+
+  const statsItems = useMemo(() => {
+    const safeStats = statsData ?? {
+      total_concessions: 0,
+      total_students: 0,
+      total_amount: 0,
+      average_amount: 0,
+    };
+
+    return [
+      {
+        title: "Total Concessions",
+        value: String(safeStats.total_concessions ?? 0),
+        subtitle: "Active entries this year",
+        icon: Coins01Icon,
+      },
+      {
+        title: "Students Covered",
+        value: String(safeStats.total_students ?? 0),
+        subtitle: "Distinct student count",
+        icon: UserAccountIcon,
+      },
+      {
+        title: "Total Amount",
+        value: `$${Number(safeStats.total_amount ?? 0).toLocaleString()}`,
+        subtitle: "Computed concessions",
+        icon: DollarCircleIcon,
+      },
+      {
+        title: "Average Amount",
+        value: `$${Number(safeStats.average_amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+        subtitle: selectedAcademicYearName
+          ? `Academic year: ${selectedAcademicYearName}`
+          : "Current academic year",
+        icon: PieChart01Icon,
+        subtitleIcon: Calendar03Icon,
+      },
+    ];
+  }, [statsData, selectedAcademicYearName]);
 
   return (
     <PageLayout
@@ -260,10 +280,10 @@ export default function ConcessionsPage() {
             onSuccess={handleDeleteSuccess}
           />
 
-          {/* View Concession Dialog */}
-          <ViewConcessionDialog
-            open={isViewDialogOpen}
-            onOpenChange={setIsViewDialogOpen}
+          {/* View Concession Sheet */}
+          <ViewConcessionSheet
+            open={isViewSheetOpen}
+            onOpenChange={setIsViewSheetOpen}
             concession={viewingConcession}
             currencySymbol="$"
           />
@@ -272,32 +292,53 @@ export default function ConcessionsPage() {
       emptyStateTitle="No concession found"
       emptyStateDescription="There was no concession found for the selected academic year."
     >
-      {/* Stats Cards */}
-      <ConcessionStatsCards
-        stats={statsData}
-        isLoading={isLoadingStats}
-        currency="$"
-      />
+      {!isLoadingStats ? <StatsCards items={statsItems} /> : null}
 
-      <DataTable
+      <AdvancedTable
         columns={columns}
-        data={filteredData}
-        searchKey="student"
-        showPagination={filteredData?.length > 10}
-        filters={
-          <ConcessionFilters
-            typeFilter={typeFilter}
-            targetFilter={targetFilter}
-            minAmount={minAmount}
-            maxAmount={maxAmount}
-            onTypeFilterChange={setTypeFilter}
-            onTargetFilterChange={setTargetFilter}
-            onMinAmountChange={setMinAmount}
-            onMaxAmountChange={setMaxAmount}
-            onClearFilters={handleClearFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
-        }
+        data={rows}
+        pageSize={20}
+        showPagination={rows.length > 10}
+        showRowSelection={false}
+        showBulkActions={false}
+        onRowClick={handleView}
+        toolbar={(table) => (
+          <div className="p-1 space-y-4 overflow-x-auto no-scrollbar">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-2 flex-1">
+                <Searchbar
+                  value={searchInputValue}
+                  disabled={isLoading || isFetching}
+                  onChange={(event) => {
+                    setSearchInputValue(event.target.value);
+                  }}
+                  onClear={() => {
+                    setSearchInputValue("");
+                    setAppliedSearchValue("");
+                    table.getColumn("student")?.setFilterValue(undefined);
+                  }}
+                  onSearch={() => {
+                    const normalizedValue = searchInputValue.trim();
+                    setAppliedSearchValue(normalizedValue);
+                    table.getColumn("student")?.setFilterValue(normalizedValue || undefined);
+                  }}
+                  showDirtyIndicator={isSearchDirty}
+                  placeholder="Search student name or ID..."
+                  className="w-full min-w-62.5 max-w-sm"
+                />
+                <div className="md:hidden">
+                  <TableFilters table={table} disabled={Boolean(isLoading || isFetching)} />
+                </div>
+                <div className="hidden md:block">
+                  <TableFiltersInline table={table} disabled={Boolean(isLoading || isFetching)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <ViewOptions table={table} />
+              </div>
+            </div>
+          </div>
+        )}
       />
     </PageLayout>
   );

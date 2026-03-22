@@ -99,19 +99,19 @@ function DialogBox({
   const showFooter = footer !== null && (footer !== undefined || hasBuiltInFooter)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} >
       <DialogContent
-        className={cn(className, "gap-2")}
+        className={cn(className, "gap-2 p-0")}
         showCloseButton={showCloseButton}
         {...contentProps}
       >
-        <DialogHeader className="gap-0">
+        <DialogHeader className="gap-0 border-b p-4 sm:px-5">
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          {description && <DialogDescription className="text-muted-foreground -mt-1 text-xs">{description}</DialogDescription>}
         </DialogHeader>
 
         {children && (
-          <div className={cn("p-1 overflow-y-auto min-h-0 flex-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40", 
+          <div className={cn("px-3 sm:px-5 min-h-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40", 
           contentClassName
           )}>
             {children}
@@ -120,7 +120,7 @@ function DialogBox({
 
         {showFooter &&
           (footer ?? (
-            <DialogFooter>
+            <DialogFooter className="p-3 sm:p-4 border-t fbg-muted">
               {cancelLabel !== false && (
                 <Button
                   variant="outline"

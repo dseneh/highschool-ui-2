@@ -43,6 +43,9 @@ export interface SelectFieldProps extends React.ComponentProps<typeof Select> {
   checkedValues?: string[];
   defaultCheckedValues?: string[];
   onCheckedValuesChange?: (values: string[]) => void;
+  id?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }
 
 export function SelectField({
@@ -63,6 +66,9 @@ export function SelectField({
     onValueChange,
     disabled,
     defaultValue,
+    id,
+    "aria-invalid": ariaInvalid,
+    "aria-describedby": ariaDescribedBy,
     ...restSelectProps
   } = selectProps;
   const [localValue, setLocalValue] = React.useState(
@@ -227,6 +233,9 @@ export function SelectField({
         }
       >
         <ComboboxInput
+          id={id}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
           placeholder={comboboxPlaceholder}
           className={cn("w-full", triggerClassName)}
           showClear={!!currentValue}
@@ -257,7 +266,12 @@ export function SelectField({
       onValueChange={(nextValue) => setValue(String(nextValue ?? ""))}
       disabled={disabled}
     >
-      <SelectTrigger className={cn("w-full", triggerClassName)}>
+      <SelectTrigger
+        id={id}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
+        className={cn("w-full", triggerClassName)}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className={className}>

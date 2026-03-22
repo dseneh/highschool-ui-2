@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryState } from "nuqs";
 import { GradeLevelDto } from "@/lib/api2/grade-level-types";
 
@@ -17,13 +17,33 @@ export default function ClassSectionSidebar({
   filteredGradeLevels,
 }: ClassSectionSidebarProps) {
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const activeGradeLevels = useMemo(
+    () => filteredGradeLevels.filter((gradeLevel) => gradeLevel.active),
+    [filteredGradeLevels]
+  );
+  const sectionListRef = useRef<HTMLDivElement | null>(null);
+  const sectionButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [, setGradeLevelId] = useQueryState("gradeLevel", { defaultValue: "" });
   const [, setSectionId] = useQueryState("section", { defaultValue: "" });
+
+  useEffect(() => {
+    if (!selectedSectionId) return;
+    const selectedButton = sectionButtonRefs.current[selectedSectionId];
+    const listContainer = sectionListRef.current;
+    if (!selectedButton || !listContainer) return;
+
+    const { offsetTop, offsetHeight } = selectedButton;
+    const maxScrollTop = Math.max(0, listContainer.scrollHeight - listContainer.clientHeight);
+    const centeredTop = offsetTop - (listContainer.clientHeight - offsetHeight) / 2;
+    const nextScrollTop = Math.max(0, Math.min(centeredTop, maxScrollTop));
+
+    listContainer.scrollTo({ top: nextScrollTop, behavior: "smooth" });
+  }, [selectedSectionId, activeGradeLevels]);
 
   return (
     <div className="flex gap-0 -mx-1" style={{ height: "calc(100vh - 160px)" }}>
       <div className="w-56 shrink-0 border-r flex flex-col">
-        <div className="px-2 fpb-3 shrink-0">
+        <div className="px-2 pb-1 shrink-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
@@ -35,22 +55,22 @@ export default function ClassSectionSidebar({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-1">
+        <div ref={sectionListRef} className="flex-1 overflow-y-auto pr-1">
           {loading ? (
             <div className="space-y-2 pt-1 px-2">
               {[...Array(6)].map((_, i) => (
                 <Skeleton key={i} className="h-8 w-full rounded-lg" />
               ))}
             </div>
-          ) : filteredGradeLevels.length === 0 ? (
+          ) : activeGradeLevels.length === 0 ? (
             <p className="text-xs text-muted-foreground px-2 pt-3">
               {sidebarSearch
                 ? "No sections match your search."
-                : "No grade levels found."}
+                : "No active grade levels found."}
             </p>
           ) : (
             <div className="fspace-y-4 pt-1">
-              {filteredGradeLevels.map((gl) => (
+              {activeGradeLevels.map((gl) => (
                 <div key={gl.id}>
                   {/* <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                       {gl.name}
@@ -62,6 +82,9 @@ export default function ClassSectionSidebar({
                         return (
                           <button
                             key={sec.id}
+                            ref={(node) => {
+                              sectionButtonRefs.current[sec.id] = node;
+                            }}
                             className={cn(
                               "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
                               isActive

@@ -36,20 +36,23 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
   // Calculate overall payment progress - recalculates when paymentPlan changes
   const paymentProgress = useMemo(() => {
     if (!paymentPlan || paymentPlan.length === 0) {
-      return { paid: 0, percentage: 0 }
+      return { paid: 0, due: 0, balance: 0, percentage: 0 }
     }
 
     const lastItem = paymentPlan[paymentPlan.length - 1]
     if (!lastItem) {
-      return { paid: 0, percentage: 0 }
+      return { paid: 0, due: 0, balance: 0, percentage: 0 }
     }
 
     const totalAmount = lastItem.cumulative_amount_due || 0
     const totalPaid = lastItem.cumulative_paid || 0
+    const totalBalance = lastItem.cumulative_balance || 0
     const percentage = totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0
 
     return {
       paid: totalPaid,
+      due: totalAmount,
+      balance: totalBalance,
       percentage: Math.min(percentage, 100),
     }
   }, [paymentPlan])
@@ -59,6 +62,21 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
       style: "currency",
       currency: "USD",
     }).format(amount)
+  }
+
+  const formatPercentage = (value: number) => `${Math.round(value)}%`
+
+  const getInstallmentLabel = (index: number) => {
+    const position = index + 1
+    const suffix =
+      position % 10 === 1 && position % 100 !== 11
+        ? "st"
+        : position % 10 === 2 && position % 100 !== 12
+          ? "nd"
+          : position % 10 === 3 && position % 100 !== 13
+            ? "rd"
+            : "th"
+    return `${position}${suffix} Installment`
   }
 
   
@@ -117,9 +135,9 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
               </p>
             </div>
           </div>
-          <div className=" md:max-w-sm flex flex-col items-start gap-0 w-full justify-end ">
+          <div className="md:max-w-sm flex flex-col items-start gap-1 w-full justify-end">
             <b>Payment Progress:</b>
-          <div className="flex items-center gap-1 w-full justify-end ">
+            <div className="flex items-center gap-1 w-full justify-end">
           <Progress 
             value={paymentProgress.percentage} 
             className="w-full h-2 rounded-full"
@@ -128,7 +146,14 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
             {paymentProgress.percentage.toFixed(1)}%
           </span>
             </div>
+            <div className="w-full text-xs text-muted-foreground dark:text-slate-400 text-right">
+              <span>{formatCurrency(paymentProgress.paid)} paid</span>
+              <span className="mx-1.5">/</span>
+              <span>{formatCurrency(paymentProgress.due)} due</span>
+              <span className="mx-1.5">-</span>
+              <span className={cn(paymentProgress.balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400")}>{formatCurrency(paymentProgress.balance)} balance</span>
             </div>
+          </div>
         </div>
       </div>
 
@@ -140,8 +165,9 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
               <th className="h-12 px-4 text-left font-semibold text-muted-foreground dark:text-slate-400">Installment</th>
               <th className="h-12 px-4 text-left font-semibold text-muted-foreground dark:text-slate-400">Due Date</th>
               <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Amount Due</th>
-              <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Paid</th>
-              <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Balance</th>
+              <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Cumulative Due</th>
+              <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Cumulative Paid</th>
+              <th className="h-12 px-4 text-right font-semibold text-muted-foreground dark:text-slate-400">Cumulative Balance</th>
             </tr>
           </thead>
           <tbody>
@@ -155,7 +181,7 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
                   <div className="flex items-center gap-2">
                     <span>{getInstallmentStatusIcon(item)}</span>
                     <span className="font-semibold text-sm text-gray-900 dark:text-gray-50">
-                      Installment {index + 1}
+                      {getInstallmentLabel(index)}
                       </span>
                     </div>
                 </td>
@@ -163,18 +189,27 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
                   {format(new Date(item.payment_date), "MMM dd, yyyy")}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-semibold text-gray-900 dark:text-gray-50">{formatCurrency(item.amount)}</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-semibold text-gray-900 dark:text-gray-50">{formatCurrency(item.amount)}</span>
+                    <span className="text-xs text-muted-foreground dark:text-slate-400">({formatPercentage(item.percentage)} of total)</span>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.amount_paid)}</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-semibold text-gray-900 dark:text-gray-50">{formatCurrency(item.cumulative_amount_due)}</span>
+                    <span className="text-xs text-muted-foreground dark:text-slate-400">({formatPercentage(item.cumulative_percentage)} of total)</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.cumulative_paid)}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span
                     className={`font-semibold ${
-                      item.balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                      item.cumulative_balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                     }`}
                   >
-                    {formatCurrency(item.balance)}
+                    {formatCurrency(item.cumulative_balance)}
                   </span>
                 </td>
               </tr>
@@ -203,31 +238,39 @@ export function PaymentPlan({ paymentPlan = [], onInstallmentClick }: PaymentPla
                 {getInstallmentStatusIcon(item)}
                 <div>
                   <p className="font-semibold text-sm text-gray-900 dark:text-gray-50">
-                    {format(new Date(item.payment_date), "MMM dd, yyyy")}
+                    {getInstallmentLabel(index)}
                   </p>
-                  <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">Due Date</p>
+                  <p className="text-xs text-muted-foreground dark:text-slate-400 mt-0.5">
+                    Due {format(new Date(item.payment_date), "MMM dd, yyyy")}
+                  </p>
                 </div>
               </div>
               {getInstallmentStatusBadge(item)}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-current border-opacity-10 dark:border-opacity-20">
+            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-current border-opacity-10 dark:border-opacity-20">
               <div>
                 <p className="text-xs text-muted-foreground dark:text-slate-400">Amount</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{formatCurrency(item.amount)}</p>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">{formatPercentage(item.percentage)} of total</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground dark:text-slate-400">Paid</p>
-                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.amount_paid)}</p>
+                <p className="text-xs text-muted-foreground dark:text-slate-400">Cumulative Due</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{formatCurrency(item.cumulative_amount_due)}</p>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">{formatPercentage(item.cumulative_percentage)} of total</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground dark:text-slate-400">Balance</p>
+                <p className="text-xs text-muted-foreground dark:text-slate-400">Cumulative Paid</p>
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(item.cumulative_paid)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground dark:text-slate-400">Cumulative Balance</p>
                 <p
                   className={`text-sm font-semibold ${
-                    item.balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                    item.cumulative_balance > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                   }`}
                 >
-                  {formatCurrency(item.balance)}
+                  {formatCurrency(item.cumulative_balance)}
                 </p>
               </div>
             </div>

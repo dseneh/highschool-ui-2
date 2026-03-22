@@ -236,16 +236,6 @@ export default function TransactionsPage() {
     }
   }
 
-  async function handleTuitionSubmit(payload: CreateTransactionCommand) {
-    try {
-      await create.mutateAsync(payload);
-      setShowTuition(false);
-      toast.success("Tuition payment recorded");
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  }
-
   async function handleGeneralSubmit(payload: CreateTransactionCommand) {
     try {
       await create.mutateAsync(payload);
@@ -563,7 +553,10 @@ export default function TransactionsPage() {
       transactionTypes={transactionTypes}
       paymentMethods={paymentMethods}
       bankAccounts={bankAccounts}
-      onSubmit={handleTuitionSubmit}
+      onPaymentRecorded={() => {
+        setShowTuition(false);
+        void refetch();
+      }}
       submitting={create.isPending}
     />
 

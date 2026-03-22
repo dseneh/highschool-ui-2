@@ -243,8 +243,8 @@ export default function Page() {
       {/* Animated Background */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--muted))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--muted))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-40" />
-        <div className="absolute left-1/4 top-0 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
-        <div className="absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-secondary/10 blur-[100px] animate-pulse [animation-delay:2s]" />
+        <div className="absolute left-1/4 top-0 h-125 w-125 rounded-full bg-primary/10 blur-[120px] animate-pulse" />
+        <div className="absolute right-1/4 top-1/3 h-100 w-100 rounded-full bg-secondary/10 blur-[100px] animate-pulse [animation-delay:2s]" />
       </div>
 
       {/* Header */}

@@ -485,11 +485,9 @@ export function DashboardSidebar({
           <div className="space-y-2">
             {filteredPrimaryNavSections.map((section, sectionIndex) => (
               <SidebarGroup key={sectionIndex} className="p-0">
-                {section.title && (
-                  <SidebarGroupLabel className="px-2 text-xs font-semibold text-muted-foreground/70 tracking-widest uppercase mb-1">
+                  <SidebarGroupLabel className="px-2 text-xs font-semibold text-muted-foreground/70 tracking-widest uppercase mb-1 group-data-[collapsible=icon]:hidden">
                     {section.title}
                   </SidebarGroupLabel>
-                )}
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {section.items.map((item) => {

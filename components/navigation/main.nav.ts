@@ -1,4 +1,4 @@
-import { Add01Icon, ArrowShrinkIcon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileIcon, Invoice01Icon, SchoolIcon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, ArrowShrinkIcon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileIcon, Invoice01Icon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
 import { NavSection } from "./type";
 
 // Main Navigation - Organized by functional areas
@@ -219,12 +219,6 @@ export const primaryNavSections: NavSection[] = [
           },
           {
             icon: CreditCardIcon,
-            label: "Concessions",
-            path: "/concessions",
-            meta: "Manage student concessions",
-          },
-          {
-            icon: CreditCardIcon,
             label: "Payment Methods",
             path: "/setup/payment-methods",
           },
@@ -232,6 +226,61 @@ export const primaryNavSections: NavSection[] = [
             icon: Coins01Icon,
             label: "Transaction Types",
             path: "/setup/transaction-types",
+          },
+        ],
+      },
+      {
+        icon: BookOpen02Icon,
+        label: "Accounting",
+        path: "/accounting/journal-entries",
+        meta: "Ledger accounts, journals, cash transactions",
+        requiredRoles: "accountant",
+        subItems: [
+          {
+            icon: Coins01Icon,
+            label: "Currencies",
+            path: "/accounting/currencies",
+          },
+          {
+            icon: BookOpen02Icon,
+            label: "Chart of Accounts",
+            path: "/accounting/ledger-accounts",
+          },
+          {
+            icon: Building02Icon,
+            label: "Bank Accounts",
+            path: "/accounting/bank-accounts",
+          },
+          {
+            icon: Settings01Icon,
+            label: "Fees Setup",
+            path: "/accounting/fees-setup",
+          },
+          {
+            icon: CreditCardIcon,
+            label: "Concessions",
+            path: "/accounting/concessions",
+            meta: "Manage student concessions",
+          },
+          {
+            icon: CreditCardIcon,
+            label: "Transaction Types",
+            path: "/accounting/transaction-types",
+          },
+          {
+            icon: Coins01Icon,
+            label: "Cash Transactions",
+            path: "/accounting/cash-transactions",
+          },
+          {
+            icon: Invoice01Icon,
+            label: "Student Payments",
+            path: "/accounting/student-payments",
+          },
+          {
+            icon: FileIcon,
+            label: "Journal Entries",
+            path: "/accounting/journal-entries",
           },
         ],
       },

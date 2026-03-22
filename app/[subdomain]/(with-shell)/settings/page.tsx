@@ -408,7 +408,7 @@ export default function SettingsPage() {
           onValueChange={(value) => setActiveTab(value as TabValue)}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 " variant={"line"}>
             <TabsTrigger value="info" className="flex items-center gap-2">
               <HugeiconsIcon icon={Building02Icon} className="h-4 w-4" />
               <span className="hidden sm:inline">Tenant Info</span>
@@ -424,7 +424,7 @@ export default function SettingsPage() {
           </TabsList>
 
           {/* Tenant Info Tab */}
-          <TabsContent value="info" className="space-y-6">
+          <TabsContent value="info" className="space-y-6 pt-3">
             <IdentitySection tenantData={tenantData} />
             <GeneralInfoSection
               tenantData={tenantData}
@@ -450,7 +450,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           {/* Branding Tab */}
-          <TabsContent value="branding" className="space-y-6">
+          <TabsContent value="branding" className="space-y-6 pt-3">
             <BrandingSection
               tenantData={tenantData}
               logoFile={logoFile}
@@ -464,7 +464,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           {/* Theme Tab */}
-          <TabsContent value="theme" className="space-y-6">
+          <TabsContent value="theme" className="space-y-6 pt-3">
             <ThemeSection
               themePreview={themePreview}
               handleThemeChange={handleThemeChange}

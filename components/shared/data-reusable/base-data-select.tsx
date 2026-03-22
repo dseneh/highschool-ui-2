@@ -32,6 +32,10 @@ export type SelectOption = {
 };
 
 type BaseDataSelectProps<T = unknown> = {
+  id?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
+
   /* ---- State management ---- */
   useUrlState?: boolean;
   urlParamName?: string;
@@ -77,6 +81,9 @@ type BaseDataSelectProps<T = unknown> = {
 /* ------------------------------------------------------------------ */
 
 export default function BaseDataSelect<T = unknown>({
+  id,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
   useUrlState = true,
   urlParamName = "value",
   value: controlledValue,
@@ -239,15 +246,18 @@ export default function BaseDataSelect<T = unknown>({
           itemToStringLabel={(v) => valueLabelMap.get(String(v)) ?? ""}
         >
           <ComboboxInput
+            id={id}
+            aria-invalid={ariaInvalid}
+            aria-describedby={ariaDescribedBy}
             placeholder={placeholder ?? `Search ${title?.toLowerCase()}...`}
             className={cn("w-full", selectClassName)}
             showClear={!!value}
             showTrigger
           />
           <ComboboxContent className="animate-in fade-in slide-in-from-top-2 duration-200">
-            <ComboboxList>
+            <ComboboxList className="p-2">
               {options.map((opt) => (
-                <ComboboxItem key={opt.value} value={opt.value}>
+                <ComboboxItem key={opt.value} value={opt.value} className="truncate">
                   {opt.label}
                 </ComboboxItem>
               ))}
@@ -262,7 +272,12 @@ export default function BaseDataSelect<T = unknown>({
           disabled={disabled || !enabled}
           items={options.map((opt) => ({ value: opt.value, label: opt.label }))}
         >
-          <SelectTrigger className={cn("w-full", selectClassName)}>
+          <SelectTrigger
+            id={id}
+            aria-invalid={ariaInvalid}
+            aria-describedby={ariaDescribedBy}
+            className={cn("w-full", selectClassName)}
+          >
             <SelectValue placeholder={placeholder ?? `Select ${title?.toLowerCase()}...`} />
           </SelectTrigger>
           <SelectContent className="animate-in fade-in slide-in-from-top-2 duration-200">

@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 export type StatsCardItem = {
   title: string;
-  value: string;
-  subtitle: string;
+  value: string | React.ReactNode;
+  subtitle: string | React.ReactNode;
   icon: ComponentProps<typeof HugeiconsIcon>["icon"];
   subtitleIcon?: ComponentProps<typeof HugeiconsIcon>["icon"];
 };
@@ -33,12 +33,12 @@ export function StatsCards({ items, className }: StatsCardsProps) {
           <div className="pointer-events-none absolute inset-0 bg-linear-to-tr from-transparent via-transparent to-primary/6 opacity-80 transition-opacity duration-200 group-hover:opacity-100" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/90 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
                 {item.title}
-              </p>
-              <p className="text-2xl font-semibold tracking-tight text-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary sm:text-[28px]">
+              </div>
+              <div className="text-2xl font-semibold tracking-tight text-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary sm:text-[28px]">
                 {item.value}
-              </p>
+              </div>
             </div>
 
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary shadow-xs transition-all duration-200 group-hover:scale-105 group-hover:border-primary/30 group-hover:bg-primary/15">
@@ -46,7 +46,7 @@ export function StatsCards({ items, className }: StatsCardsProps) {
             </div>
           </div>
 
-          <div className="relative mt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
+          <div className="relative fmt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-2.5 py-1 backdrop-blur-sm transition-all duration-200 group-hover:border-primary/20 group-hover:bg-primary/5">
               {item.subtitleIcon ? (
                 <HugeiconsIcon

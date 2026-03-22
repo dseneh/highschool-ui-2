@@ -127,7 +127,7 @@ export function useStudentPageActions(student: StudentDto | undefined) {
       },
       {
         id: "payment",
-        label: "Make Payment",
+        label: "Record Payment",
         icon: <HugeiconsIcon icon={Coins01Icon} className="size-4" />,
         onClick: () => router.push(`/students/${studentIdNumber}/billing`),
         variant: "default" as const,

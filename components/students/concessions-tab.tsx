@@ -83,7 +83,6 @@ function ConcessionCard({
           
           <div className="flex items-center gap-1 shrink-0">
             <AuthButton
-              disable
               variant="ghost"
               size="sm"
               icon={<Pencil className="size-4" />}
@@ -92,7 +91,6 @@ function ConcessionCard({
               className="h-8 w-8 p-0"
             />
             <AuthButton
-              disable
               variant="ghost"
               size="sm"
               className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"

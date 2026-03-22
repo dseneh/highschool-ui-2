@@ -17,12 +17,14 @@ import {getErrorMessage, cn} from '@/lib/utils';
 import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api2/finance-types";
 import {STUDENT_TARGET_LABELS, TARGET_COLORS} from '@/components/finance/utils';
 import { Loader2, Pencil, Trash2 } from "lucide-react";
+import EmptyStateComponent from "../shared/empty-state";
 
 interface SectionFeeListProps {
   section: {
     id: string;
     name: string;
     tuition_fees?: number;
+    section_class?: string;
   };
   availableFees: GeneralFeeDto[];
 }
@@ -148,8 +150,25 @@ export function SectionFeeList({ section, availableFees }: SectionFeeListProps) 
   return (
     <>
       <div className="space-y-4">
-        {/* Action Bar */}
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between rounded-md border p-4">
+          <div>
+            <h3 className="text-lg font-semibold">{section.section_class}</h3>
+            <p className="text-sm text-muted-foreground">
+               {feeCount} fee{feeCount !== 1 ? "s" : ""} assigned | Total: <b>{formatCurrency(totalFees)}</b>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+            size="sm"
+            onClick={() => setShowAddFee(true)}
+            disabled={unassignedFees.length === 0}
+            icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
+          >
+            Add Fees
+          </Button>
+          </div>
+        </div>
+        {/* <div className="flex justify-between items-center">
           <div className="text-sm text-muted-foreground">
             {feeCount} fee{feeCount !== 1 ? "s" : ""} assigned | Total: {formatCurrency(totalFees)}
           </div>
@@ -161,11 +180,11 @@ export function SectionFeeList({ section, availableFees }: SectionFeeListProps) 
           >
             Add Fees
           </Button>
-        </div>
+        </div> */}
 
         {/* Fees Table */}
         {sectionFees && sectionFees.length > 0 ? (
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
@@ -236,9 +255,11 @@ export function SectionFeeList({ section, availableFees }: SectionFeeListProps) 
             </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            No fees assigned to this section yet.
-          </div>
+          <EmptyStateComponent
+            title="No fees assigned"
+            description="Assign fees to this section to see them here."
+            icon={<HugeiconsIcon icon={Add01Icon} className="h-8 w-8 text-muted-foreground" />}
+          />
         )}
       </div>
 
@@ -268,12 +289,16 @@ export function SectionFeeList({ section, availableFees }: SectionFeeListProps) 
         open={!!deletingFee}
         onOpenChange={(open: boolean) => !open && setDeletingFee(null)}
         title="Remove Fee"
-        description={`Are you sure you want to remove "${deletingFee?.general_fee.name}" from this section?`}
         onAction={handleDelete}
         actionLoading={remove.isPending}
         actionVariant="destructive"
         actionLabel="Yes, remove"
-      />
+      >
+        Are you sure you want to remove <b>{deletingFee?.general_fee.name}</b> from this section?
+        <p>
+          New students in this section will no longer be charged this fee.
+        </p>
+      </DialogBox>
     </>
   );
 }

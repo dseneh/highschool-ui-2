@@ -1,6 +1,6 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useParams, usePathname } from "next/navigation"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { StudentDetailHeader } from "@/components/students/student-detail-header"
 import { StudentPersonalInfo } from "@/components/students/student-personal-info"
@@ -15,13 +15,15 @@ import PageLayout from "@/components/dashboard/page-layout"
 
 export default function StudentDetailsPage() {
   const params = useParams()
+  const pathname = usePathname()
   const idNumber = params.id_number as string
 
   const studentsApi = useStudentsApi()
   const { data: student, isLoading, error, refetch, isFetching } = studentsApi.getStudent(idNumber, {
-    enabled: !!idNumber && window.location.href.includes("/students/"),
+    enabled: !!idNumber && Boolean(pathname?.includes("/students/")),
   })
   const hookResult = useStudentPageActions(student)
+  const studentDisplayName = [student?.first_name, student?.last_name].filter(Boolean).join(" ") || student?.full_name || "this student"
 
   if (isLoading){
     return <LoadingSkeleton />
@@ -31,7 +33,7 @@ export default function StudentDetailsPage() {
     <PageLayout
     
     title="Student Details"
-    description={`View and manage detailed information for ${student.first_name} ${student.last_name}`}
+    description={`View and manage detailed information for ${studentDisplayName}`}
     actions={
        <Button 
             variant="outline"

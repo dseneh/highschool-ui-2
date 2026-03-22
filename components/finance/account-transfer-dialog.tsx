@@ -12,6 +12,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AccountingAmountField } from "@/components/accounting/accounting-amount-field";
 import type {
   AccountTransferCommand,
   BankAccountDto,
@@ -140,14 +141,12 @@ export function AccountTransferDialog({
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="transfer-amount">Amount *</Label>
-            <Input
-              id="transfer-amount"
-              type="number"
-              step="0.01"
-              min="0"
+            <AccountingAmountField
+              field={{
+                value: amount,
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value),
+              } as any}
               placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
             />
           </div>
 

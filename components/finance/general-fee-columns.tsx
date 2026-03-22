@@ -169,9 +169,8 @@ export function getGeneralFeeColumns(
           <div className="flex justify-end items-center gap-2">
             {onSyncToSections && (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                variant="info-outline"
+                size="xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   onSyncToSections(fee);
@@ -180,18 +179,17 @@ export function getGeneralFeeColumns(
                 tooltip="Sync amount to all active sections"
                 icon={<HugeiconsIcon
                   icon={RefreshIcon}
-                  className={cn("h-4 w-4", isSyncing && "animate-spin")}
+                  className={cn("size-4", isSyncing && "animate-spin")}
                 />}
               >
-                
-                <span className="sr-only">Sync</span>
+                Sync
               </Button>
             )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
                   className="h-8 w-8"
                   onClick={(e) => e.stopPropagation()}

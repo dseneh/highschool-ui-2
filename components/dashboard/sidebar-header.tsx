@@ -16,6 +16,8 @@ import {
   UserIcon,
   Logout01Icon,
 } from "@hugeicons/core-free-icons";
+import { DialogBox } from "@/components/ui/dialog-box";
+import StatusBadge from "@/components/ui/status-badge";
 import {
   buildRootLoginUrl,
   getRootDomain,
@@ -30,10 +32,14 @@ import { useTenantStore } from "@/store/tenant-store";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import AvatarImg from "../shared/avatar-img";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export default function SidebarHeaderDropDown() {
+  const [openWorkspaceDialog, setOpenWorkspaceDialog] = React.useState(false);
   const [loggingOut, setLoggingOut] = React.useState(false);
   const router = useRouter();
+  const { state: sidebarState, isMobile } = useSidebar();
   const { logout } = useAuth();
   const user = useAuthStore((state) => state.user);
   const tenant = useTenantStore((state) => state.tenant);
@@ -43,97 +49,109 @@ export default function SidebarHeaderDropDown() {
     typeof window !== "undefined"
       ? getSubdomainFromHost(window.location.host) ?? ""
       : "";
+  const isSidebarCollapsed = sidebarState === "collapsed" && !isMobile;
   const currentWorkspace =
     subdomain || routeWorkspace || tenant?.schema_name || tenant?.workspace || "";
+  const currentTenant = user?.tenants?.find((tenantItem) => {
+    const workspaceFromTenant = (tenantItem as { workspace?: string }).workspace;
+    const workspace = tenantItem.schema_name ?? workspaceFromTenant ?? "";
+    return workspace.toLowerCase() === currentWorkspace.toLowerCase();
+  }) ?? null;
+
+  const currentTenantName = tenant?.name ?? currentTenant?.name ?? "EzySchool";
+  const currentTenantLogo = tenant?.logo ?? currentTenant?.logo;
+  const currentTenantWorkspace =
+    currentWorkspace || tenant?.schema_name || tenant?.workspace || "—";
+  const tenantStatus = tenant?.status ?? (tenant?.active ? "active" : "inactive");
+  const normalizedTenantStatus = String(tenantStatus || "").toLowerCase();
+
+  const otherTenants = (user?.tenants ?? []).filter((tenantItem) => {
+    const workspaceFromTenant = (tenantItem as { workspace?: string }).workspace;
+    const workspace = tenantItem.schema_name ?? workspaceFromTenant ?? "";
+    if (!workspace) return false;
+    return workspace.toLowerCase() !== currentWorkspace.toLowerCase();
+  });
+
+  const handleSwitchWorkspace = (targetWorkspace: string) => {
+    if (!targetWorkspace) return;
+    setOpenWorkspaceDialog(false);
+    changeWorkspace(targetWorkspace);
+  };
 
   return (
+    <>
     <div className="flex items-center justify-between">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 outline-none w-full">
           <div className="size-10 rounded-2xl bg-background border shadow-xs flex items-center justify-center shrink-0 overflow-hidden">
             <AvatarImg
-              src={tenant?.logo}
-              alt={tenant?.name}
-              name={tenant?.name}
+              src={currentTenantLogo}
+              alt={currentTenantName}
+              name={currentTenantName}
               className="size-10"
               imgClassName="size-10"
             />
           </div>
           <div className="flex flex-col items-start flex-1 min-w-0">
             <span className="font-semibold text-sm truncate w-full text-left">
-              {tenant?.name ?? "EzySchool"}
+              {currentTenantName}
             </span>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground truncate w-full text-left">
-              {subdomain || tenant?.schema_name || tenant?.workspace || null}
+              {currentTenantWorkspace}
             </span>
           </div>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            className="size-4 text-muted-foreground shrink-0"
-          />
+          {!isSidebarCollapsed && (
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              className="size-4 text-muted-foreground shrink-0"
+            />
+          )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-67.5">
+        <DropdownMenuContent align="start" className="w-88 max-w-[calc(100vw-1rem)]">
           <DropdownMenuGroup>
-            <p className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
-              Workspaces
-            </p>
-
-            {/* Render tenants from user profile */}
-            {user?.tenants?.map((t) => {
-              const workspaceFromTenant = (t as { workspace?: string }).workspace;
-              const targetWorkspace = t.schema_name ?? workspaceFromTenant;
-              const isSelected =
-                currentWorkspace === targetWorkspace ||
-                currentWorkspace === t.schema_name;
-
-              return (
-              <DropdownMenuItem
-                key={t.id}
-                onClick={() => changeWorkspace(targetWorkspace)}
-                className={cn(
-                  isSelected ? "cursor-pointer bg-accent" : "cursor-pointer",
-                  "hover:bg-accent/50 focus:bg-accent/50"
-                )}
-              >
-                <div className="size-7 shadow-xs flex items-center justify-center mr-2 overflow-hidden">
-                   <AvatarImg
-                      src={t?.logo}
-                      alt={t?.name}
-                      name={t?.name}
-                      className="size-7"
-                      imgClassName="size-7 object-cover"
-                    />
-                </div>
-                <div className="flex items-start flex-col truncate flex-1">
-                  <span className="text-sm">{t.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {targetWorkspace}
-                  </span>
-                </div>
-                {/* {isSelected && (
-                  <HugeiconsIcon
-                    icon={Tick01Icon}
-                    className="size-4 ml-auto shrink-0"
+            <div className="px-2 py-2">
+              <div className="rounded-lg border border-border/70 bg-muted/20 p-2.5">
+                <div className="flex items-center gap-2">
+                  <AvatarImg
+                    src={currentTenantLogo}
+                    alt={currentTenantName}
+                    name={currentTenantName}
+                    className="size-9"
+                    imgClassName="size-9 object-cover"
                   />
-                )} */}
-              </DropdownMenuItem>
-            )})}
-
-            {(!user?.tenants || user.tenants.length === 0) && (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground italic">
-                No workspaces found
+                  <div className="min-w-0 flex-1 pr-1">
+                    <p className="text-sm font-semibold leading-tight wrap-break-word">{currentTenantName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{currentTenantWorkspace}</p>
+                  </div>
+                  {normalizedTenantStatus && normalizedTenantStatus !== "active" ? (
+                    <StatusBadge
+                      status={tenantStatus}
+                      showIcon={false}
+                      className="capitalize"
+                    />
+                  ) : null}
+                </div>
               </div>
-            )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2.5 w-full"
+                onClick={() => setOpenWorkspaceDialog(true)}
+              >
+                Change Workspace
+              </Button>
+            </div>
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/account-settings")}> 
               <HugeiconsIcon icon={UserIcon} className="size-4 mr-2" />
               Account Settings
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
               <HugeiconsIcon icon={Settings01Icon} className="size-4 mr-2" />
               Workspace Settings
             </DropdownMenuItem>
@@ -192,5 +210,69 @@ export default function SidebarHeaderDropDown() {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+    <DialogBox
+      open={openWorkspaceDialog}
+      onOpenChange={setOpenWorkspaceDialog}
+      title="Change Workspace"
+      description="Select a workspace to switch your current context."
+      cancelLabel="Close"
+      className="sm:max-w-lg"
+    >
+      <div className="space-y-2 pb-3 pt-1">
+        {otherTenants.length > 0 ? (
+          otherTenants.map((tenantItem) => {
+            const workspaceFromTenant = (tenantItem as { workspace?: string }).workspace;
+            const targetWorkspace = tenantItem.schema_name ?? workspaceFromTenant ?? "";
+            const targetStatus =
+              (tenantItem as { status?: string }).status ??
+              ((tenantItem as { active?: boolean }).active ? "active" : undefined);
+            const normalizedTargetStatus = String(targetStatus || "unknown").toLowerCase();
+            const badgeVariant = normalizedTargetStatus === "active" ? "default" : "secondary";
+
+            return (
+              <button
+                key={tenantItem.id}
+                type="button"
+                onClick={() => handleSwitchWorkspace(targetWorkspace)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg border border-border/60 px-3 py-2.5 text-left transition-colors",
+                  "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                )}
+              >
+                <AvatarImg
+                  src={tenantItem.logo}
+                  alt={tenantItem.name}
+                  name={tenantItem.name}
+                  className="size-9"
+                  imgClassName="size-9 object-cover"
+                />
+                <div className="min-w-0 flex-1 pr-1">
+                  <p className="text-sm font-medium leading-tight wrap-break-word">{tenantItem.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{targetWorkspace}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <StatusBadge
+                    status={targetStatus || "unknown"}
+                    showIcon={false}
+                    variants={{
+                      active: badgeVariant,
+                      unknown: "secondary",
+                    }}
+                    labels={{ unknown: "Unknown" }}
+                    className="capitalize"
+                  />
+                  <span className="text-[11px] text-muted-foreground">Tenant</span>
+                </div>
+              </button>
+            );
+          })
+        ) : (
+          <div className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+            No other workspaces available.
+          </div>
+        )}
+      </div>
+    </DialogBox>
+    </>
   );
 }
