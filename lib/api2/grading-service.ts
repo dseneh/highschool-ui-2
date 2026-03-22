@@ -27,6 +27,7 @@ import type {
   SectionFinalGradesSubjectResponse,
   PaginatedResponse,
   GradeStatusType,
+  BulkUploadGradesResponse,
 } from "./grading-types";
 
 /* ============================= GRADEBOOKS ============================= */
@@ -193,15 +194,20 @@ export async function bulkCreateGrades(
 export async function bulkUploadGrades(
   _subdomain: string,
   sectionId: string,
-  file: File
+  file: File,
+  overrideGrades = false
 ) {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("override_grades", overrideGrades ? "true" : "false");
 
-  const { data } = await apiClient.post<{ message: string; grades: GradeDto[] }>(
+  const { data } = await apiClient.post<BulkUploadGradesResponse>(
     `grading/sections/${sectionId}/grades-upload/`,
     formData,
     {
+      params: {
+        override_grades: overrideGrades ? "true" : "false",
+      },
       headers: {
         "Content-Type": "multipart/form-data",
       },

@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {MoreHorizontalIcon, ViewIcon, BookOpen02Icon, Delete02Icon, Invoice01Icon, UserAdd01Icon, RepeatIcon} from '@hugeicons/core-free-icons';
+import {MoreHorizontalIcon, ViewIcon, BookOpen02Icon, Delete02Icon, Invoice01Icon, UserAdd01Icon, RepeatIcon, Calendar03Icon, Settings01Icon, CheckListIcon, Contact01Icon, UserGroup03Icon, Analytics01Icon, UserCheck01Icon} from '@hugeicons/core-free-icons';
 import Link from "next/link"
 import type { ConditionFilter } from "@/components/shared/advanced-table"
 import { cn, getGradeTextColorClass } from "@/lib/utils"
@@ -25,10 +25,12 @@ import { cn, getGradeTextColorClass } from "@/lib/utils"
 interface StudentColumnsProps {
   onEnroll?: (student: StudentDto) => void
   onFixEnrollment?: (student: StudentDto) => void
+  onReinstate?: (student: StudentDto) => void
   onDelete?: (student: StudentDto) => void
   user?: unknown
   gradeFilterOptions?: Array<{ label: string; value: string }>
   sectionFilterOptions?: Array<{ label: string; value: string }>
+  returnToUrl?: string
 }
 
 function getBalance(student: StudentDto): number {
@@ -38,13 +40,23 @@ function getBalance(student: StudentDto): number {
   return Number(student.current_enrollment?.billing_summary?.balance || 0)
 }
 
+function getPaid(student: StudentDto): number {
+  const paid = (student as StudentDto & { paid?: number | null }).paid
+  if (typeof paid === "number" && Number.isFinite(paid)) {
+    return Number(paid)
+  }
+  return Number(student.current_enrollment?.billing_summary?.paid || 0)
+}
+
 export function getStudentColumns({
   onEnroll,
   onFixEnrollment,
+  onReinstate,
   onDelete,
   user,
   gradeFilterOptions = [],
   sectionFilterOptions = [],
+  returnToUrl,
 }: StudentColumnsProps = {}): ColumnDef<StudentDto>[] {
   const gradeLabelById = new Map(gradeFilterOptions.map((option) => [option.value, option.label]))
   const sectionLabelById = new Map(sectionFilterOptions.map((option) => [option.value, option.label]))
@@ -108,11 +120,11 @@ export function getStudentColumns({
           </Avatar>
           <div>
             <div className="font-medium">{displayName}</div>
-            {student.email && (
+            {/* {student.email && (
               <div className="text-xs text-muted-foreground">
                 {student.email}
               </div>
-            )}
+            )} */}
           </div>
         </div>
       )
@@ -148,7 +160,7 @@ export function getStudentColumns({
     ),
     cell: ({ row }) => {
       const enrollment = row.original.current_enrollment
-      if (!enrollment?.section) return <span className="text-muted-foreground">—</span>
+      if (!enrollment?.section) return <span className="text-muted-foreground">-</span>
       return <span className="text-sm">{enrollment.section.name}</span>
     },
     filterFn: (row, id, value) => {
@@ -171,31 +183,42 @@ export function getStudentColumns({
     ),
     cell: ({ row }) => {
       const student = row.original
-      const status = student.status
-      const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "Unknown"
+      const terminalStatuses = ["withdrawn", "graduated", "dropped", "transferred", "expelled"]
+      const isTerminal = terminalStatuses.includes(student.status?.toLowerCase())
+
+      // Show enrollment-based status for non-terminal students (clearer than raw student.status)
+      let displayStatus: string
+      if (isTerminal) {
+        displayStatus = student.status
+      } else if (student.is_enrolled) {
+        displayStatus = "enrolled"
+      } else {
+        displayStatus = "not enrolled"
+      }
+
+      const label = displayStatus
+        .split(/[_\s]+/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
 
       return (
         <Badge
           variant="secondary"
-          className={getStatusBadgeClass(status)}
+          className={getStatusBadgeClass(displayStatus)}
         >
           {label}
         </Badge>
       )
     },
-    filterFn: (row, id, value) => {
-      if (!value || !Array.isArray(value) || value.length === 0) return true
-      const status = row.original.status || ""
-      return value.includes(status.toLowerCase())
-    },
+    // Filtering is server-side; always pass rows through client-side
+    filterFn: () => true,
     meta: {
       displayName: "Status",
       filterType: "checkbox",
       filterOptions: [
-        { label: "Active", value: "active" },
-        { label: "Inactive", value: "inactive" },
-        { label: "Enrolled", value: "enrolled" },
-        { label: "Not Enrolled", value: "not_enrolled" },
+        { label: "All", value: "all" },
+        { label: "Enrolled (this year)", value: "enrolled" },
+        { label: "Not Enrolled (this year)", value: "not_enrolled" },
         { label: "Withdrawn", value: "withdrawn" },
         { label: "Graduated", value: "graduated" },
         { label: "Dropped", value: "dropped" },
@@ -309,23 +332,37 @@ export function getStudentColumns({
       const filter = value as ConditionFilter | undefined
       if (!filter || !filter.condition) return true
 
-      const amount = getBalance(row.original)
+      const isPct = filter.condition.startsWith("pct-")
+      const actualCondition = isPct ? filter.condition.slice(4) : filter.condition
+
+      let amount: number
+      if (isPct) {
+        const balance = getBalance(row.original)
+        const totalBill = Number(row.original.current_enrollment?.billing_summary?.total_bill || 0)
+        amount = totalBill > 0 ? (balance / totalBill) * 100 : 0
+      } else {
+        amount = getBalance(row.original)
+      }
+
       const minRaw = filter.value?.[0]
       const maxRaw = filter.value?.[1]
-      const min = Number(minRaw || 0)
-      const max = Number(maxRaw || 0)
+      const minValue = minRaw === "" || minRaw === undefined || minRaw === null ? null : Number(minRaw)
+      const maxValue = maxRaw === "" || maxRaw === undefined || maxRaw === null ? null : Number(maxRaw)
+      const hasMin = minValue !== null && Number.isFinite(minValue)
+      const hasMax = maxValue !== null && Number.isFinite(maxValue)
 
-      switch (filter.condition) {
+      switch (actualCondition) {
         case "is-between":
-          if (!Number.isFinite(min)) return true
-          if (!Number.isFinite(max) || max === 0) return amount >= min
-          return amount >= min && amount <= max
+          if (hasMin && hasMax) return amount >= (minValue as number) && amount <= (maxValue as number)
+          if (hasMin) return amount >= (minValue as number)
+          if (hasMax) return amount <= (maxValue as number)
+          return true
         case "is-greater-than":
-          return amount > min
+          return hasMin ? amount > (minValue as number) : true
         case "is-less-than":
-          return amount < min
+          return hasMin ? amount < (minValue as number) : true
         case "is-equal-to":
-          return amount === min
+          return hasMin ? amount === (minValue as number) : true
         default:
           return true
       }
@@ -338,6 +375,85 @@ export function getStudentColumns({
         { label: "Is Greater Than", value: "is-greater-than" },
         { label: "Is Less Than", value: "is-less-than" },
         { label: "Is Equal To", value: "is-equal-to" },
+        { label: "% Is Between", value: "pct-is-between" },
+        { label: "% Is Greater Than", value: "pct-is-greater-than" },
+        { label: "% Is Less Than", value: "pct-is-less-than" },
+        { label: "% Is Equal To", value: "pct-is-equal-to" },
+      ],
+      formatter: (amount: number | string) => {
+        const value = Number(amount || 0)
+        return value.toLocaleString()
+      },
+    } as any,
+  },
+  {
+    id: "paid",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Paid" />
+    ),
+    cell: ({ row }) => {
+      const paid = getPaid(row.original)
+      if (paid === undefined || paid === null) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
+      return (
+        <span className={`text-sm font-medium ${paid > 0 ? "text-emerald-600" : ""}`}>
+          {(row.original.current_enrollment?.billing_summary?.currency || '$')}{paid.toLocaleString()}
+        </span>
+      )
+    },
+    filterFn: (row, id, value) => {
+      const filter = value as ConditionFilter | undefined
+      if (!filter || !filter.condition) return true
+
+      const isPct = filter.condition.startsWith("pct-")
+      const actualCondition = isPct ? filter.condition.slice(4) : filter.condition
+
+      let amount: number
+      if (isPct) {
+        const paid = getPaid(row.original)
+        const totalBill = Number(row.original.current_enrollment?.billing_summary?.total_bill || 0)
+        amount = totalBill > 0 ? (paid / totalBill) * 100 : 0
+      } else {
+        amount = getPaid(row.original)
+      }
+
+      const minRaw = filter.value?.[0]
+      const maxRaw = filter.value?.[1]
+      const minValue = minRaw === "" || minRaw === undefined || minRaw === null ? null : Number(minRaw)
+      const maxValue = maxRaw === "" || maxRaw === undefined || maxRaw === null ? null : Number(maxRaw)
+      const hasMin = minValue !== null && Number.isFinite(minValue)
+      const hasMax = maxValue !== null && Number.isFinite(maxValue)
+
+      switch (actualCondition) {
+        case "is-between":
+          if (hasMin && hasMax) return amount >= (minValue as number) && amount <= (maxValue as number)
+          if (hasMin) return amount >= (minValue as number)
+          if (hasMax) return amount <= (maxValue as number)
+          return true
+        case "is-greater-than":
+          return hasMin ? amount > (minValue as number) : true
+        case "is-less-than":
+          return hasMin ? amount < (minValue as number) : true
+        case "is-equal-to":
+          return hasMin ? amount === (minValue as number) : true
+        default:
+          return true
+      }
+    },
+    meta: {
+      displayName: "Paid",
+      filterType: "number",
+      filterConditions: [
+        { label: "Is Between", value: "is-between" },
+        { label: "Is Greater Than", value: "is-greater-than" },
+        { label: "Is Less Than", value: "is-less-than" },
+        { label: "Is Equal To", value: "is-equal-to" },
+        { label: "% Is Between", value: "pct-is-between" },
+        { label: "% Is Greater Than", value: "pct-is-greater-than" },
+        { label: "% Is Less Than", value: "pct-is-less-than" },
+        { label: "% Is Equal To", value: "pct-is-equal-to" },
       ],
       formatter: (amount: number | string) => {
         const value = Number(amount || 0)
@@ -349,23 +465,7 @@ export function getStudentColumns({
     id: "actions",
     cell: ({ row }) => {
       const student = row.original
-      const menuItems = [
-        {
-          label: "View Details",
-          icon: ViewIcon,
-          href: `/students/${student.id_number}`,
-        },
-        {
-          label: "Billing",
-          icon: Invoice01Icon,
-          href: `/students/${student.id_number}/billing`,
-        },
-        {
-          label: "Grades",
-          icon: BookOpen02Icon,
-          href: `/students/${student.id_number}/grades`,
-        },
-      ]
+      const isWithdrawn = student.status?.toLowerCase() === "withdrawn"
 
       const role = (user as { role?: string } | undefined)?.role || ""
       const canEnroll = ["admin", "registrar", "superadmin"].includes(role)
@@ -379,39 +479,115 @@ export function getStudentColumns({
                 <Button variant="ghost" size="icon-sm" icon={<HugeiconsIcon icon={MoreHorizontalIcon} />} aria-label="Open menu" />
               }
             />
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuGroup>
-                {/* <DropdownMenuLabel>Actions</DropdownMenuLabel> */}
-                {/* <DropdownMenuSeparator /> */}
-                {!student.is_enrolled && canEnroll && (
-                  <>
-                    <DropdownMenuItem onClick={() => onEnroll?.(student)}>
-                      <HugeiconsIcon icon={UserAdd01Icon} className=" size-4" />
-                      Enroll Student
+                {/* <DropdownMenuItem>
+                  <Link href={`/students/${student.id_number}${returnToUrl ? `?returnTo=${encodeURIComponent(returnToUrl)}` : ''}`} className="flex items-center w-full">
+                    <HugeiconsIcon icon={ViewIcon} className="mr-2 size-4" />
+                    View Details
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator /> */}
+                {studentActions.map((action) => {
+                  if (action.requireEnrollment && !student.is_enrolled) return null
+                  if (action.requireRole && !["admin", "registrar", "superadmin"].includes(role)) return null
+
+                  return (
+                    <div key={action.label}>
+                    <DropdownMenuItem key={action.label}>
+                      <Link href={`${action.href(student)}${returnToUrl ? `?returnTo=${encodeURIComponent(returnToUrl)}` : ''}`} className="flex items-center w-full">
+                        <HugeiconsIcon icon={action.icon} className="mr-2 size-4" />
+                        {action.label}
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                {menuItems.map((item) => (
-                  <DropdownMenuItem key={item.label}>
-                    <Link href={item.href} className="flex items-center w-full">
-                      <HugeiconsIcon icon={item.icon} className="mr-2 size-4" />
-                      {item.label}
+                    {action?.hasDivider && <DropdownMenuSeparator />}
+                    </div>
+                  )
+                })}
+{/* 
+                {student.is_enrolled && (
+                  <DropdownMenuItem>
+                    <Link href={`/students/${student.id_number}/attendance`} className="flex items-center w-full">
+                      <HugeiconsIcon icon={CheckListIcon} className="mr-2 size-4" />
+                      Attendance
                     </Link>
                   </DropdownMenuItem>
-                ))}
-                {student.is_enrolled && canEnroll && (
+                )}
+                {student.is_enrolled && (
+                  <DropdownMenuItem>
+                    <Link href={`/students/${student.id_number}/schedule`} className="flex items-center w-full">
+                      <HugeiconsIcon icon={Calendar03Icon} className="mr-2 size-4" />
+                      Schedule
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                {student.is_enrolled && (
+                  <DropdownMenuItem>
+                    <Link href={`/students/${student.id_number}/billing`} className="flex items-center w-full">
+                      <HugeiconsIcon icon={Invoice01Icon} className="mr-2 size-4" />
+                      Billing
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {student.is_enrolled && (
+                  <DropdownMenuItem>
+                    <Link href={`/students/${student.id_number}/grades`} className="flex items-center w-full">
+                      <HugeiconsIcon icon={BookOpen02Icon} className="mr-2 size-4" />
+                      Grades
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuItem>
+                  <Link href={`/students/${student.id_number}/contacts`} className="flex items-center w-full">
+                    <HugeiconsIcon icon={Contact01Icon} className="mr-2 size-4" />
+                    Contacts
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href={`/students/${student.id_number}/guardians`} className="flex items-center w-full">
+                    <HugeiconsIcon icon={UserGroup03Icon} className="mr-2 size-4" />
+                    Guardians
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Link href={`/students/${student.id_number}/settings`} className="flex items-center w-full">
+                    <HugeiconsIcon icon={Settings01Icon} className="mr-2 size-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem> */}
+
+                {/* Enrollment management */}
+                {canEnroll && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-orange-600 focus:text-orange-600"
-                      onClick={() => onFixEnrollment?.(student)}
-                    >
-                      <HugeiconsIcon icon={RepeatIcon} className="size-4" />
-                      Fix Enrollment
-                    </DropdownMenuItem>
+                    {isWithdrawn ? (
+                      <DropdownMenuItem
+                        className="text-green-600 focus:text-green-600"
+                        onClick={() => onReinstate?.(student)}
+                      >
+                        <HugeiconsIcon icon={UserCheck01Icon} className="size-4" />
+                        Reinstate Student
+                      </DropdownMenuItem>
+                    ) : !student.is_enrolled ? (
+                      <DropdownMenuItem onClick={() => onEnroll?.(student)}>
+                        <HugeiconsIcon icon={UserAdd01Icon} className="size-4" />
+                        Enroll Student
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        className="text-orange-600 focus:text-orange-600"
+                        onClick={() => onFixEnrollment?.(student)}
+                      >
+                        <HugeiconsIcon icon={RepeatIcon} className="size-4" />
+                        Fix Enrollment
+                      </DropdownMenuItem>
+                    )}
                   </>
                 )}
+
                 {student.can_delete && canDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -419,7 +595,7 @@ export function getStudentColumns({
                       className="text-destructive focus:text-destructive"
                       onClick={() => onDelete?.(student)}
                     >
-                      <HugeiconsIcon icon={Delete02Icon} className=" size-4" />
+                      <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                       Delete
                     </DropdownMenuItem>
                   </>
@@ -433,3 +609,65 @@ export function getStudentColumns({
   },
 ]
 }
+
+const studentActions = [
+  {
+    label: "View Details",
+    icon: ViewIcon,
+    href: (student: StudentDto) => `/students/${student.id_number}`,
+    requireEnrollment: true,
+    requireRole: true,
+    hasDivider: true,
+  },
+  {
+    label: "Billing",
+    icon: Invoice01Icon,
+    href: (student: StudentDto) => `/students/${student.id_number}/billing`,
+    requireEnrollment: true,
+    requireRole: true,
+  },
+  {
+    label: "Grades",
+    icon: BookOpen02Icon,
+    href: (student: StudentDto) => `/students/${student.id_number}/grades`,
+    requireEnrollment: true,
+    requireRole: true,
+    hasDivider: true,
+  },
+  {
+    label: "Attendance",
+    icon: CheckListIcon,
+    href: (student: StudentDto) => `/students/${student.id_number}/attendance`,
+    requireEnrollment: true,
+    requireRole: true,
+  },
+  {
+    label: "Schedule",
+    icon: Calendar03Icon,
+    href: (student: StudentDto) => `/students/${student.id_number}/schedule`,
+    requireEnrollment: true,
+    requireRole: true,
+    hasDivider: true,
+  },
+  {
+    label: "Contacts",
+    icon: Contact01Icon,
+    href: (student: StudentDto) => `/students/${student.id_number}/contacts`,
+    requireEnrollment: false,
+    requireRole: true,
+  },
+  {
+    label: "Guardians",
+    icon: UserGroup03Icon,
+    href: (student: StudentDto) => `/students/${student.id_number}/guardians`,
+    requireEnrollment: false,
+    requireRole: true,
+  },
+  // {
+  //   label: "Settings",
+  //   icon: Settings01Icon,
+  //   href: (student: StudentDto) => `/students/${student.id_number}/settings`,
+  //   requireEnrollment: false,
+  //   requireRole: true,
+  // },
+]

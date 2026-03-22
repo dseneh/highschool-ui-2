@@ -137,7 +137,7 @@ export default function StudentGradesPage() {
       <div className="space-y-4">
 
         {/* Prompt to select marking period */}
-        {!markingPeriodParam && (
+        {!markingPeriodParam && !loading && (
           <Card className="p-6 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40">
             <div className="flex items-start gap-3">
               <HugeiconsIcon icon={BookOpen02Icon} className="size-5 text-blue-600 mt-0.5" />

@@ -3,12 +3,12 @@
 import * as React from "react";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogBox } from "@/components/ui/dialog-box";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -22,10 +22,6 @@ import type {
 } from "@/lib/api2/grade-level-types";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
-import {
-  Add01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getErrorMessage } from "@/lib/utils";
@@ -43,9 +39,8 @@ import { z } from "zod";
 import { useQueryState } from "nuqs";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import PageLayout from "@/components/dashboard/page-layout";
-import { Pencil, AlertCircle, FileExclamationPoint, TriangleAlert, RefreshCcw } from "lucide-react";
+import { Pencil, TriangleAlert, RefreshCcw, Loader2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ManageGradeLevelTuitionDialog } from "./manage-grade-level-tuition-dialog";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -60,7 +55,7 @@ type FormInput = z.input<typeof formSchema>;
 
 export function GradeLevelTab() {
   const { data: gradeLevels, isLoading, error, refetch, isFetching } = useGradeLevels();
-  const { create, update, deleteById } = useGradeLevelMutations();
+  const { create, update, deleteById, updateTuitions } = useGradeLevelMutations();
 
   const [statusFilter, setStatusFilter] = useQueryState("gradeStatus", {
     defaultValue: "active",
@@ -72,8 +67,10 @@ export function GradeLevelTab() {
   );
   const [deletingLevel, setDeletingLevel] =
     React.useState<GradeLevelDto | null>(null);
-  const [tuitionManagingLevel, setTuitionManagingLevel] =
-    React.useState<GradeLevelDto | null>(null);
+  const [savingTuitionKeys, setSavingTuitionKeys] = React.useState<Record<string, boolean>>({});
+  const [savingTuitionRows, setSavingTuitionRows] = React.useState<Record<string, number>>({});
+  const [savedTuitionKeys, setSavedTuitionKeys] = React.useState<Record<string, boolean>>({});
+  const savedIndicatorTimeoutsRef = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const form = useForm<FormInput>({
     resolver: zodResolver(formSchema),
@@ -99,6 +96,15 @@ export function GradeLevelTab() {
       });
     }
   }, [editingLevel, form]);
+
+  React.useEffect(() => {
+    const savedIndicatorTimeouts = savedIndicatorTimeoutsRef.current;
+    return () => {
+      Object.values(savedIndicatorTimeouts).forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+    };
+  }, []);
 
   const handleCreate = (data: FormInput) => {
     create.mutate(data as CreateGradeLevelCommand, {
@@ -158,6 +164,141 @@ export function GradeLevelTab() {
     );
   };
 
+  const getTuitionByType = React.useCallback(
+    (level: GradeLevelDto, feeType: "returning" | "new") =>
+      level.tuition_fees.find((fee) => fee.fee_type === feeType),
+    [],
+  );
+
+  const getTuitionDraftKey = (levelId: string, feeType: "returning" | "new") =>
+    `${levelId}:${feeType}`;
+
+  const formatCurrencyInputValue = React.useCallback((value: number) => {
+    if (!Number.isFinite(value)) {
+      return "0.00";
+    }
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }, []);
+
+  const parseCurrencyInputValue = React.useCallback((rawValue: string) => {
+    const cleaned = rawValue.replace(/,/g, "").trim();
+    if (!cleaned) {
+      return 0;
+    }
+    return Number(cleaned);
+  }, []);
+
+  const isRowTuitionSaving = React.useCallback(
+    (levelId: string) => Boolean(savingTuitionRows[levelId]),
+    [savingTuitionRows],
+  );
+
+  const markTuitionSaved = (key: string) => {
+    if (savedIndicatorTimeoutsRef.current[key]) {
+      clearTimeout(savedIndicatorTimeoutsRef.current[key]);
+    }
+
+    setSavedTuitionKeys((prev) => ({ ...prev, [key]: true }));
+    savedIndicatorTimeoutsRef.current[key] = setTimeout(() => {
+      setSavedTuitionKeys((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      delete savedIndicatorTimeoutsRef.current[key];
+    }, 1200);
+  };
+
+  const handleTuitionInputBlur = (
+    level: GradeLevelDto,
+    feeType: "returning" | "new",
+    rawValue: string,
+    inputEl?: HTMLInputElement,
+  ) => {
+    if (!level.active) {
+      return;
+    }
+
+    const targetFee = getTuitionByType(level, feeType);
+    if (!targetFee) {
+      return;
+    }
+
+    const key = getTuitionDraftKey(level.id, feeType);
+    const parsedAmount = parseCurrencyInputValue(rawValue);
+
+    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
+      toast.error("Please enter a valid tuition amount");
+      if (inputEl) {
+        inputEl.value = formatCurrencyInputValue(Number(targetFee.amount ?? 0));
+      }
+      return;
+    }
+
+    const nextAmount = Number(parsedAmount.toFixed(2));
+
+    if (nextAmount === Number(targetFee.amount)) {
+      if (inputEl) {
+        inputEl.value = formatCurrencyInputValue(nextAmount);
+      }
+      return;
+    }
+
+    setSavingTuitionKeys((prev) => ({ ...prev, [key]: true }));
+    setSavingTuitionRows((prev) => ({
+      ...prev,
+      [level.id]: (prev[level.id] ?? 0) + 1,
+    }));
+
+    const payload = {
+      tuition_fees: level.tuition_fees.map((fee) => ({
+        id: fee.id,
+        amount:
+          fee.id === targetFee.id ? nextAmount : fee.amount,
+      })),
+    };
+
+    updateTuitions.mutate(
+      {
+        id: level.id,
+        payload,
+      },
+      {
+        onSuccess: () => {
+          if (inputEl) {
+            inputEl.value = formatCurrencyInputValue(nextAmount);
+          }
+          markTuitionSaved(key);
+        },
+        onError: (error: unknown) => {
+          toast.error(getErrorMessage(error));
+        },
+        onSettled: () => {
+          setSavingTuitionKeys((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+          setSavingTuitionRows((prev) => {
+            const current = prev[level.id] ?? 0;
+            if (current <= 1) {
+              const next = { ...prev };
+              delete next[level.id];
+              return next;
+            }
+            return {
+              ...prev,
+              [level.id]: current - 1,
+            };
+          });
+        },
+      },
+    );
+  };
+
   const activeLevels = React.useMemo(
     () => (gradeLevels || []).filter((level) => level.active),
     [gradeLevels],
@@ -188,9 +329,17 @@ export function GradeLevelTab() {
       cell: ({ row }) => {
         const allTuititionsEmpty = row.original.tuition_fees.every(
           (fee) => !fee.amount || fee.amount === 0
-        )
+        );
+        const isRowSaving = isRowTuitionSaving(row.original.id);
         return (
           <div className="flex items-center gap-2">
+            <Switch
+              checked={row.original.active}
+              onCheckedChange={(checked) =>
+                handleToggleActive(row.original, checked)
+              }
+              disabled={update.isPending || isRowSaving}
+            />
             <span>{row.original.name}</span>
             {allTuititionsEmpty && (
               <Tooltip>
@@ -215,38 +364,124 @@ export function GradeLevelTab() {
       header: "Description",
     },
     {
+      id: "tuition_returning",
+      header: "Old Students Tuition",
+      cell: ({ row }) => {
+        const fee = getTuitionByType(row.original, "returning");
+        if (!fee) {
+          return <span className="text-muted-foreground">-</span>;
+        }
+        const key = getTuitionDraftKey(row.original.id, "returning");
+        const symbol = row.original.currency?.symbol ?? "";
+        const isSaving = Boolean(savingTuitionKeys[key]);
+        const isSaved = Boolean(savedTuitionKeys[key]);
+        const isRowSaving = isRowTuitionSaving(row.original.id);
+        const isRowEditable = row.original.active;
+        return (
+          <div className="w-full">
+            <InputGroup data-disabled={isRowSaving || !isRowEditable}  className="bg-accent/20 dark:bg-accent/50">
+              {symbol && (
+                <InputGroupAddon align="inline-start" className="text-xs text-muted-foreground bg-transparent">
+                  {symbol}
+                </InputGroupAddon>
+              )}
+              <InputGroupInput
+              type="text"
+              inputMode="decimal"
+              defaultValue={formatCurrencyInputValue(Number(fee.amount ?? 0))}
+              onFocus={(e) => {
+                e.currentTarget.value = String(Number(fee.amount ?? 0));
+              }}
+              onBlur={(e) => handleTuitionInputBlur(row.original, "returning", e.currentTarget.value, e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.currentTarget.value = formatCurrencyInputValue(Number(fee.amount ?? 0));
+                  e.currentTarget.blur();
+                }
+              }}
+              disabled={isRowSaving || !isRowEditable}
+              className="h-8 text-right"
+            />
+              <InputGroupAddon align="inline-end" className="pr-2 bg-transparent">
+                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                {!isSaving && isSaved && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+              </InputGroupAddon>
+            </InputGroup>
+          </div>
+        );
+      },
+    },
+    {
+      id: "tuition_new",
+      header: "New Students Tuition",
+      cell: ({ row }) => {
+        const fee = getTuitionByType(row.original, "new");
+        if (!fee) {
+          return <span className="text-muted-foreground">-</span>;
+        }
+        const key = getTuitionDraftKey(row.original.id, "new");
+        const symbol = row.original.currency?.symbol ?? "";
+        const isSaving = Boolean(savingTuitionKeys[key]);
+        const isSaved = Boolean(savedTuitionKeys[key]);
+        const isRowSaving = isRowTuitionSaving(row.original.id);
+        const isRowEditable = row.original.active;
+        return (
+          <div className="w-full">
+            <InputGroup data-disabled={isRowSaving || !isRowEditable} className="bg-accent/20 dark:bg-accent/50">
+              {symbol && (
+                <InputGroupAddon align="inline-start" className="text-xs text-muted-foreground bg-transparent">
+                  {symbol}
+                </InputGroupAddon>
+              )}
+              <InputGroupInput
+              type="text"
+              inputMode="decimal"
+              defaultValue={formatCurrencyInputValue(Number(fee.amount ?? 0))}
+              onFocus={(e) => {
+                e.currentTarget.value = String(Number(fee.amount ?? 0));
+              }}
+              onBlur={(e) => handleTuitionInputBlur(row.original, "new", e.currentTarget.value, e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  e.currentTarget.value = formatCurrencyInputValue(Number(fee.amount ?? 0));
+                  e.currentTarget.blur();
+                }
+              }}
+              disabled={isRowSaving || !isRowEditable}
+              className="h-8 text-right"
+            />
+              <InputGroupAddon align="inline-end" className="pr-2 bg-transparent">
+                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                {!isSaving && isSaved && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+              </InputGroupAddon>
+            </InputGroup>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "division.name",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Division" />
+      header: () => (
+        <div>Division</div>
       ),
       cell: ({ row }) => row.original.division.name,
     },
     {
       accessorKey: "sections",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Sections" />
+      header: () => (
+        <div className="text-center">Classes</div>
       ),
-      cell: ({ row }) => row.original.sections.length,
-    },
-    {
-      accessorKey: "active",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <Badge variant={row.original.active ? "default" : "secondary"}>
-            {row.original.active ? "Active" : "Inactive"}
-          </Badge>
-          <Switch
-            checked={row.original.active}
-            onCheckedChange={(checked) =>
-              handleToggleActive(row.original, checked)
-            }
-            disabled={update.isPending}
-          />
-        </div>
-      ),
+      cell: ({ row }) => <div className="text-center">{row.original.sections.length}</div>,
     },
     // {
     //   id: "toggle",
@@ -264,33 +499,17 @@ export function GradeLevelTab() {
       cell: ({ row }) => {
         const allTuititionsEmpty = row.original.tuition_fees.every(
           (fee) => !fee.amount || fee.amount === 0
-        )
+        );
+        const isRowSaving = isRowTuitionSaving(row.original.id);
+        const isRowEditable = row.original.active;
         return (
         <div className="flex gap-2 justify-end">
-          {allTuititionsEmpty && (
-              <Tooltip>
-                <TooltipTrigger>
-                  <TriangleAlert className="size-4 text-orange-500 shrink-0" />
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Tuition fees not configured
-                </TooltipContent>
-              </Tooltip>
-            )}
-          <div className="flex items-center gap-1">
-            <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setTuitionManagingLevel(row.original)}
-          >
-            Manage Tuition
-          </Button>
-          </div>
           <Button
-            variant="outline"
+            variant="link"
             size="sm"
             onClick={() => setEditingLevel(row.original)}
             icon={<Pencil className="size-3" />}
+            disabled={isRowSaving || !isRowEditable}
           >
             Edit
           </Button>
@@ -300,6 +519,7 @@ export function GradeLevelTab() {
             onClick={() =>
               router.push(`/setup/sections?gradeLevel=${row.original.id}`)
             }
+            disabled={isRowSaving}
             // icon={<Pencil className="size-3" />}
           >
             Go to Sections
@@ -330,12 +550,12 @@ export function GradeLevelTab() {
       description="Manage grade levels and track active status"
       actions={
         <div className="flex items-center gap-2">
-          <Button
+          {/* <Button
           onClick={() => setShowCreate(true)}
           icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
         >
           Add Grade Level
-        </Button>
+        </Button> */}
         <Button 
           variant="outline"
           onClick={() => refetch()}
@@ -355,7 +575,7 @@ export function GradeLevelTab() {
     >
       <div className="space-y-4">
         <Tabs value={statusFilter} onValueChange={(value) => void setStatusFilter(value)}>
-          <TabsList>
+          <TabsList className="space-x-2">
             <TabsTrigger value="active">
               Active ({activeLevels.length})
             </TabsTrigger>
@@ -365,7 +585,13 @@ export function GradeLevelTab() {
           </TabsList>
         </Tabs>
 
-        <DataTable columns={columns} data={filteredLevels}  showPagination={false} />
+        <DataTable
+          columns={columns}
+          data={filteredLevels}
+          showPagination={false}
+          containerClassName="[&_table]:border-collapse [&_th]:border [&_td]:border [&_th]:border-border/60 [&_td]:border-border/40 [&_th:nth-child(4)]:w-36 [&_td:nth-child(4)]:w-48 [&_th:nth-child(5)]:w-48 [&_td:nth-child(5)]:w-48 "
+          // containerClassName="[&_table]:border-collapse [&_th]:border [&_td]:border [&_th]:border-border/60 [&_td]:border-border/40 [&_th:nth-child(4)]:w-36 [&_td:nth-child(4)]:w-48 [&_th:nth-child(5)]:w-48 [&_td:nth-child(5)]:w-48 [&_th:nth-child(4)]:bg-primary/10 [&_td:nth-child(4)]:bg-primary/4 [&_th:nth-child(5)]:bg-primary/10 [&_td:nth-child(5)]:bg-primary/4 dark:[&_th:nth-child(4)]:bg-primary/18 dark:[&_td:nth-child(4)]:bg-primary/8 dark:[&_th:nth-child(5)]:bg-primary/18 dark:[&_td:nth-child(5)]:bg-primary/8"
+        />
 
         {/* Create Dialog */}
         <DialogBox
@@ -453,6 +679,7 @@ export function GradeLevelTab() {
               <FormField
                 control={form.control}
                 name="level"
+                disabled
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Level</FormLabel>
@@ -496,13 +723,13 @@ export function GradeLevelTab() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Textarea {...field}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="active"
                 render={({ field }) => (
@@ -518,7 +745,7 @@ export function GradeLevelTab() {
                     </div>
                   </FormItem>
                 )}
-              />
+              /> */}
             </form>
           </Form>
         </DialogBox>
@@ -534,14 +761,6 @@ export function GradeLevelTab() {
           actionLoading={deleteById.isPending}
         />
 
-        {/* Manage Tuition Dialog */}
-        {tuitionManagingLevel && (
-          <ManageGradeLevelTuitionDialog
-            open={!!tuitionManagingLevel}
-            onOpenChange={(open) => !open && setTuitionManagingLevel(null)}
-            gradeLevel={tuitionManagingLevel}
-          />
-        )}
       </div>
     </PageLayout>
   );

@@ -28,7 +28,7 @@ import {
 import { pointerOutsideOfPreview } from "@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview"
 import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview"
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder"
-import { GripVertical, Tally4 } from "lucide-react"
+import { GripVertical, Settings, Tally4 } from "lucide-react"
 
 type CleanupFn = () => void
 type ItemEntry = { itemId: string; element: HTMLElement }
@@ -381,8 +381,8 @@ export function ViewOptions<TData>({ table }: ViewOptionsProps<TData>) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 ">
-          <Tally4 className="size-4" />
+        <Button variant="outline" size="sm" className="h-8 " tooltip="Configure columns display">
+          <Settings className="size-4" />
           <span className="hidden sm:inline">Columns</span>
         </Button>
       </PopoverTrigger>

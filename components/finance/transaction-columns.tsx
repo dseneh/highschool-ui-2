@@ -26,6 +26,13 @@ import {
   ArrowTurnBackwardIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  DEFAULT_NUMBER_FILTER_CONDITIONS,
+  type FilterOption,
+} from "@/components/shared/advanced-table";
+import { ToolTipComponent } from "../ui/tooltip";
+import AvatarImg from "../shared/avatar-img";
+import moment from "moment";
 
 export function getTransactionColumns({
   currency = "USD",
@@ -35,6 +42,9 @@ export function getTransactionColumns({
   onCancel,
   onDelete,
   enableSelection = false,
+  typeFilterOptions = [],
+  accountFilterOptions = [],
+  academicYearFilterOptions = [],
 }: {
   currency?: string;
   onViewDetail?: (tx: TransactionDto) => void;
@@ -43,8 +53,14 @@ export function getTransactionColumns({
   onCancel?: (tx: TransactionDto) => void;
   onDelete?: (tx: TransactionDto) => void;
   enableSelection?: boolean;
+  typeFilterOptions?: FilterOption[];
+  accountFilterOptions?: FilterOption[];
+  academicYearFilterOptions?: FilterOption[];
 }): ColumnDef<TransactionDto>[] {
   const columns: ColumnDef<TransactionDto>[] = [];
+  const typeLabelById = new Map(typeFilterOptions.map((option) => [option.value, option.label]));
+  const accountLabelById = new Map(accountFilterOptions.map((option) => [option.value, option.label]));
+  const yearLabelById = new Map(academicYearFilterOptions.map((option) => [option.value, option.label]));
 
   // Checkbox column (conditional)
   if (enableSelection) {
@@ -110,15 +126,36 @@ export function getTransactionColumns({
             <p className="truncate text-sm font-medium">
               {tx.transaction_type?.name ?? "—"}
             </p>
-            {tx.description && (
+            {/* {tx.description && (
               <p className="truncate text-xs text-muted-foreground">
                 {tx.description}
               </p>
-            )}
+            )} */}
           </div>
         );
       },
       size: 220,
+    },
+    {
+      id: "transaction_type_id",
+      accessorFn: (row) => row.transaction_type?.id ?? "",
+      header: "Type",
+      cell: ({ row }) => {
+        return (
+          <span className="text-sm truncate max-w-36 block">
+            {row.original.transaction_type?.name ?? "—"}
+          </span>
+        );
+      },
+      filterFn: () => true,
+      meta: {
+        displayName: "Type",
+        filterType: "checkbox",
+        filterOptions: [{ label: "All transactions", value: "all" }, ...typeFilterOptions],
+        formatter: (value: string) => typeLabelById.get(String(value)) || String(value),
+        filterSummaryMode: "count",
+      } as any,
+      size: 150,
     },
     {
       accessorKey: "student",
@@ -127,31 +164,75 @@ export function getTransactionColumns({
       ),
       cell: ({ row }) => {
         const student = row.original.student;
-        if (!student) return <span className="text-muted-foreground">—</span>;
+        if (!student) return <span className="text-muted-foreground">-</span>;
         return (
           <div className="min-w-0 max-w-40">
+            <ToolTipComponent
+              content={
+                <div className="flex items-center gap-2">
+                  <AvatarImg name={student.full_name} className="size-8 rounded-full mb-2" />
+                  <div>
+
+                  <div className="text-sm font-medium">{student.full_name}</div>
+                  <div className="text-xs ">
+                      ID: {student.id_number}
+                    </div>
+                   </div>
+                
+                </div>
+              }
+
+            >
+
             <p className="truncate text-sm">{student.full_name}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            {/* <p className="truncate text-xs text-muted-foreground">
               {student.id_number}
-            </p>
+              </p> */}
+              </ToolTipComponent>
           </div>
         );
       },
       size: 170,
     },
     {
-      accessorKey: "account",
+      id: "account_id",
+      accessorFn: (row) => row.account?.id ?? "",
       header: "Account",
       cell: ({ row }) => {
         const acct = row.original.account;
-        if (!acct) return <span className="text-muted-foreground">—</span>;
+        if (!acct) return <span className="text-muted-foreground">-</span>;
         return (
           <span className="text-sm truncate max-w-30 block">
             {acct.name}
           </span>
         );
       },
+      filterFn: () => true,
+      meta: {
+        displayName: "Account",
+        filterType: "radio",
+        filterOptions: [{ label: "All Accounts", value: "all" }, ...accountFilterOptions],
+        formatter: (value: string) => accountLabelById.get(String(value)) || String(value),
+      } as any,
       size: 130,
+    },
+    {
+      id: "academic_year_id",
+      accessorFn: (row) => row.academic_year?.id ?? "",
+      header: "Academic Year",
+      cell: ({ row }) => (
+        <span className="text-sm truncate max-w-36 block">
+          {row.original.academic_year?.name ?? "-"}
+        </span>
+      ),
+      filterFn: () => true,
+      meta: {
+        displayName: "Academic Year",
+        filterType: "radio",
+        filterOptions: [...academicYearFilterOptions],
+        formatter: (value: string) => yearLabelById.get(String(value)) || String(value),
+      } as any,
+      size: 140,
     },
     {
       accessorKey: "date",
@@ -171,6 +252,19 @@ export function getTransactionColumns({
           return dateStr;
         }
       },
+      filterFn: () => true,
+      meta: {
+        displayName: "Date",
+        filterType: "daterange",
+        formatter: (value: string) => {
+          if (!value) return "";
+          try {
+            return moment(value).format("MM-DD-YY");
+          } catch {
+            return value;
+          }
+        },
+      } as any,
       size: 120,
     },
     {
@@ -200,6 +294,16 @@ export function getTransactionColumns({
           </span>
         );
       },
+      filterFn: () => true,
+      meta: {
+        displayName: "Amount",
+        filterType: "number",
+        filterConditions: DEFAULT_NUMBER_FILTER_CONDITIONS,
+        formatter: (value: number | string) => {
+          const numeric = Number(value || 0);
+          return Number.isFinite(numeric) ? numeric.toLocaleString() : String(value);
+        },
+      } as any,
       size: 130,
     },
     {
@@ -208,7 +312,7 @@ export function getTransactionColumns({
       cell: ({ row }) => {
         const method = row.original.payment_method;
         if (!method)
-          return <span className="text-muted-foreground text-xs">—</span>;
+          return <span className="text-muted-foreground text-xs">-</span>;
         return (
           <Badge variant="secondary" className="text-xs font-normal">
             {method.name}
@@ -222,7 +326,7 @@ export function getTransactionColumns({
       header: "Reference",
       cell: ({ row }) => {
         const ref = row.original.reference;
-        if (!ref) return <span className="text-muted-foreground">—</span>;
+        if (!ref) return <span className="text-muted-foreground">-</span>;
         return (
           <span
             className="text-xs text-muted-foreground truncate max-w-25 block"
@@ -245,6 +349,16 @@ export function getTransactionColumns({
           </Badge>
         );
       },
+      filterFn: () => true,
+      meta: {
+        displayName: "Status",
+        filterType: "checkbox",
+        filterOptions: [
+          { label: "Pending", value: "pending" },
+          { label: "Approved", value: "approved" },
+          { label: "Canceled", value: "canceled" },
+        ],
+      } as any,
       size: 100,
     },
     {

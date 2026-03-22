@@ -68,3 +68,23 @@ function TooltipContent({
 }
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+
+
+type ToolTipComponentProps = {
+  children?: React.ReactNode
+  trigger?: React.ReactNode
+  className?: string
+  content?: string | React.ReactNode
+}
+export const ToolTipComponent = ({ children, trigger, className, content }: ToolTipComponentProps) => {
+  return (
+    <Tooltip>
+        <TooltipTrigger>
+          {children || trigger}
+        </TooltipTrigger>
+        <TooltipContent className={cn(className)}>
+        {content}
+        </TooltipContent>
+    </Tooltip>
+  )
+}

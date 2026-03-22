@@ -72,7 +72,7 @@ export function AssessmentsList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="fspace-y-3">
       {assessments.map((assessment) => {
         const typeColor = getTypeColor(assessment.assessment_type.name);
         return (
@@ -80,7 +80,7 @@ export function AssessmentsList({
             key={assessment.id}
             className="hover:shadow-md transition-shadow"
           >
-            <CardContent className="p-4">
+            <CardContent className="fp-4">
               <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                 {/* Left Section: Color Bar + Title & Basic Info */}
                 <div className="flex items-start gap-4 flex-1 min-w-0">

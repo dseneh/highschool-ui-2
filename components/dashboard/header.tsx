@@ -77,14 +77,16 @@ export function DashboardHeader({
   const resetLayout = useDashboardStore((state) => state.resetLayout);
 
   const fromParam = searchParams.get("from");
+  const returnToParam = searchParams.get("returnTo");
+  const navigationParam = returnToParam || fromParam;
   const decodedFrom = useMemo(() => {
-    if (!fromParam) return undefined;
+    if (!navigationParam) return undefined;
     try {
-      return decodeURIComponent(fromParam);
+      return decodeURIComponent(navigationParam);
     } catch {
-      return fromParam;
+      return navigationParam;
     }
-  }, [fromParam]);
+  }, [navigationParam]);
 
   // Allow only internal app paths for back navigation
   const safeFromUrl = decodedFrom?.startsWith("/") ? decodedFrom : undefined;

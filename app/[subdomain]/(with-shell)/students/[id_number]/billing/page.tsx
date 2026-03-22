@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { useStudents as useStudentsApi } from "@/lib/api2/student"
 import { useBillings } from "@/lib/api2/billing"
 import { useTransactions } from "@/lib/api2/transaction"
@@ -22,15 +22,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Invoice01Icon,
-  DollarCircleIcon,
   Coins01Icon,
-  CreditCardIcon,
   CheckmarkCircle02Icon,
   Clock01Icon,
   Cancel01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
-  Wallet01Icon,
+  Download01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { getStatusBadgeClass } from "@/lib/status-colors"
@@ -49,6 +47,7 @@ import { AuthButton } from "@/components/auth/auth-button"
 import {CircleCheck, Coins} from 'lucide-react';
 import EmptyStateComponent from '@/components/shared/empty-state';
 import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number"
+import { downloadStudentBillingPdf } from "@/lib/api2/billing-service"
 
 /* ------------------------------------------------------------------ */
 /*  Skeleton                                                           */
@@ -139,11 +138,11 @@ export default function StudentBillingPage() {
   const [editingConcession, setEditingConcession] = useState<StudentConcessionDto | null>(null)
   const [selectedInstallment, setSelectedInstallment] = useState<PaymentPlanItem | null>(null)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionDto | null>(null)
+  const [isDownloadingFinancialRecord, setIsDownloadingFinancialRecord] = useState(false)
 
   const loading = studentLoading || billsLoading || transactionsLoading 
   const fetching = isFetchingBills || isFetchingTransactions
 
-  if (loading) return <BillingSkeleton />
   // Billing data
   const billItems = billsResponse?.bill ?? []
   const apiSummary = billsResponse?.summary
@@ -176,6 +175,33 @@ export default function StudentBillingPage() {
   const sortedTransactions = [...(transactions ?? [])].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )
+
+  const triggerBlobDownload = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const handleDownloadFinancialRecord = useCallback(async () => {
+    if (!student?.id) return
+
+    try {
+      setIsDownloadingFinancialRecord(true)
+      const blob = await downloadStudentBillingPdf(subdomain, student.id)
+      const safeName = student.full_name.replace(/\s+/g, "_")
+      triggerBlobDownload(blob, `${safeName}_Financial_Record.pdf`)
+      toast.success("Financial record downloaded")
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setIsDownloadingFinancialRecord(false)
+    }
+  }, [student, subdomain, triggerBlobDownload])
 
   // Handle refresh
   const handleRefresh = () => {
@@ -309,6 +335,19 @@ export default function StudentBillingPage() {
   }
 
   const disableButtons = !student?.is_enrolled || !balance || balance <= 0 || loading || fetching
+  const paymentStateLabel = paymentStatus?.is_paid_in_full
+    ? "Paid in Full"
+    : paymentStatus?.is_on_time
+      ? "On Track"
+      : "Outstanding"
+  const paymentStateBadgeClass = paymentStatus?.is_paid_in_full
+    ? "bg-emerald-100 text-emerald-700"
+    : paymentStatus?.is_on_time
+      ? "bg-blue-100 text-blue-700"
+      : "bg-amber-100 text-amber-700"
+  const feeItemsCount = tuitionItems.length + feeItems.length
+
+  if (loading) return <BillingSkeleton />
 
   return (
     <PageLayout
@@ -339,6 +378,18 @@ export default function StudentBillingPage() {
             <span className="hidden sm:inline">Add Concession</span>
             <span className="sm:hidden">Concession</span>
           </AuthButton>
+          {/* <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadFinancialRecord}
+            disabled={!student?.id}
+            loading={isDownloadingFinancialRecord}
+            loadingText="Downloading..."
+            icon={<HugeiconsIcon icon={Download01Icon} className="size-4" />}
+          >
+            <span className="hidden sm:inline">Download Record</span>
+            <span className="sm:hidden">Record</span>
+          </Button> */}
           {/* <Button
             variant="outline"
             size="icon-sm"
@@ -414,83 +465,139 @@ export default function StudentBillingPage() {
           </div>
         )}
 
-        {/* ── Summary Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Gross Total Bill */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={Invoice01Icon} className="size-5 text-blue-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Gross Total</p>
-                <p className="text-lg font-bold truncate">{currency}{grossTotalBill.toLocaleString()}</p>
-              </div>
-            </div>
-          </Card>
+        <Card className="overflow-hidden border-border/70 bg-linear-to-br from-background via-background to-muted/30 p-0 gap-0">
+          <div className="border-b border-border/60 px-5 py-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <HugeiconsIcon icon={Invoice01Icon} className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Student Financial Record</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Clear view of billed amounts, concessions, payments, and the current balance.
+                    </p>
+                  </div>
+                </div>
 
-          {/* Concession */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 shrink-0 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={ArrowDown01Icon} className="size-5 text-purple-600" />
+                <div className="flex flex-wrap items-center gap-2 ">
+                  {/* <Badge variant="outline">{student?.current_enrollment?.academic_year?.name || "Current Academic Year"}</Badge> */}
+                  {student?.student_class && (
+                    <div className="font-semibold text-muted-foreground">Class: <Badge variant="outline">{student.student_class}</Badge></div>
+                  )}
+                  <div className="font-semibold text-muted-foreground">
+                    Payment Status: <Badge className={paymentStateBadgeClass}>{paymentStateLabel}</Badge>
+                  </div>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Concession</p>
-                <p className="text-lg font-bold text-purple-600 truncate">
-                  {currency}{totalConcession.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </Card>
 
-          {/* Net Bill */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 shrink-0 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={Wallet01Icon} className="size-5 text-green-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Net Bill</p>
-                <p className="text-lg font-bold text-green-600 truncate">{currency}{netTotalBill.toLocaleString()}</p>
-              </div>
+              <Button
+                variant="outline"
+                onClick={handleDownloadFinancialRecord}
+                disabled={!student?.id}
+                loading={isDownloadingFinancialRecord}
+                loadingText="Downloading..."
+                icon={<HugeiconsIcon icon={Download01Icon} className="size-4" />}
+              >
+                Download Statement
+              </Button>
             </div>
-          </Card>
+          </div>
 
-          {/* Total Paid */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-5 text-emerald-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Total Paid</p>
-                <p className="text-lg font-bold text-emerald-600 truncate">{currency}{paid.toLocaleString()}</p>
-              </div>
+          <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
+            <div className="rounded-xl border bg-background/80 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Gross Total Bill</p>
+              <p className="mt-2 text-2xl font-bold">{currency}{grossTotalBill.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Before concession adjustments</p>
             </div>
-          </Card>
 
-          {/* Balance Due */}
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "size-10 shrink-0 rounded-lg flex items-center justify-center",
-                balance > 0 ? "bg-red-500/10" : "bg-green-500/10"
+            <div className="rounded-xl border bg-background/80 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Concession</p>
+              <p className="mt-2 text-2xl font-bold text-purple-600">{currency}{totalConcession.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Approved fee reductions</p>
+            </div>
+
+            <div className="rounded-xl border bg-background/80 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Net Total Bill</p>
+              <p className="mt-2 text-2xl font-bold text-blue-700">{currency}{netTotalBill.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Gross total minus concession</p>
+            </div>
+
+            <div className="rounded-xl border bg-background/80 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total Paid</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-600">{currency}{paid.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Approved payments only</p>
+            </div>
+
+            <div className="rounded-xl border bg-background/80 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Balance</p>
+              <p className={cn(
+                "mt-2 text-2xl font-bold",
+                balance > 0 ? "text-red-600" : "text-emerald-600"
               )}>
-                <HugeiconsIcon
-                  icon={DollarCircleIcon}
-                  className={cn("size-5", balance > 0 ? "text-red-600" : "text-green-600")}
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Balance Due</p>
-                <p className={cn("text-lg font-bold truncate", balance > 0 ? "text-red-600" : "text-green-600")}>
-                  {currency}{balance.toLocaleString()}
-                </p>
+                {currency}{balance.toLocaleString()}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Remaining after payments</p>
+            </div>
+          </div>
+
+          {/* <div className="grid gap-4 border-t border-border/60 px-5 py-4 lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="rounded-xl border bg-background/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Record Summary</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Tuition Portion</p>
+                  <p className="text-sm font-semibold">{currency}{tuition.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Bill Line Items</p>
+                  <p className="text-sm font-semibold">{feeItemsCount} item{feeItemsCount !== 1 && "s"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Concession Entries</p>
+                  <p className="text-sm font-semibold">{concessionItems.length}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Installments</p>
+                  <p className="text-sm font-semibold">{paymentPlan?.length || 0}</p>
+                </div>
               </div>
             </div>
-          </Card>
-        </div>
+
+            <div className="rounded-xl border bg-background/70 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Applied Concessions</p>
+              {concessionItems.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {concessionItems.slice(0, 3).map((item: StudentConcessionDto) => (
+                    <div key={item.id} className="flex items-start justify-between gap-3 rounded-lg border border-dashed border-purple-200 bg-purple-50/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium capitalize">
+                          {String(item.target).replace(/_/g, " ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.concession_type === "percentage"
+                            ? `${item.value}% concession`
+                            : `${currency}${Number(item.value).toLocaleString()} flat concession`}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-purple-700">
+                        {currency}{Number(item.amount).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  {concessionItems.length > 3 && (
+                    <p className="text-xs text-muted-foreground">
+                      +{concessionItems.length - 3} more concession{concessionItems.length - 3 !== 1 && "s"} in the concessions tab.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">No concessions applied to this student yet.</p>
+              )}
+            </div>
+          </div> */}
+        </Card>
 
         {paymentPlan && paymentPlan.length > 0 && (
           <PaymentPlan 
@@ -604,7 +711,7 @@ export default function StudentBillingPage() {
                       <>
                         <div className="flex items-center justify-between pt-2 px-3 text-purple-600">
                           <span className="text-sm font-medium">Concession</span>
-                          <span className="text-sm font-semibold">-{currency}{totalConcession.toLocaleString()}</span>
+                          <span className="text-sm font-semibold">{currency}{totalConcession.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center justify-between pt-2 mt-1 border-t px-3">
                           <span className="text-sm font-semibold">Net Total</span>
@@ -630,7 +737,7 @@ export default function StudentBillingPage() {
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <span className="font-semibold text-purple-600">-{currency}{Number(item.amount).toLocaleString()}</span>
+                                <span className="font-semibold text-purple-600">{currency}{Number(item.amount).toLocaleString()}</span>
                                 {/* <Button
                                   variant="ghost"
                                   size="xs"
@@ -775,11 +882,22 @@ function TransactionCard({
 
   return (
     <Card 
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className="relative overflow-hidden hover:shadow-md transition-shadow cursor-pointer p-0"
       onClick={() => onClick?.(tx)}
     >
+      <div
+        className="absolute right-4 top-4 z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <TransactionActionButtons
+          tx={tx}
+          mode="dropdown"
+          onEdit={onEdit}
+          onActionSuccess={onActionSuccess}
+        />
+      </div>
       <div className="p-5">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pr-10">
           <div className="flex items-start gap-3 flex-1">
             <div className={cn("size-10 shrink-0 rounded-lg flex items-center justify-center", statusConfig.bgColor)}>
               <HugeiconsIcon icon={statusConfig.icon} className={cn("size-5", statusConfig.iconColor)} />
@@ -814,19 +932,6 @@ function TransactionCard({
               {currency}{tx.amount.toLocaleString()}
             </p>
           </div>
-        </div>
-
-        <div
-          className="mt-4 pt-3 border-t flex items-center justify-start sm:justify-end"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <TransactionActionButtons
-            tx={tx}
-            compact={false}
-            className="w-full sm:w-auto"
-            onEdit={onEdit}
-            onActionSuccess={onActionSuccess}
-          />
         </div>
       </div>
     </Card>

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useGrading } from "@/lib/api2/grading";
-import { type GradebookScheduleProjectionDto, useGradebookScheduleProjection } from "@/lib/api2/schedule-projection";
+import { useGradebookScheduleProjection } from "@/lib/api2/schedule-projection";
 import { useAllMarkingPeriods } from "@/hooks/use-marking-period";
 import PageLayout from "@/components/dashboard/page-layout";
 import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateAction } from "@/components/ui/empty-state";
@@ -12,26 +12,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SelectField } from "@/components/ui/select-field";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Add01Icon,
   FileIcon,
-  UserAdd01Icon,
-  UserEdit01Icon,
-  UserIcon,
 } from "@hugeicons/core-free-icons";
-import { GradeStatus, SectionStudentGrade } from "@/lib/api2/grading-types";
+import { AssessmentDto, GradeStatus, SectionStudentGrade } from "@/lib/api2/grading-types";
 import { CreateAssessmentDialog } from "@/components/grading/create-assessment-dialog";
 import { AssignTeacherDialog } from "@/components/grading/assign-teacher-dialog";
 import { GradeEntryTable } from "@/components/grading/grade-entry-table";
 import { AssessmentsList } from "@/components/grading/assessments-list";
 import { GradebookNav } from "@/components/grading/gradebook-nav";
 import { FinalGradesTable } from "@/components/grading/final-grades-table";
-import { GradeWorkflowBadge } from "@/components/grading/grade-workflow-badge";
-import { ArrowLeft, RefreshCcw, AlertCircle, CheckCircle2, Clock, Lock } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
+import { GradeBulkUploadDialog } from "@/components/grading/grade-bulk-upload-dialog";
+import { GradeEntryStatusPanel } from "./_components/grade-entry-status-panel";
+import { GradebookHeaderActions } from "./_components/gradebook-header-actions";
+import { GradebookDetailsTab } from "./_components/gradebook-details-tab";
 import { useHeaderBreadcrumbs } from "@/hooks/use-header-breadcrumbs";
 
 export default function GradebookDetailPage() {
@@ -90,20 +86,21 @@ export default function GradebookDetailPage() {
 
   const [createAssessmentOpen, setCreateAssessmentOpen] = useState(false);
   const [assignTeacherOpen, setAssignTeacherOpen] = useState(false);
+  const [uploadGradesOpen, setUploadGradesOpen] = useState(false);
 
-  // Auto-select current marking period on initial load
-  useEffect(() => {
-    if (!markingPeriod && allMarkingPeriods && allMarkingPeriods.length > 0) {
-      // Find the current marking period
-      const currentPeriod = allMarkingPeriods.find(mp => mp.is_current);
-      if (currentPeriod) {
-        setMarkingPeriod(currentPeriod.id);
-      } else {
-        // Fallback to first marking period if no current one
-        setMarkingPeriod(allMarkingPeriods[0].id);
-      }
-    }
-  }, [markingPeriod, allMarkingPeriods, setMarkingPeriod]);
+  // // Auto-select current marking period on initial load
+  // useEffect(() => {
+  //   if (!markingPeriod && allMarkingPeriods && allMarkingPeriods.length > 0) {
+  //     // Find the current marking period
+  //     const currentPeriod = allMarkingPeriods.find(mp => mp.is_current);
+  //     if (currentPeriod) {
+  //       setMarkingPeriod(currentPeriod.id);
+  //     } else {
+  //       // Fallback to first marking period if no current one
+  //       setMarkingPeriod(allMarkingPeriods[0].id);
+  //     }
+  //   }
+  // }, [markingPeriod, allMarkingPeriods, setMarkingPeriod]);
 
   const assessmentsList = assessments || [];
   const canEdit = gradebook?.status === GradeStatus.DRAFT;
@@ -158,10 +155,10 @@ export default function GradebookDetailPage() {
   const canDeleteAssessment = Boolean(gradingConfig?.allow_assessment_delete);
 
   // Prepare marking period options for selector
-  const markingPeriodOptions = (allMarkingPeriods || []).map(mp => ({
-    value: mp.id,
-    label: `${mp.name} (${mp.semester.name})`,
-  }));
+  // const markingPeriodOptions = (allMarkingPeriods || []).map(mp => ({
+  //   value: mp.id,
+  //   label: `${mp.name}`,
+  // }));
 
   // Determine if we came from teacher grades page
   const fromTeacherGrades = Boolean(
@@ -213,53 +210,18 @@ export default function GradebookDetailPage() {
         error={error}
         actions={
           gradebook && (
-            <div className="flex items-center gap-3">
-                {/* Contextual Back Button */}
-                {fromTeacherGrades ? (
-                  <Button
-                    variant="outline"
-                    iconLeft={<ArrowLeft className="h-4 w-4" />}
-                    onClick={() => router.push(backUrl)}
-                  >
-                    Back to My Classes
-                  </Button>
-                ) : null}
-              
-                <div className="flex items-center gap-4">
-                  <label htmlFor="marking-period-select" className="text-sm font-medium text-foreground shrink-0">
-                    Marking Period:
-                  </label>
-                  <div className="w-full max-w-md">
-                    <SelectField
-                      items={markingPeriodOptions}
-                      value={markingPeriod || ""}
-                      onValueChange={(value) => setMarkingPeriod(value as string)}
-                      placeholder="Select marking period"
-                      disabled={markingPeriodOptions.length === 0 || loading || fetching}
-                      triggerClassName="bg-gray-100"
-                    />
-                  </div>
-                </div>
-              {/* <Badge variant={getStatusVariant(gradebook.status)}>
-                {gradebook.status}
-              </Badge> */}
-              {canEdit && (
-                <Button
-                  variant="outline"
-                  icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
-                  onClick={() => setCreateAssessmentOpen(true)}
-                  disabled={loading || fetching}
-                >
-                  Add Assessment
-                </Button>
-              )}
-                <Button
-                  variant="outline"
-                  onClick={handleRefetch}
-                  loading={loading || fetching}
-                  icon={<RefreshCcw className="h-4 w-4" />}
-                />
-            </div>
+            <GradebookHeaderActions
+              fromTeacherGrades={fromTeacherGrades}
+              onBack={() => router.push(backUrl)}
+              loading={loading}
+              fetching={fetching}
+              canEdit={canEdit}
+              hasMarkingPeriod={hasMarkingPeriod}
+              canEditGrades={canEditGrades}
+              onOpenCreateAssessment={() => setCreateAssessmentOpen(true)}
+              onOpenUploadGrades={() => setUploadGradesOpen(true)}
+              onRefresh={handleRefetch}
+            />
           )
         }
       >
@@ -269,113 +231,15 @@ export default function GradebookDetailPage() {
             <GradebookNav 
               currentGradebookId={gradebookId} 
               currentGradebook={gradebook}
+              rightContent={
+                <GradeEntryStatusPanel
+                  status={predominantStatus}
+                  canReview={canReview}
+                  canApprove={canApprove}
+                  hasMarkingPeriod={hasMarkingPeriod}
+                />
+              }
             />
-
-            {/* Workflow Status Banner */}
-            {hasMarkingPeriod && finalGrades?.students && (
-              <Alert className={cn(
-                predominantStatus === GradeStatus.DRAFT && "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900",
-                predominantStatus === GradeStatus.REJECTED && "border-destructive/50 bg-destructive/10",
-                predominantStatus === GradeStatus.PENDING && "border-warning/50 bg-warning/10",
-                predominantStatus === GradeStatus.REVIEWED && "border-blue-500/50 bg-blue-50 dark:bg-blue-950/20",
-                predominantStatus === GradeStatus.SUBMITTED && "border-purple-500/50 bg-purple-50 dark:bg-purple-950/20",
-                predominantStatus === GradeStatus.APPROVED && "border-success/50 bg-success/10"
-              )}>
-                <div className="flex items-start gap-3">
-                  {predominantStatus === GradeStatus.DRAFT && <AlertCircle className="h-5 w-5 text-gray-600 dark:text-gray-400 mt-0.5" />}
-                  {predominantStatus === GradeStatus.REJECTED && <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />}
-                  {predominantStatus === GradeStatus.PENDING && <Clock className="h-5 w-5 text-warning mt-0.5" />}
-                  {predominantStatus === GradeStatus.REVIEWED && <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />}
-                  {predominantStatus === GradeStatus.SUBMITTED && <Clock className="h-5 w-5 text-purple-600 mt-0.5" />}
-                  {predominantStatus === GradeStatus.APPROVED && <Lock className="h-5 w-5 text-success mt-0.5" />}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm">Grade Entry Status:</span>
-                      <GradeWorkflowBadge status={predominantStatus} />
-                    </div>
-                    <AlertDescription className="text-sm">
-                      {predominantStatus === GradeStatus.DRAFT && (
-                        <>You can enter and edit grades. When ready, submit them for {canReview ? "review" : canApprove ? "approval" : "finalization"}.</>
-                      )}
-                      {predominantStatus === GradeStatus.REJECTED && (
-                        <>These grades were rejected. Please review the feedback, make corrections, and resubmit.</>
-                      )}
-                      {predominantStatus === GradeStatus.PENDING && (
-                        <>Grades are awaiting review. You cannot edit them until they are reviewed or rejected.</>
-                      )}
-                      {predominantStatus === GradeStatus.REVIEWED && (
-                        <>Grades have been reviewed{canApprove ? " and are awaiting approval" : " and are ready for submission"}. Editing is locked.</>
-                      )}
-                      {predominantStatus === GradeStatus.SUBMITTED && (
-                        <>Grades have been submitted{canApprove ? " and are awaiting final approval" : ""}. Editing is locked.</>
-                      )}
-                      {predominantStatus === GradeStatus.APPROVED && (
-                        <>Grades have been approved and finalized. No further edits are allowed.</>
-                      )}
-                    </AlertDescription>
-                  </div>
-                </div>
-              </Alert>
-            )}
-
-            {/* Teacher Info */}
-            <Card className="gap-0">
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 shrink-0">
-                      <HugeiconsIcon icon={UserIcon} className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Teacher</p>
-                      {gradebook.teacher ? (
-                        <p className="text-sm font-semibold">{gradebook.teacher.full_name}</p>
-                      ) : (
-                        <p className="text-sm font-medium text-orange-500">No teacher assigned</p>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    iconLeft={
-                      <HugeiconsIcon
-                        icon={gradebook.teacher ? UserEdit01Icon : UserAdd01Icon}
-                        className="h-3.5 w-3.5"
-                      />
-                    }
-                    onClick={() => setAssignTeacherOpen(true)}
-                  >
-                    {gradebook.teacher ? "Change Teacher" : "Assign Teacher"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Gradebook Info */}
-            <Card className="gap-1">
-              <CardHeader>
-                <CardTitle className="text-base">Class Schedule</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {scheduleProjectionLoading ? (
-                  <div className="text-sm text-muted-foreground">Loading schedule...</div>
-                ) : !scheduleProjection || scheduleProjection.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No schedule entries projected for this gradebook yet.</div>
-                ) : (
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {scheduleProjection.map((slot: GradebookScheduleProjectionDto) => (
-                      <div key={slot.id} className="rounded-md border p-2 text-sm">
-                        <div className="font-medium">{slot.period.name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          Day {slot.day_of_week} • {slot.start_time} - {slot.end_time}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
             {/* <Card className="gap-1">
               <CardHeader>
@@ -440,8 +304,8 @@ export default function GradebookDetailPage() {
 
             {/* Tabs for Grade Entry and Assessments */}
             <Tabs value={activeTab || "entry"} onValueChange={(value) => setActiveTab(value)}>
-              <TabsList>
-                <TabsTrigger value="entry">
+              <TabsList className="h-auto fmax-w-md fw-full max-w-full justify-start overflow-y-hidden overflow-x-auto no-scrollbar" >
+                <TabsTrigger value="entry" className="w-sm">
                   <span className="flex items-center gap-2">
                     <span>Grade Entry</span>
                     {rejectedGradesCount > 0 && (
@@ -467,10 +331,11 @@ export default function GradebookDetailPage() {
                 {canApprove && (
                   <TabsTrigger value="approveGrades">Approve Grades</TabsTrigger>
                 )}
+                <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="viewGrades">View Grades</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="entry" className="mt-4">
+              <TabsContent value="entry" className="">
                 {!hasMarkingPeriod ? (
                   <Card className="p-8 text-center">
                     <div className="text-muted-foreground">
@@ -507,7 +372,7 @@ export default function GradebookDetailPage() {
               </TabsContent>
 
               {showAssessmentsTab && (
-                <TabsContent value="assessments" className="mt-4">
+                <TabsContent value="assessments" className="">
                 {!hasMarkingPeriod ? (
                   <Card className="p-8 text-center">
                     <div className="text-muted-foreground">
@@ -516,8 +381,8 @@ export default function GradebookDetailPage() {
                   </Card>
                 ) : (
                   <>
-                    <div className="flex items-center justify-end mb-4">
                       {canCreateAssessment && (
+                    <div className="flex items-center justify-end mb-4">
                         <Button
                           variant="default"
                           icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
@@ -525,8 +390,8 @@ export default function GradebookDetailPage() {
                         >
                           Add Assessment
                         </Button>
-                      )}
                     </div>
+                      )}
                     <AssessmentsList
                       assessments={assessmentsList}
                       canEdit={canEditAssessment}
@@ -540,9 +405,9 @@ export default function GradebookDetailPage() {
               )}
 
               {canReview && (
-                <TabsContent value="reviewGrades" className="mt-4">
+                <TabsContent value="reviewGrades" className="">
                   {!hasMarkingPeriod ? (
-                    <Card className="p-8 text-center">
+                    <Card className="p-8f text-center">
                       <div className="text-muted-foreground">
                         Please select a marking period to review grades.
                       </div>
@@ -559,7 +424,7 @@ export default function GradebookDetailPage() {
               )}
 
               {canApprove && (
-                <TabsContent value="approveGrades" className="mt-4">
+                <TabsContent value="approveGrades" className="">
                   {!hasMarkingPeriod ? (
                     <Card className="p-8 text-center">
                       <div className="text-muted-foreground">
@@ -577,7 +442,16 @@ export default function GradebookDetailPage() {
                 </TabsContent>
               )}
 
-              <TabsContent value="viewGrades" className="mt-4">
+              <TabsContent value="details" className="">
+                <GradebookDetailsTab
+                  gradebook={gradebook}
+                  scheduleProjection={scheduleProjection}
+                  scheduleProjectionLoading={scheduleProjectionLoading}
+                  onAssignTeacher={() => setAssignTeacherOpen(true)}
+                />
+              </TabsContent>
+
+              <TabsContent value="viewGrades" className="">
                 {!hasMarkingPeriod ? (
                   <Card className="p-8 text-center">
                     <div className="text-muted-foreground">
@@ -619,6 +493,28 @@ export default function GradebookDetailPage() {
           onSuccess={() => refetchGradebook()}
         />
       )}
+
+      <GradeBulkUploadDialog
+        open={uploadGradesOpen}
+        onOpenChange={setUploadGradesOpen}
+        sectionId={gradebook?.section?.id || ""}
+        onSuccess={handleRefetch}
+        templateContext={{
+          gradeLevel: gradebook?.grade_level?.name,
+          section: gradebook?.section?.name,
+          subject: gradebook?.subject?.name,
+          academicYear: gradebook?.academic_year?.name,
+          markingPeriod:
+            assessmentsList[0]?.marking_period?.name ||
+            allMarkingPeriods?.find((period) => period.id === markingPeriod)?.name ||
+            "",
+          assessments: assessmentsList.map((assessment: AssessmentDto) => assessment.name),
+          students: finalGrades?.students?.map((student: SectionStudentGrade) => ({
+            id_number: student?.student?.id_number,
+            full_name: student?.student?.full_name,
+          })) || [],
+        }}
+      />
     </>
   );
 }

@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import PageLayout from "@/components/dashboard/page-layout";
-import { SummaryCardGrid } from "@/components/dashboard/summary-card-grid";
-import { DataTable } from "@/components/shared/data-table";
+import { StatsCards } from "@/components/shared/stats-cards";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth/auth-button";
 import {
@@ -36,7 +35,8 @@ import { AccountTransferDialog } from "@/components/finance/account-transfer-dia
 import { TuitionPaymentDialog } from "@/components/finance/tuition-payment-dialog";
 import { GeneralTransactionDialog } from "@/components/finance/general-transaction-dialog";
 import { UploadTransactionsDialog } from "@/components/finance/upload-transactions-dialog";
-import { TransactionFilters, useTransactionFilterParams } from "@/components/finance/transaction-filters";
+import { useTransactionFilterParams } from "@/components/finance/transaction-filters";
+import { TransactionsTable } from "@/components/finance/transactions-table";
 import { DialogBox } from "@/components/ui/dialog-box";
 import {
   Add01Icon,
@@ -58,7 +58,7 @@ import { FloatingSelectionPanel } from "@/components/shared/floating-selection-p
 /*  Summary helpers                                                    */
 /* ------------------------------------------------------------------ */
 
-function buildSummaryCards(transactions: TransactionDto[]) {
+function buildSummaryCards(transactions: TransactionDto[], totalTransactions: number) {
   const approved = transactions.filter((t) => t.status === "approved");
   const totalIncome = approved
     .filter((t) => t.transaction_type?.type === "income")
@@ -69,6 +69,12 @@ function buildSummaryCards(transactions: TransactionDto[]) {
   const pending = transactions.filter((t) => t.status === "pending").length;
 
   return [
+    {
+      title: "Total Transactions",
+      value: totalTransactions.toLocaleString(),
+      subtitle: `${pending} pending`,
+      icon: getIconByKey("transactions"),
+    },
     {
       title: "Total Income",
       value: formatCurrency(totalIncome),
@@ -100,7 +106,8 @@ export default function TransactionsPage() {
   const { params } = filterState;
 
   // Row selection state
-  const [rowSelection, setRowSelection] = React.useState({});
+  const [selectedTransactions, setSelectedTransactions] = React.useState<TransactionDto[]>([]);
+  const [clearSelectionSignal, setClearSelectionSignal] = React.useState(0);
 
   // Dialog state
   const [showCreate, setShowCreate] = React.useState(false);
@@ -136,9 +143,18 @@ export default function TransactionsPage() {
   const academicYears = academicYearsData ?? [];
   const isEmpty = transactions.length === 0;
 
-  // Selected transactions
-  const selectedIndices = Object.keys(rowSelection).map(Number);
-  const selectedTransactions = selectedIndices.map((i) => transactions[i]).filter(Boolean);
+  const visibleTypes = React.useMemo(
+    () => transactionTypes.filter((type) => !type.is_hidden).map((type) => ({ value: type.id, label: type.name })),
+    [transactionTypes]
+  );
+  const accountFilterOptions = React.useMemo(
+    () => bankAccounts.map((account) => ({ value: account.id, label: account.number || account.name })),
+    [bankAccounts]
+  );
+  const academicYearFilterOptions = React.useMemo(
+    () => academicYears.map((year) => ({ value: year.id, label: year.name })),
+    [academicYears]
+  );
 
   // Column definition
   const columns = React.useMemo(
@@ -150,8 +166,11 @@ export default function TransactionsPage() {
         onCancel: (tx) => setConfirmAction({ type: "cancel", transaction: tx }),
         onDelete: (tx) => setConfirmAction({ type: "delete", transaction: tx }),
         enableSelection: true,
+        typeFilterOptions: visibleTypes,
+        accountFilterOptions,
+        academicYearFilterOptions,
       }),
-    []
+    [visibleTypes, accountFilterOptions, academicYearFilterOptions]
   );
 
   /* ---- Handlers ---- */
@@ -265,7 +284,7 @@ export default function TransactionsPage() {
     try {
       await bulkApprove.mutateAsync(pendingTxs.map((t) => t.id));
       toast.success(`${pendingTxs.length} transaction(s) approved`);
-      setRowSelection({});
+      setClearSelectionSignal((value) => value + 1);
       setBulkApproveDialog(false);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -276,7 +295,7 @@ export default function TransactionsPage() {
     try {
       await bulkCancel.mutateAsync(cancelableTxs.map((t) => t.id));
       toast.success(`${cancelableTxs.length} transaction(s) canceled`);
-      setRowSelection({});
+      setClearSelectionSignal((value) => value + 1);
       setBulkCancelDialog(false);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -287,7 +306,7 @@ export default function TransactionsPage() {
     try {
       await bulkDelete.mutateAsync(deletableTxs.map((t) => t.id));
       toast.success(`${deletableTxs.length} transaction(s) deleted`);
-      setRowSelection({});
+      setClearSelectionSignal((value) => value + 1);
       setBulkDeleteDialog(false);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -352,15 +371,15 @@ export default function TransactionsPage() {
           </AuthButton>
         </div>
       }
-      loading={isLoading}
+      // loading={isLoading}
       error={error}
       fetching={isFetching}
       refreshAction={refetch}
       skeleton={
         <>
           {/* Summary cards skeleton */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="relative p-5 rounded-xl border bg-card overflow-hidden">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-3 flex-1">
@@ -401,34 +420,31 @@ export default function TransactionsPage() {
           </div>
         </>
       }
-      noData={isEmpty}
+      // noData={isEmpty}
       emptyState={<div className="text-center text-muted-foreground py-8">No transactions found</div>}
     >
       {/* Summary Cards */}
-      <SummaryCardGrid items={buildSummaryCards(transactions)} />
-
-      {/* Filters */}
-      <TransactionFilters
-        filterState={filterState}
-        transactionTypes={transactionTypes}
-        bankAccounts={bankAccounts}
-        academicYears={academicYears}
+      <StatsCards
+        items={buildSummaryCards(transactions, txData?.count ?? transactions.length)}
+        className="xl:grid-cols-4"
       />
 
       {/* Table */}
-      <DataTable
+      <TransactionsTable
         columns={columns}
         data={transactions}
+        loading={isFetching}
+        filterState={filterState}
         onRowClick={(row) => setDetailTx(row)}
-        pageSize={30}
-        rowSelection={rowSelection}
-        onRowSelectionChange={setRowSelection}
+        onSelectedRowsChange={setSelectedTransactions}
+        clearSelectionSignal={clearSelectionSignal}
+        totalCount={txData?.count ?? transactions.length}
       />
 
       {/* Floating Selection Panel */}
       <FloatingSelectionPanel
         count={selectedTransactions.length}
-        onClear={() => setRowSelection({})}
+        onClear={() => setClearSelectionSignal((value) => value + 1)}
         actions={[
           {
             label: "Export",

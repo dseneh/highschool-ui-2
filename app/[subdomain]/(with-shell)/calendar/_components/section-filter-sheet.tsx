@@ -87,10 +87,10 @@ export function SectionFilterSheet({
             </div>
             <div>
               <SheetTitle className="text-sm font-semibold leading-tight">
-                Filter by Section
+                Filter by Classes
               </SheetTitle>
               <SheetDescription className="mt-0.5 text-xs">
-                {totalSections} {totalSections === 1 ? "section" : "sections"} available
+                {totalSections} {totalSections === 1 ? "class" : "classes"} available
               </SheetDescription>
             </div>
           </div>
@@ -137,7 +137,7 @@ export function SectionFilterSheet({
                 selectedSectionId === null ? "text-primary" : "text-foreground"
               )}
             >
-              All Sections
+              All Classes
             </span>
             <Badge
               variant={selectedSectionId === null ? "default" : "secondary"}
@@ -171,16 +171,14 @@ export function SectionFilterSheet({
             <div className="space-y-2">
               {filteredGradeLevels.map((gradeLevel) => (
                 <div key={gradeLevel.id} className="border-b pb-2 hover:bg-acient/50 transition-all duration-500">
-                  {/* Grade level header */}
-                  <div className="fmb-1.5 flex items-center gap-1.5 px-1">
-                    {/* <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" /> */}
+                  {/* <div className="flex items-center gap-1.5 px-1">
                     <span className="ftext-[11px] font-semibold fuppercase text-primary tracking-wider ftext-muted-foreground">
                       {gradeLevel.name}
                     </span>
                     <span className="ml-auto text-[11px] text-muted-foreground/60">
                       {gradeLevel.sections.length}
                     </span>
-                  </div>
+                  </div> */}
 
                   {/* Sections */}
                   <div className="space-y-1">
@@ -215,7 +213,8 @@ export function SectionFilterSheet({
                               isSelected ? "text-primary" : "text-foreground"
                             )}
                           >
-                            {section.name}
+                           <span className={cn(!isSelected && "text-muted-foreground")}>{gradeLevel.name}</span> {" "} 
+                           <span>{section.name}</span>
                           </span>
                           <span className="ml-auto text-xs text-muted-foreground">
                             {section.students}{" "}

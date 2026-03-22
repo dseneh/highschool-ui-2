@@ -17,7 +17,7 @@ interface PageHeaderProps {
  */
 export function PageHeader({ title, description, children, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex  items-start sm:items-center justify-between gap-2 overflow-hidden", className)}>
+    <div className={cn("flex items-center justify-between gap-2 overflow-hidden", className)}>
       <div className="min-w-0">
         <h2 className="font-semibold truncate">{title}</h2>
         {description && (

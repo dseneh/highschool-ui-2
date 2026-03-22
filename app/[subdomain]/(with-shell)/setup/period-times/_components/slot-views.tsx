@@ -9,6 +9,7 @@ import {
 import { MoreVertical } from "lucide-react";
 import type { SectionTimeSlotDto, SlotViewMode } from "./types";
 import DropDownMenuButton from "./dropdown-menu";
+import { cn } from "@/lib/utils";
 
 type SlotViewsProps = {
   slotViewMode: SlotViewMode;
@@ -60,13 +61,23 @@ function formatDuration(startTime: string, endTime: string) {
 function TimeSlotCard({ slot, minHeightClass, onEditSlot, onDeleteSlot }: TimeSlotCardProps) {
   return (
     <div
-      className={`${minHeightClass ?? ""} rounded-md border bg-background p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md`}
+      className={cn(
+        minHeightClass, 
+        "rounded-md border bg-background p-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md",
+        slot.period.period_type === "recess" && "border-orange-300 hover:border-orange-400"
+      )}
     >
       <div className="space-y-1">
         <div className="flex items-start justify-between gap-2">
-          <p className="line-clamp-2 text-sm font-medium">{slot.period.name} <Badge variant="outline" className="text-[10px]">
-          {slot.period.period_type || "class"}
-        </Badge></p>
+          <p className="line-clamp-2 text-sm font-medium">
+            <span>{slot.period.name} </span>
+            <Badge variant="outline" className={cn(
+              "ms-0.5 text-[10px]",
+              slot.period.period_type === "recess" ? "bg-orange-500 text-white" : "bg-blue-100 text-blue-800"
+              )}>
+            {slot.period.period_type || "class"}
+            </Badge>
+        </p>
           {/* <Badge variant="outline" className="shrink-0 text-[10px]">
             #{slot.sort_order}
           </Badge> */}

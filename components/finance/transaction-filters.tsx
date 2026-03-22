@@ -38,6 +38,10 @@ import {
   parseAsString,
   parseAsInteger,
 } from "nuqs";
+import {
+  buildNumberConditionQueryParams,
+  type ConditionFilter,
+} from "@/components/shared/advanced-table";
 
 /* ------------------------------------------------------------------ */
 /*  Hook: useTransactionFilterParams                                   */
@@ -54,7 +58,29 @@ export function useTransactionFilterParams() {
   const [academicYear, setAcademicYear] = useQueryState("year", parseAsString.withDefault(""));
   const [dateFrom, setDateFrom] = useQueryState("from", parseAsString.withDefault(""));
   const [dateTo, setDateTo] = useQueryState("to", parseAsString.withDefault(""));
+  const [amountCondition, setAmountCondition] = useQueryState("amount_condition", parseAsString.withDefault(""));
+  const [amountMin, setAmountMin] = useQueryState("amount_min", parseAsString.withDefault(""));
+  const [amountMax, setAmountMax] = useQueryState("amount_max", parseAsString.withDefault(""));
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+
+  const amountFilter = React.useMemo<ConditionFilter | undefined>(() => {
+    const hasAmount = Boolean(amountCondition || amountMin || amountMax);
+    if (!hasAmount) return undefined;
+    return {
+      condition: amountCondition || "",
+      value: [amountMin || "", amountMax || ""],
+    };
+  }, [amountCondition, amountMin, amountMax]);
+
+  const amountParams = React.useMemo(
+    () =>
+      buildNumberConditionQueryParams(amountFilter, {
+        equalKey: "amount",
+        minKey: "amount_min",
+        maxKey: "amount_max",
+      }),
+    [amountFilter]
+  );
 
   /** Build the params object to pass to the API hook */
   const params: TransactionListParams = React.useMemo(
@@ -68,12 +94,27 @@ export function useTransactionFilterParams() {
       academic_year: academicYear || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
+      amount: amountParams.amount,
+      amount_min: amountParams.amount_min,
+      amount_max: amountParams.amount_max,
     }),
-    [search, status, transactionType, account, academicYear, dateFrom, dateTo, page]
+    [
+      search,
+      status,
+      transactionType,
+      account,
+      academicYear,
+      dateFrom,
+      dateTo,
+      amountParams.amount,
+      amountParams.amount_min,
+      amountParams.amount_max,
+      page,
+    ]
   );
 
   /** Count how many filters are active (common + advanced) */
-  const activeFilterCount = [status, transactionType, account, academicYear, dateFrom, dateTo].filter(Boolean).length;
+  const activeFilterCount = [status, transactionType, account, academicYear, dateFrom, dateTo, amountCondition, amountMin, amountMax].filter(Boolean).length;
   /** Count advanced filters only (excludes status & type which are always visible) */
   const advancedFilterCount = [account, academicYear, dateFrom, dateTo].filter(Boolean).length;
 
@@ -93,6 +134,12 @@ export function useTransactionFilterParams() {
     setDateFrom,
     dateTo,
     setDateTo,
+    amountCondition,
+    setAmountCondition,
+    amountMin,
+    setAmountMin,
+    amountMax,
+    setAmountMax,
     page,
     setPage,
     activeFilterCount,
@@ -171,6 +218,9 @@ export function TransactionFilters({
     void filterState.setAcademicYear(null);
     void filterState.setDateFrom(null);
     void filterState.setDateTo(null);
+    void filterState.setAmountCondition(null);
+    void filterState.setAmountMin(null);
+    void filterState.setAmountMax(null);
     void setPage(1);
   }
 
@@ -178,7 +228,7 @@ export function TransactionFilters({
     <>
       <div className="flex items-center gap-2 flex-wrap">
         {/* Search */}
-        <div className="relative flex-1 min-w-50 max-w-sm">
+        <div className="relative flex-1 min-w-25 max-w-xs">
           <HugeiconsIcon
             icon={Search01Icon}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"

@@ -1,11 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { DialogBox } from "@/components/ui/dialog-box";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SelectField } from "@/components/ui/select-field";
 import {
   Select,
   SelectTrigger,
@@ -34,12 +41,23 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { getErrorMessage } from "@/lib/utils";
+import { Loader2, ArrowLeft } from "lucide-react";
+import {
+  BulkUploadEditableCell,
+  BulkUploadStepIndicator,
+} from "@/components/shared/bulk-upload/preview-primitives";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type Step = "mode" | "upload" | "review";
+type Step = "setup" | "preview" | "uploading";
+
+const STEPS: { key: Step; label: string; num: number }[] = [
+  { key: "setup", label: "Setup", num: 1 },
+  { key: "preview", label: "Review", num: 2 },
+  { key: "uploading", label: "Upload", num: 3 },
+];
 
 interface ParsedRow {
   student_id: string;
@@ -56,7 +74,7 @@ interface UploadTransactionsDialogProps {
   transactionTypes: TransactionTypeDto[];
   paymentMethods: PaymentMethodDto[];
   bankAccounts: BankAccountDto[];
-  onSubmit: (type: BulkTransactionType, payload: BulkTransactionCommand) => void;
+  onSubmit: (type: BulkTransactionType, payload: BulkTransactionCommand) => Promise<void> | void;
   submitting?: boolean;
 }
 
@@ -152,6 +170,11 @@ const MODE_CARDS: {
   },
 ];
 
+const TRANSACTION_TYPE_OPTIONS = MODE_CARDS.map((card) => ({
+  value: card.type,
+  label: card.title,
+}));
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -165,7 +188,7 @@ export function UploadTransactionsDialog({
   onSubmit,
   submitting,
 }: UploadTransactionsDialogProps) {
-  const [step, setStep] = React.useState<Step>("mode");
+  const [step, setStep] = React.useState<Step>("setup");
   const [mode, setMode] = React.useState<BulkTransactionType | null>(null);
   const [rows, setRows] = React.useState<ParsedRow[]>([]);
   const [fileName, setFileName] = React.useState("");
@@ -190,7 +213,7 @@ export function UploadTransactionsDialog({
   // Reset on open/close
   React.useEffect(() => {
     if (open) {
-      setStep("mode");
+      setStep("setup");
       setMode(null);
       setRows([]);
       setFileName("");
@@ -228,7 +251,7 @@ export function UploadTransactionsDialog({
         }
         setRows(parsed);
         setFileName(file.name);
-        setStep("review");
+        setStep("preview");
         toast.success(`Loaded ${parsed.length} rows from ${file.name}`);
       } catch (err) {
         toast.error(getErrorMessage(err));
@@ -267,7 +290,7 @@ export function UploadTransactionsDialog({
 
   /* ---------- Submit ---------- */
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!mode) return;
 
     const transactions: BulkTransactionRow[] = rows.map((row) => ({
@@ -287,125 +310,71 @@ export function UploadTransactionsDialog({
       transactions,
     };
 
-    onSubmit(mode, payload);
+    setStep("uploading");
+    try {
+      await onSubmit(mode, payload);
+    } catch {
+      setStep("preview");
+    }
   }
 
   const isValid = rows.length > 0 && headerAccount && headerMethod;
 
-  /* ---------- Dynamic dialog props ---------- */
-
-  const titles: Record<Step, string> = {
-    mode: "Upload Transactions",
-    upload: `Upload ${mode ? MODE_CARDS.find((m) => m.type === mode)?.title : ""} File`,
-    review: `Review ${rows.length} Transactions`,
-  };
-
-  const descriptions: Record<Step, string> = {
-    mode: "Choose the type of transactions to upload.",
-    upload: "Upload an Excel (.xlsx) or CSV file with transaction data.",
-    review: "Review and configure the data before submitting.",
-  };
-
   return (
-    <DialogBox
-      open={open}
-      onOpenChange={onOpenChange}
-      title={titles[step]}
-      description={descriptions[step]}
-      actionLabel={step === "review" ? "Upload Transactions" : undefined}
-      onAction={step === "review" ? handleSubmit : undefined}
-      actionLoading={submitting}
-      actionLoadingText="Uploading…"
-      actionDisabled={step === "review" ? !isValid : true}
-      footer={step !== "review" ? null : undefined}
-      className={step === "review" ? "sm:max-w-4xl" : "sm:max-w-lg"}
-    >
-      {/* -------- Step 1: Mode Selection -------- */}
-      {step === "mode" && (
-        <div className="grid gap-3 py-4">
-          {MODE_CARDS.map((card) => (
-            <button
-              key={card.type}
-              type="button"
-              className="flex items-start gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              onClick={() => {
-                setMode(card.type);
-                setStep("upload");
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={step === "preview" ? "sm:max-w-6xl" : "sm:max-w-2xl"}>
+        <DialogHeader>
+          <DialogTitle>Upload Transactions</DialogTitle>
+          <DialogDescription>
+            Use the same bulk-upload workflow: setup, preview, and apply edits before upload.
+          </DialogDescription>
+        </DialogHeader>
+
+        <BulkUploadStepIndicator step={step} steps={STEPS} />
+
+        {step === "setup" && (
+          <div className="flex flex-col gap-6 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Transaction Type</Label>
+              <SelectField
+                value={mode ?? ""}
+                onValueChange={(value) => setMode((value as BulkTransactionType) ?? null)}
+                items={TRANSACTION_TYPE_OPTIONS}
+                placeholder="Select transaction type"
+              />
+            </div>
+
+            <div
+              className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/25 p-10 transition-colors hover:border-primary/50 hover:bg-accent/30"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") fileRef.current?.click();
               }}
+              role="button"
+              tabIndex={0}
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <HugeiconsIcon icon={card.icon} size={20} />
+              <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <HugeiconsIcon icon={Upload04Icon} size={24} />
               </div>
-              <div>
-                <p className="text-sm font-medium">{card.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {card.description}
-                </p>
+              <div className="text-center">
+                <p className="text-sm font-medium">Drag & drop your file here or click to browse</p>
+                <p className="text-xs text-muted-foreground">Supports .xlsx, .xls, .csv — max 5 MB</p>
               </div>
-            </button>
-          ))}
-        </div>
-      )}
+            </div>
 
-      {/* -------- Step 2: File Upload -------- */}
-      {step === "upload" && (
-        <div className="flex flex-col items-center gap-6 py-8">
-          {/* Drag-drop area */}
-          <div
-            className="flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/25 p-10 transition-colors hover:border-primary/50 hover:bg-accent/30"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") fileRef.current?.click();
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <HugeiconsIcon icon={Upload04Icon} size={24} />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium">
-                Drag & drop your file here or click to browse
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Supports .xlsx, .xls, .csv — max 5 MB
-              </p>
-            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileChange}
+            />
           </div>
+        )}
 
-          <input
-            ref={fileRef}
-            type="file"
-            className="hidden"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileChange}
-          />
-
-          {/* Download template */}
-          <Button
-            variant="outline"
-            size="sm"
-            iconLeft={<HugeiconsIcon icon={Download04Icon} size={14} />}
-            onClick={downloadTemplate}
-          >
-            Download Template
-          </Button>
-
-          {/* Back */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setStep("mode")}
-          >
-            ← Choose a different type
-          </Button>
-        </div>
-      )}
-
-      {/* -------- Step 3: Review -------- */}
-      {step === "review" && (
+        {step === "preview" && (
         <div className="flex flex-col gap-4 py-2">
           {/* Header overrides */}
           <div className="rounded-lg border bg-muted/30 p-4">
@@ -536,7 +505,7 @@ export function UploadTransactionsDialog({
               onClick={() => {
                 setRows([]);
                 setFileName("");
-                setStep("upload");
+                setStep("setup");
               }}
             >
               Change file
@@ -569,58 +538,39 @@ export function UploadTransactionsDialog({
                       {i + 1}
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 px-1 text-xs"
+                      <BulkUploadEditableCell
                         value={row.student_id}
-                        onChange={(e) =>
-                          updateRow(i, "student_id", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "student_id", value)}
                       />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 w-20 px-1 text-xs"
-                        type="number"
+                      <BulkUploadEditableCell
                         value={row.amount}
-                        onChange={(e) =>
-                          updateRow(i, "amount", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "amount", value)}
                       />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 px-1 text-xs"
+                      <BulkUploadEditableCell
                         value={row.reference}
-                        onChange={(e) =>
-                          updateRow(i, "reference", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "reference", value)}
                       />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 px-1 text-xs"
+                      <BulkUploadEditableCell
                         value={row.notes}
-                        onChange={(e) =>
-                          updateRow(i, "notes", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "notes", value)}
                       />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 w-20 px-1 text-xs"
+                      <BulkUploadEditableCell
                         value={row.status}
-                        onChange={(e) =>
-                          updateRow(i, "status", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "status", value)}
                       />
                     </td>
                     <td className="px-2 py-1">
-                      <Input
-                        className="h-6 w-24 px-1 text-xs"
+                      <BulkUploadEditableCell
                         value={row.date}
-                        onChange={(e) =>
-                          updateRow(i, "date", e.target.value)
-                        }
+                        onChange={(value) => updateRow(i, "date", value)}
                       />
                     </td>
                     <td className="px-2 py-1 text-right">
@@ -646,6 +596,63 @@ export function UploadTransactionsDialog({
           )}
         </div>
       )}
-    </DialogBox>
+
+        {step === "uploading" && (
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <p className="text-sm font-medium">Uploading transactions...</p>
+            <p className="text-xs text-muted-foreground">Please wait while we process your file.</p>
+          </div>
+        )}
+
+        <DialogFooter>
+          {step === "setup" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                iconLeft={<HugeiconsIcon icon={Download04Icon} size={14} />}
+              >
+                Download Template
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+
+          {step === "preview" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setStep("setup")}
+                iconLeft={<ArrowLeft className="size-4" />}
+              >
+                Back
+              </Button>
+              <Button
+                onClick={() => {
+                  void handleSubmit();
+                }}
+                disabled={!isValid || Boolean(submitting)}
+                loading={Boolean(submitting)}
+                loadingText="Uploading"
+              >
+                Upload Transactions
+              </Button>
+            </>
+          )}
+
+          {step === "uploading" && (
+            <Button variant="ghost" disabled>
+              Processing...
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

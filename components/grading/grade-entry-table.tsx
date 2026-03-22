@@ -530,7 +530,7 @@ export function GradeEntryTable({
           {completedStudentsCount >= 1 ? (
             <Alert className="border-primary/30 bg-primary/[0.035] text-primary dark:border-primary/40 dark:bg-primary/[0.075] dark:text-primary shadow-sm">
               <CheckCircle2 className="h-4 w-4" />
-              <div className="flex items-center justify-between gap-4 flex-1">
+              <div className="flex items-center justify-between gap-4 flex-1 flex-wrap">
                 <AlertDescription>
                   {completedStudentsCount} of {totalStudentsCount} students grade entry complete. 
                   {(() => {
@@ -598,7 +598,7 @@ export function GradeEntryTable({
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-border/70 bg-muted/30">
-              <th className="sticky left-0 z-20 bg-muted/30 px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+              <th className="md:sticky left-0 z-20 bg-muted/30 px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
                 Student
               </th>
               {assessments.map((assessment) => (
@@ -612,7 +612,7 @@ export function GradeEntryTable({
                   </div> */}
                 </th>
               ))}
-              <th className="sticky right-0 z-20 bg-muted/30 px-6 py-3 text-center text-sm font-semibold text-muted-foreground">
+              <th className="lg:sticky right-0 z-20 bg-muted/30 px-6 py-3 text-center text-sm font-semibold text-muted-foreground">
                 Grade Percentage
               </th>
             </tr>
@@ -639,8 +639,8 @@ export function GradeEntryTable({
 
                 return (
                   <tr key={student.id} className="border-b border-border/50 last:border-b-0 hover:bg-muted/20 transition-colors">
-                    <td className="sticky left-0 z-10 bg-background px-4 py-3">
-                      <div className="min-w-[200px]">
+                    <td className="md:sticky left-0 z-10 bg-background px-4 py-3">
+                      <div className="min-w-50">
                         <div className="font-medium">{student.full_name}</div>
                         <div className="text-xs text-muted-foreground">
                           {student.id_number}
@@ -678,13 +678,14 @@ export function GradeEntryTable({
                       return (
                         <td
                           key={`${student.id}-${assessment.id}`}
-                          className="px-6 py-3 text-center"
+                          className="px-6 py-3 text-center border-x"
                         >
                           <div className="flex flex-col items-center gap-1">
-                            <div className="relative w-full max-w-32">
+                            <div className="relative fw-full min-w-28">
                               <InputGroup 
                               className={cn(
-                                isEditing && "ring-2 ring-primary/30 border-primary/60"
+                                isEditing && "ring-2 ring-primary/30 border-primary/60",
+                                "w-full"
                               )}>
                                 <InputGroupInput
                                   id={inputId}
@@ -754,7 +755,7 @@ export function GradeEntryTable({
                         </td>
                       );
                     })}
-                    <td className="sticky right-0 z-10 bg-muted/40 px-6 py-3 text-center border-l border-border/50">
+                    <td className="lg:sticky right-0 z-10 bg-muted/40 px-6 py-3 text-center border-l border-border/50">
                       {mp?.final_percentage !== null && mp?.final_percentage !== undefined ? (
                         <span
                           className={cn(

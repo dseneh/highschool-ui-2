@@ -2,16 +2,13 @@
 
 import * as React from "react";
 import { useStaff } from "@/lib/api2/staff";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserGroupIcon,
   UserCircleIcon,
   Building02Icon,
   User02Icon,
-  RefreshIcon,
 } from "@hugeicons/core-free-icons";
-import { StaffTable } from "@/components/staff/staff-table";
-import { Button } from "@/components/ui/button";
+import { StaffTable } from "../../../../components/staff/staff-table";
 import { useMemo, useCallback, useState } from "react";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
@@ -20,24 +17,61 @@ import PageLayout from "@/components/dashboard/page-layout";
 import { AddStaffDropdown } from "@/components/staff/add-staff-dropdown";
 import { StaffFormModal } from "@/components/staff/staff-form-modal";
 import type { StaffFormSchema } from "@/components/staff/staff-form";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { StaffBulkUploadDialog } from "@/components/staff/staff-bulk-upload-dialog";
+import { StatsCards } from "@/components/shared/stats-cards";
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import type { StaffTableUrlParams } from "../../../../components/staff/staff-table";
 
 export default function StaffPage() {
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsString.withDefault("all"),
+  );
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [departmentFilter, setDepartmentFilter] = useQueryState(
+    "department",
+    parseAsString.withDefault(""),
+  );
+  const [roleFilter, setRoleFilter] = useQueryState("role", parseAsString.withDefault("all"));
+  const [genderFilter, setGenderFilter] = useQueryState("gender", parseAsString.withDefault(""));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [pageSize, setPageSize] = useQueryState("page_size", parseAsInteger.withDefault(20));
+
+  const urlParams = useMemo<StaffTableUrlParams>(
+    () => ({
+      search,
+      status: statusFilter,
+      department: departmentFilter,
+      role: roleFilter,
+      gender: genderFilter,
+    }),
+    [search, statusFilter, departmentFilter, roleFilter, genderFilter]
+  );
+
+  const staffQuery = useMemo(
+    () => ({
+      search: search || undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      department: departmentFilter || undefined,
+      is_teacher:
+        roleFilter === "teacher"
+          ? "true"
+          : roleFilter === "staff"
+            ? "false"
+            : undefined,
+      gender: genderFilter || undefined,
+      page,
+      page_size: pageSize,
+    }),
+    [search, statusFilter, departmentFilter, roleFilter, genderFilter, page, pageSize],
+  );
+
   const staffApi = useStaff();
-  const { data, isLoading, error, isFetching, refetch } = staffApi.getStaff({});
+  const { data, isLoading, error, isFetching, refetch } = staffApi.getStaff(staffQuery);
+  const { data: departmentsData } = staffApi.getDepartments({ page_size: 500 });
   const createMutation = staffApi.createStaff();
-  const [deleteStaff, setDeleteStaff] = useState<StaffListItem | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRefresh = useCallback(() => {
@@ -94,33 +128,54 @@ export default function StaffPage() {
     }
   };
 
-  const handleDeleteConfirm = useCallback(() => {
-    if (!deleteStaff) return;
-    setIsDeleting(true);
-    const deleteMutation = staffApi.deleteStaff(deleteStaff.id);
-    deleteMutation.mutate(undefined, {
-      onSuccess: () => {
-        showToast.success(
-          "Staff deleted",
-          `${deleteStaff.full_name} has been permanently removed`,
-        );
-        setDeleteStaff(null);
-        setIsDeleting(false);
-        refetch();
-      },
-      onError: (err) => {
-        showToast.error("Delete failed", getErrorMessage(err));
-        setIsDeleting(false);
-      },
-    });
-  }, [deleteStaff, staffApi, refetch]);
-
   const staffList = useMemo(() => {
     if (Array.isArray(data)) return data;
     return data?.results || [];
   }, [data]);
 
-  const isEmpty = !isLoading && staffList.length === 0;
+  const departmentFilterOptions = useMemo(() => {
+    const departments = Array.isArray(departmentsData)
+      ? departmentsData
+      : departmentsData?.results || [];
+
+    return departments
+      .map((department: { id: string; name: string }) => ({
+        label: department.name,
+        value: department.id,
+      }))
+      .sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label));
+  }, [departmentsData]);
+
+  const serverPagination = useMemo(() => {
+    if (Array.isArray(data) || !data || typeof data.count !== "number") {
+      return undefined;
+    }
+
+    return {
+      totalCount: data.count,
+      currentPage: page,
+      pageSize,
+      onPageChange: (nextPage: number) => {
+        void setPage(nextPage);
+      },
+      onPageSizeChange: (nextPageSize: number) => {
+        void setPageSize(nextPageSize);
+        void setPage(1);
+      },
+    };
+  }, [data, page, pageSize, setPage, setPageSize]);
+
+  const setUrlParams = useCallback(
+    (params: StaffTableUrlParams & { page: number }) => {
+      void setSearch(params.search || "");
+      void setStatusFilter(params.status || "all");
+      void setDepartmentFilter(params.department || "");
+      void setRoleFilter(params.role || "all");
+      void setGenderFilter(params.gender || "");
+      void setPage(params.page || 1);
+    },
+    [setSearch, setStatusFilter, setDepartmentFilter, setRoleFilter, setGenderFilter, setPage]
+  );
 
   // Calculate stats from staff data
   const stats = useMemo(() => {
@@ -180,20 +235,15 @@ export default function StaffPage() {
             <AddStaffDropdown
               disabled={isLoading || isFetching}
               onAddIndividual={() => setShowCreateModal(true)}
-              onUploadBulk={() =>
-                showToast.info(
-                  "Coming soon",
-                  "Bulk upload is in the works and will be available soon.",
-                )
-              }
+              onUploadBulk={() => setShowBulkUploadModal(true)}
             />
           </>
         }
         fetching={isFetching}
         refreshAction={handleRefresh}
-        loading={isLoading}
+        // loading={isLoading}
         error={error}
-        noData={isEmpty}
+        // noData={isEmpty}
         skeleton={<StaffTableSkeleton />}
         filterActions={
            <StaffFormModal
@@ -208,38 +258,29 @@ export default function StaffPage() {
         emptyStateAction={() => setShowCreateModal(true)}
       >
         {/* Stats Cards */}
-        {!isEmpty && !isLoading && <StaffStatsCards items={stats} />}
+             <StatsCards items={stats} />
 
-        {!isEmpty && <StaffTable data={data} />}
+          <StaffTable
+            data={data}
+            urlParams={urlParams}
+            setUrlParams={setUrlParams}
+            departmentFilterOptions={departmentFilterOptions}
+            serverPagination={serverPagination}
+            loading={isFetching}
+            onDataChanged={handleRefresh}
+          />
 
       </PageLayout>
 
       {/* Staff Form Modal */}
-     
 
-      {/* Delete Dialog */}
-      {deleteStaff && (
-        <AlertDialog open={!!deleteStaff} onOpenChange={(open) => !open && setDeleteStaff(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete staff member?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete {deleteStaff.full_name}? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                disabled={isDeleting}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+      <StaffBulkUploadDialog
+        open={showBulkUploadModal}
+        onOpenChange={setShowBulkUploadModal}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
     </>
   );
 }
@@ -255,42 +296,6 @@ function StaffTableSkeleton() {
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StaffStatsCards({
-  items,
-}: {
-  items: Array<{
-    title: string;
-    value: string;
-    subtitle: string;
-    icon: any;
-    subtitleIcon?: any;
-  }>;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {items.map((item) => (
-        <div key={item.title} className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-              <HugeiconsIcon icon={item.icon} className="w-5 h-5 text-primary" />
-            </div>
-          </div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-1">
-            {item.title}
-          </h3>
-          <p className="text-2xl font-bold mb-2">{item.value}</p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            {item.subtitleIcon && (
-              <HugeiconsIcon icon={item.subtitleIcon} className="w-3 h-3" />
-            )}
-            {item.subtitle}
-          </p>
-        </div>
-      ))}
     </div>
   );
 }

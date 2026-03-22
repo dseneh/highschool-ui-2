@@ -23,6 +23,8 @@ import NavStudentCard from "./nav-student-card";
 import NavStaffCard from "./nav-staff-card";
 import { useStudentByNumber } from "@/hooks/use-student";
 import { useStaff } from "@/lib/api2/staff";
+import { LockKeyhole } from "lucide-react";
+import { ToolTipComponent } from "../ui/tooltip";
 
 interface DetailSideNavProps {
   items: NavItem[];
@@ -61,9 +63,14 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
     return stripTenantFromPath(path, subdomain);
   }, [pathname, subdomain]);
 
+  const getItemBasePath = useMemo(
+    () => (path: string) => path.split("?")[0] || path,
+    []
+  );
+
   const activeItem = useMemo(
-    () => items.find((item) => normalizedPath === item.path) || items[0],
-    [items, normalizedPath]
+    () => items.find((item) => normalizedPath === getItemBasePath(item.path)) || items[0],
+    [items, normalizedPath, getItemBasePath]
   );
 
   // Only show loading for the active context
@@ -72,12 +79,12 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
   if (isLoading) {
     return (
       <>
-        {/* ── Tablet: Dropdown bar skeleton (sm → lg) ── */}
-        <div className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2 border-b bg-sidebar/50 sticky top-0 z-10">
+        {/* ── Mobile/Tablet: Dropdown bar skeleton (< lg) ── */}
+        <div className="flex lg:hidden items-center gap-2 px-4 py-2 border-b bg-sidebar/50 sticky top-0 z-10">
           <Skeleton className="size-7 rounded-full" />
-          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16 sm:w-20" />
           <span className="text-muted-foreground">·</span>
-          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-8 w-28 sm:w-32" />
         </div>
 
         {/* ── Desktop: Vertical tab rail skeleton (lg+) ── */}
@@ -117,15 +124,15 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
 
   return (
     <>
-      {/* ── Tablet: Dropdown bar (sm → lg) ── */}
-      <div className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2 border-b bg-sidebar/50 sticky top-0 z-10">
+      {/* ── Mobile/Tablet: Dropdown bar (< lg) ── */}
+      <div className="flex lg:hidden items-center gap-2 px-4 py-2 border-b bg-sidebar/50 sticky top-0 z-10">
         <Avatar className="size-7 rounded-full ring-1 ring-background">
           <AvatarImage src={contextData?.avatar} alt={contextTitle} />
           <AvatarFallback className="rounded-full text-[10px] font-semibold">
             {contextTitle?.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <span className="text-sm font-semibold truncate max-w-32">
+        <span className="text-sm font-semibold truncate max-w-24 sm:max-w-32">
           {contextTitle}
         </span>
         <span className="text-muted-foreground">·</span>
@@ -141,18 +148,21 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
           />
           <DropdownMenuContent align="start" className="min-w-48">
             {items.map((item) => {
-              const isActive = normalizedPath === item.path;
+              const isActive = normalizedPath === getItemBasePath(item.path);
               return (
                 <DropdownMenuItem
                   key={item.path}
-                  render={<Link href={item.path} />}
-                  className={cn(isActive && "bg-accent font-semibold")}
+                  disabled={item.disabled}
+                  title={item.disabledReason}
+                  render={item.disabled ? undefined : <Link href={item.path} />}
+                  className={cn(isActive && "bg-accent font-semibold", item.disabled && "opacity-50")}
                 >
                   <HugeiconsIcon
                     icon={item.icon}
                     className={cn("size-4 mr-2", isActive ? "opacity-100" : "opacity-60")}
                   />
                   {item.label}
+  
                 </DropdownMenuItem>
               );
             })}
@@ -173,10 +183,40 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
       <div className="flex-1 overflow-y-auto py-1.5 px-2">
         <ul className="space-y-0.5">
           {items.map((item) => {
-            const isActive = normalizedPath === item.path;
+            const isActive = normalizedPath === getItemBasePath(item.path);
 
             return (
               <li key={item.path}>
+                {item.disabled ? (
+                  
+                  <div
+                    // title={item.disabledReason}
+                    aria-disabled="true"
+                    className={cn(
+                      "justify-between flex cursor-not-allowed items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium opacity-50",
+                      isActive
+                        ? "bg-primary/10 text-primary dark:bg-primary/15"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex gap-2.5">
+
+                    <HugeiconsIcon
+                      icon={item.icon}
+                      className={cn(
+                        "size-4 shrink-0",
+                        isActive ? "opacity-100" : "opacity-70"
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
+                    </div>
+                    <ToolTipComponent
+                    content={item.disabledReason}
+                  >
+                    <LockKeyhole className="size-4 ftext-destructive/70" />
+                    </ToolTipComponent>
+                  </div>
+                ) : (
                 <Link
                   href={item.path}
                   className={cn(
@@ -196,6 +236,7 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
                   />
                   <span className="truncate">{item.label}</span>
                 </Link>
+                )}
               </li>
             );
           })}

@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import EmptyStateComponent from "./empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -56,6 +57,7 @@ interface DataTableProps<TData, TValue> {
   emptyStateDescription?: string
   emptyStateAction?: () => void
   emptyStateIcon?: React.ReactNode
+  containerClassName?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -76,6 +78,7 @@ export function DataTable<TData, TValue>({
   emptyStateDescription = "There is no data to display at the moment.",
   emptyStateAction,
   emptyStateIcon,
+  containerClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -199,7 +202,7 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="rounded-md border">
+      <div className={cn("rounded-md border", containerClassName)}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

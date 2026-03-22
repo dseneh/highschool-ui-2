@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -33,6 +34,8 @@ import type {
   CreateSectionCommand,
   UpdateSectionCommand,
 } from "@/lib/api2/section-types";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,6 +58,7 @@ import { AssignSectionTeachersDialog } from "./assign-section-teachers-dialog";
 import { SectionFeeList } from "@/components/finance/section-fee-list";
 import { useRouter } from "next/navigation";
 import { SelectField } from "@/components/ui/select-field";
+import EmptyStateComponent from "../shared/empty-state";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -67,6 +71,7 @@ const formSchema = z.object({
 type FormInput = z.input<typeof formSchema>;
 
 type SectionStatus = "active" | "inactive";
+type SectionHealthFilter = "all" | "near" | "full";
 
 export function SectionTab() {
   const router = useRouter();
@@ -78,6 +83,9 @@ export function SectionTab() {
 
   const [statusFilter, setStatusFilter] = useQueryState("sectionStatus", {
     defaultValue: "active",
+  });
+  const [healthFilter, setHealthFilter] = useQueryState("sectionHealth", {
+    defaultValue: "all",
   });
 
   const [showCreate, setShowCreate] = React.useState(false);
@@ -129,6 +137,47 @@ export function SectionTab() {
 
   const filteredSections =
     statusFilter === "inactive" ? inactiveSections : activeSections;
+
+  const getUtilization = React.useCallback((section: SectionDto) => {
+    const capacity = section.max_capacity ?? 0;
+    if (!capacity || capacity <= 0) {
+      return null;
+    }
+    return Math.round((section.students / capacity) * 100);
+  }, []);
+
+  const healthFilteredSections = React.useMemo(() => {
+    if (healthFilter === "all") {
+      return filteredSections;
+    }
+
+    return filteredSections.filter((section) => {
+      const utilization = getUtilization(section);
+      if (utilization === null) {
+        return false;
+      }
+      if (healthFilter === "near") {
+        return utilization >= 80 && utilization < 100;
+      }
+      return utilization >= 100;
+    });
+  }, [filteredSections, healthFilter, getUtilization]);
+
+  const nearCapacityCount = React.useMemo(
+    () => filteredSections.filter((section) => {
+      const utilization = getUtilization(section);
+      return utilization !== null && utilization >= 80 && utilization < 100;
+    }).length,
+    [filteredSections, getUtilization],
+  );
+
+  const fullCapacityCount = React.useMemo(
+    () => filteredSections.filter((section) => {
+      const utilization = getUtilization(section);
+      return utilization !== null && utilization >= 100;
+    }).length,
+    [filteredSections, getUtilization],
+  );
 
   const timetableSourceSections = React.useMemo(
     () => (sections || []).filter((section) => section.id),
@@ -206,7 +255,7 @@ export function SectionTab() {
     );
   };
 
-  const handleToggleActive = (section: SectionDto, nextActive: boolean) => {
+  const handleToggleActive = React.useCallback((section: SectionDto, nextActive: boolean) => {
     const resolvedGradeLevelId =
       gradeLevelId || section.grade_level?.id || section.grade_level_id;
     update.mutate(
@@ -226,7 +275,7 @@ export function SectionTab() {
         },
       }
     );
-  };
+  }, [gradeLevelId, update]);
 
   const handleAddSubject = (sectionId: string, sectionName: string) => {
     setAddSubjectDialog({ sectionId, sectionName });
@@ -240,6 +289,155 @@ export function SectionTab() {
     setAssignTeachersDialog({ sectionId, sectionName });
   };
 
+  const columns: ColumnDef<SectionDto>[] = React.useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Section" />
+        ),
+        cell: ({ row }) => {
+          const section = row.original;
+          return (
+            <div className="min-w-0">
+              <div className="font-medium truncate">{section.name}</div>
+              {section.description ? (
+                <div className="text-xs text-muted-foreground line-clamp-1">{section.description}</div>
+              ) : null}
+            </div>
+          );
+        },
+      },
+      {
+        id: "grade",
+        header: "Grade",
+        cell: ({ row }) => row.original.grade_level?.name ?? "-",
+      },
+      {
+        accessorKey: "students",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Students" />
+        ),
+        cell: ({ row }) => row.original.students ?? 0,
+      },
+      {
+        accessorKey: "max_capacity",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Capacity" />
+        ),
+        cell: ({ row }) => row.original.max_capacity ?? "-",
+      },
+      {
+        id: "utilization",
+        header: "Utilization",
+        cell: ({ row }) => {
+          const utilization = getUtilization(row.original);
+          if (utilization === null) {
+            return <span className="text-muted-foreground">N/A</span>;
+          }
+
+          const colorClass =
+            utilization >= 100
+              ? "bg-destructive"
+              : utilization >= 80
+              ? "bg-warning"
+              : "bg-primary";
+
+          return (
+            <div className="w-32 space-y-1">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full ${colorClass}`}
+                  style={{ width: `${Math.min(utilization, 100)}%` }}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground">{utilization}%</div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <Badge variant={row.original.active ? "default" : "secondary"}>
+              {row.original.active ? "Active" : "Inactive"}
+            </Badge>
+            <Switch
+              checked={row.original.active}
+              onCheckedChange={(checked) => handleToggleActive(row.original, checked)}
+              disabled={update.isPending}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const section = row.original;
+          return (
+            <div className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => handleAddSubject(section.id, section.name)}>
+                      Manage Subjects
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleManageFees(section)}>
+                      Manage Fees
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleAssignTeachers(section.id, section.name)}>
+                      Assign Teachers
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        router.push(
+                          `/setup/period-times?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
+                        )
+                      }
+                    >
+                      Class Period &amp; Time
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        router.push(
+                          `/setup/section-subject-scheduler?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
+                        )
+                      }
+                    >
+                      Open Section Scheduler
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => setEditingSection(section)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setDeletingSection(section)}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [getUtilization, handleToggleActive, update.isPending, router],
+  );
+
 
 
   return (
@@ -248,16 +446,6 @@ export function SectionTab() {
       description="Manage class sections and homerooms"
       actions={
         <div className="flex items-center gap-3">
-        <div className="flex items-center gap-4 w-full">
-            <h2 className="text-sm font-medium">Select Grade Level:</h2>
-            <GradeLevelSelect
-            noTitle
-            // searchable
-            placeholder="Select grade level"
-            autoSelectFirst
-            selectClassName="w-full sm:w-[200px]"
-          />
-          </div>
         <Button
           variant="outline"
           iconLeft={<HugeiconsIcon icon={Calendar03Icon} className="h-4 w-4" />}
@@ -283,7 +471,7 @@ export function SectionTab() {
       }
     >
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[280px_1fr] lg:items-end">
+        <div className="w-full border-b pb-2">
           
           {/* {selectedGradeLevel && (
             <div className="text-sm text-muted-foreground">
@@ -293,6 +481,16 @@ export function SectionTab() {
               </span>
             </div>
           )} */}
+                  <div className="flex items-center gap-4 w-full">
+            <h2 className="text-sm font-medium">Grade Level:</h2>
+            <GradeLevelSelect
+            noTitle
+            // searchable
+            placeholder="Select grade level"
+            autoSelectFirst
+            selectClassName="w-full sm:w-[200px]"
+          />
+          </div>
         </div>
 
         <Tabs
@@ -301,13 +499,24 @@ export function SectionTab() {
             setStatusFilter(value as SectionStatus)
           }
         >
-          <TabsList>
+          <TabsList  className="w-full max-w-100">
             <TabsTrigger value="active">
               Active ({activeSections.length})
             </TabsTrigger>
             <TabsTrigger value="inactive">
               Inactive ({inactiveSections.length})
             </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Tabs
+          value={healthFilter}
+          onValueChange={(value) => setHealthFilter(value as SectionHealthFilter)}
+        >
+          <TabsList className="w-full max-w-100" variant="line">
+            <TabsTrigger value="all">All ({filteredSections.length})</TabsTrigger>
+            <TabsTrigger value="near">Near Capacity ({nearCapacityCount})</TabsTrigger>
+            <TabsTrigger value="full">Full ({fullCapacityCount})</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -327,124 +536,26 @@ export function SectionTab() {
           </EmptyState>
         )}
 
-        {gradeLevelId && !isLoading && filteredSections.length === 0 && (
-          <EmptyState className="border-none bg-muted/20">
-            <EmptyStateTitle>No sections yet</EmptyStateTitle>
-            <EmptyStateDescription>
-              Create the first section for this grade level.
-            </EmptyStateDescription>
-            <EmptyStateAction>
-              <Button
-                onClick={() => setShowCreate(true)}
-                icon={<HugeiconsIcon icon={Add01Icon} className="h-4 w-4" />}
-              >
-                Add Section
-              </Button>
-            </EmptyStateAction>
-          </EmptyState>
+        {gradeLevelId && !isLoading && healthFilteredSections.length === 0 && (
+          <EmptyStateComponent 
+            title="No sections found"
+            description={
+              filteredSections.length === 0
+                ? "Create the first section for this grade level."
+                : "No sections match the current health filter."
+            }
+            // handleAction={() => setShowCreate(true)}
+            // actionLabel="Add Section"
+          />
         )}
 
-        {gradeLevelId && filteredSections.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredSections.map((section) => (
-              <div
-                key={section.id}
-                className="rounded-lg border bg-card p-4 shadow-sm flex flex-col gap-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-base truncate">{section.name}</h3>
-                    {section.grade_level?.name && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {section.grade_level.name}
-                      </p>
-                    )}
-                    {section.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {section.description}
-                      </p>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
-                        <MoreVertical className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-48">
-                    
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          onClick={() => handleAddSubject(section.id, section.name)}
-                        >
-                          Manage Subjects
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleManageFees(section)}>
-                          Manage Fees
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleAssignTeachers(section.id, section.name)}
-                        >
-                          Assign Teachers
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            router.push(
-                              `/setup/period-times?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
-                            )
-                          }
-                        >
-                          Class Period &amp; Time
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            router.push(
-                              `/setup/section-subject-scheduler?gradeLevel=${section.grade_level?.id ?? section.grade_level_id ?? ""}&section=${section.id}`
-                            )
-                          }
-                        >
-                          Open Section Scheduler
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => setEditingSection(section)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeletingSection(section)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                  <span>{section.students ?? 0} students</span>
-                  {section.max_capacity != null && (
-                    <>
-                      <span>·</span>
-                      <span>Cap: {section.max_capacity}</span>
-                    </>
-                  )}
-
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <Badge variant={section.active ? "default" : "secondary"}>
-                    {section.active ? "Active" : "Inactive"}
-                  </Badge>
-                  <Switch
-                    checked={section.active}
-                    onCheckedChange={(checked) => handleToggleActive(section, checked)}
-                    disabled={update.isPending}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+        {gradeLevelId && healthFilteredSections.length > 0 && (
+          <DataTable
+            columns={columns}
+            data={healthFilteredSections}
+            showPagination={false}
+            containerClassName="[&_th]:whitespace-nowrap [&_td]:align-middle"
+          />
         )}
 
         {/* Add Subject Dialog */}

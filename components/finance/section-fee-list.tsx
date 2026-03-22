@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {getErrorMessage, cn} from '@/lib/utils';
 import type { GeneralFeeDto, SectionFeeDto } from "@/lib/api2/finance-types";
 import {STUDENT_TARGET_LABELS, TARGET_COLORS} from '@/components/finance/utils';
-import { Pencil, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 
 interface SectionFeeListProps {
   section: {
@@ -138,7 +138,10 @@ export function SectionFeeList({ section, availableFees }: SectionFeeListProps) 
   /* ------------------------------------------------------------------ */
 
   if (isLoading) {
-    return <div className="py-4 text-muted-foreground text-sm">Loading fees...</div>;
+    return <div className="py-8 flex items-center gap-2 text-muted-foreground text-sm mx-auto">
+      <Loader2 className="animate-spin size-7" />
+      <div>Loading fees...</div>
+    </div>;
   }
   const feeCount = sectionFees?.length || 0;     
 

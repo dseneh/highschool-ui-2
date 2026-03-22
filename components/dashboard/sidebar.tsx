@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   primaryNavSections,
+  applyStudentNavigationAvailability,
   getStudentNavigation,
   getStudentPortalNavigation,
   type NavItem,
@@ -67,7 +68,7 @@ export function DashboardSidebar({
   navSections = primaryNavSections,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { navSections?: NavSection[] }) {
-  const { state: sidebarState, isMobile: isSidebarMobile } = useSidebar();
+  const { state: sidebarState, isMobile: isSidebarMobile, setOpenMobile } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
   const subdomain = useTenantSubdomain();
@@ -222,13 +223,16 @@ export function DashboardSidebar({
 
   const filteredStudentContextItems = React.useMemo(() => {
     const items = isOnStudentDetail && params.id_number
-      ? getStudentNavigation(params.id_number as string)
+      ? applyStudentNavigationAvailability(
+          getStudentNavigation(params.id_number as string),
+          student,
+        )
       : isStudent
-      ? getStudentPortalNavigation()
-      : [];
+        ? getStudentPortalNavigation()
+        : [];
 
     return items.filter((item) => canViewNavItem(item));
-  }, [isOnStudentDetail, params.id_number, canViewNavItem, isStudent]);
+  }, [isOnStudentDetail, params.id_number, canViewNavItem, isStudent, student]);
 
   const portalStudentCardData = React.useMemo(() => {
     if (!currentStudent) {
@@ -279,6 +283,12 @@ export function DashboardSidebar({
   const menuButtonClass = "h-10 w-full px-2 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center";
   const menuIconClass = "size-5 opacity-70 group-hover/menu-button:opacity-100 transition-opacity";
 
+  const closeMobileSidebar = React.useCallback(() => {
+    if (isSidebarMobile) {
+      setOpenMobile(false);
+    }
+  }, [isSidebarMobile, setOpenMobile]);
+
   // Helper to render collapsed dropdown menu
   const renderCollapsedDropdown = (item: NavItem, isParentActive: boolean) => {
     const isHoverOpen = hoveredItem === item.label;
@@ -321,6 +331,7 @@ export function DashboardSidebar({
                 key={subItem.path}
                 onClick={() => {
                   setHoveredItem(null);
+                  closeMobileSidebar();
                   router.push(subItem.path);
                 }}
                 className={cn(
@@ -369,6 +380,7 @@ export function DashboardSidebar({
                   <SidebarMenuSubItem key={subItem.path}>
                     <SidebarMenuSubButton
                       render={<Link href={subItem.path || '#'} />}
+                      onClick={closeMobileSidebar}
                       isActive={
                         normalizedPath === subItem.path ||
                         normalizedPath.startsWith(`${subItem.path}/`)
@@ -394,6 +406,7 @@ export function DashboardSidebar({
           isActive={isActive}
           tooltip={item.label}
           className={menuButtonClass}
+          onClick={closeMobileSidebar}
           render={<Link href={item.path} />}
         >
           <HugeiconsIcon icon={item.icon} className={menuIconClass} />
@@ -531,9 +544,12 @@ export function DashboardSidebar({
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
                         isActive={isActive}
-                        tooltip={item.label}
+                        tooltip={item.disabledReason || item.label}
                         className={menuButtonClass}
-                        render={<Link href={item.path} />}
+                        disabled={item.disabled}
+                        aria-disabled={item.disabled}
+                        onClick={item.disabled ? undefined : closeMobileSidebar}
+                        render={item.disabled ? undefined : <Link href={item.path} />}
                       >
                         <HugeiconsIcon icon={item.icon} className={menuIconClass} />
                         <span className="font-medium group-data-[collapsible=icon]:hidden">{item.label}</span>

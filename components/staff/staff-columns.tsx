@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ColumnDef } from "@tanstack/react-table";
 import { StaffListItem } from "@/lib/api2/staff/types";
 import { Badge } from "@/components/ui/badge";
@@ -7,22 +9,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2, Edit2 } from "lucide-react";
+import { MoreVertical, Trash2, Edit2, Ban, UserX, Clock3, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ViewIcon, Calendar03Icon, Settings01Icon } from "@hugeicons/core-free-icons";
-import Image from "next/image";
+import { AdvancedTableColumnHeader } from "@/components/shared/advanced-table";
 import AvatarImg from "../shared/avatar-img";
 
-interface StaffTableMeta {
-  onDelete?: (staff: StaffListItem) => void;
-  onEdit?: (staff: StaffListItem) => void;
-}
-
-export type { StaffTableMeta };
+export type StaffStatusActionType = "suspend" | "terminate" | "mark_on_leave" | "activate";
 
 // Status color mapping
 const statusConfig: Record<
@@ -43,15 +41,36 @@ const genderDisplay: Record<string, string> = {
   other: "Other",
 };
 
-export const staffColumns: ColumnDef<StaffListItem>[] = [
+interface StaffColumnsProps {
+  departmentFilterOptions?: Array<{ label: string; value: string }>;
+  onDelete?: (staff: StaffListItem) => void;
+  onEdit?: (staff: StaffListItem) => void;
+  onStatusAction?: (staff: StaffListItem, action: StaffStatusActionType) => void;
+  returnToUrl?: string;
+}
+
+export function getStaffColumns({
+  departmentFilterOptions = [],
+  onDelete,
+  onEdit,
+  onStatusAction,
+  returnToUrl,
+}: StaffColumnsProps = {}): ColumnDef<StaffListItem>[] {
+  const departmentLabelById = new Map(
+    departmentFilterOptions.map((option) => [option.value, option.label])
+  );
+
+  return [
   {
     accessorKey: "id_number",
-    header: "ID Number",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="ID Number" />
+    ),
     cell: ({ row }) => {
       const staff = row.original;
       return (
         <Link
-          href={`/staff/${staff.id_number}`}
+          href={`/staff/${staff.id_number}${returnToUrl ? `?returnTo=${encodeURIComponent(returnToUrl)}` : ''}`}
           className="font-semibold text-primary hover:underline"
         >
           {staff.id_number}
@@ -62,7 +81,9 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
   },
   {
     accessorKey: "full_name",
-    header: "Name",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Name" />
+    ),
     cell: ({ row }) => {
       const staff = row.original;
       return (
@@ -82,7 +103,9 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
   },
   {
     accessorKey: "gender",
-    header: "Gender",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Gender" />
+    ),
     cell: ({ row }) => {
       const gender = row.original.gender;
       return (
@@ -91,11 +114,25 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
         </span>
       );
     },
+    // Filtering is server-side; always pass rows through client-side
+    filterFn: () => true,
+    meta: {
+      displayName: "Gender",
+      filterType: "radio",
+      filterOptions: [
+        { label: "All", value: "all" },
+        { label: "Male", value: "male" },
+        { label: "Female", value: "female" },
+        { label: "Unknown", value: "unknown" },
+      ],
+    } as any,
     size: 100,
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Status" />
+    ),
     cell: ({ row }) => {
       const status = row.original.status;
       const config = statusConfig[status] || {
@@ -104,11 +141,49 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
       };
       return <Badge variant={config.variant}>{config.label}</Badge>;
     },
+    // Filtering is server-side; always pass rows through client-side
+    filterFn: () => true,
+    meta: {
+      displayName: "Status",
+      filterType: "checkbox",
+      filterOptions: [
+        { label: "Active", value: "active" },
+        { label: "Inactive", value: "inactive" },
+        { label: "On Leave", value: "on_leave" },
+        { label: "Suspended", value: "suspended" },
+        { label: "Terminated", value: "terminated" },
+        { label: "Retired", value: "retired" },
+      ],
+    } as any,
+    size: 120,
+  },
+  {
+    id: "is_teacher",
+    accessorFn: (row) => (row.is_teacher ? "teacher" : "staff"),
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Role" />
+    ),
+    cell: ({ row }) => {
+      return <span className="text-sm">{row.original.is_teacher ? "Teacher" : "Non-teacher"}</span>;
+    },
+    // Filtering is server-side; always pass rows through client-side
+    filterFn: () => true,
+    meta: {
+      displayName: "Role",
+      filterType: "radio",
+      filterOptions: [
+        { label: "All", value: "all" },
+        { label: "Teachers", value: "teacher" },
+        { label: "Non-teachers", value: "staff" },
+      ],
+    } as any,
     size: 120,
   },
   {
     accessorKey: "position",
-    header: "Position",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Position" />
+    ),
     cell: ({ row }) => {
       const position = row.original.position;
       if (!position) return <span className="text-muted-foreground">-</span>;
@@ -122,8 +197,10 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
     size: 180,
   },
   {
-    accessorKey: "primary_department",
-    header: "Department",
+    id: "department",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Department" />
+    ),
     cell: ({ row }) => {
       const department = row.original.primary_department;
       if (!department) return <span className="text-muted-foreground">-</span>;
@@ -134,11 +211,22 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
 
       return <span className="text-sm font-medium">{department.name}</span>;
     },
+    // Filtering is server-side; always pass rows through client-side
+    filterFn: () => true,
+    meta: {
+      displayName: "Department",
+      filterType: "checkbox",
+      filterOptions: departmentFilterOptions,
+      formatter: (value: string) => departmentLabelById.get(String(value)) || String(value),
+      filterSummaryMode: "count",
+    } as any,
     size: 150,
   },
   {
     accessorKey: "manager",
-    header: "Manager",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Manager" />
+    ),
     cell: ({ row }) => {
       const manager = row.original.manager;
       if (!manager) return <span className="text-muted-foreground">-</span>;
@@ -159,7 +247,9 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
   },
   {
     accessorKey: "hire_date",
-    header: "Hire Date",
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Hire Date" />
+    ),
     cell: ({ row }) => {
       const date = row.original.hire_date;
       return (
@@ -172,48 +262,94 @@ export const staffColumns: ColumnDef<StaffListItem>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
-    cell: ({ row, table }) => {
+    header: ({ column }) => (
+      <AdvancedTableColumnHeader column={column} title="Actions" />
+    ),
+    cell: ({ row }) => {
       const staff = row.original;
-      const meta = table.options.meta as StaffTableMeta | undefined;
       return (
         <StaffActionsCell
           staff={staff}
-          onEdit={meta?.onEdit}
-          onDelete={meta?.onDelete}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusAction={onStatusAction}
         />
       );
     },
     size: 80,
   },
-];
+  ];
+}
 
 function StaffActionsCell({
   staff,
   onEdit,
   onDelete,
+  onStatusAction,
 }: {
   staff: StaffListItem;
   onEdit?: (staff: StaffListItem) => void;
   onDelete?: (staff: StaffListItem) => void;
+  onStatusAction?: (staff: StaffListItem, action: StaffStatusActionType) => void;
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnToUrl = useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }, [pathname, searchParams]);
+
   const menuItems = [
     {
       label: "View Details",
       icon: ViewIcon,
-      href: `/staff/${staff.id_number}`,
+      href: `/staff/${staff.id_number}?returnTo=${encodeURIComponent(returnToUrl)}`,
     },
     {
       label: "Schedule",
       icon: Calendar03Icon,
-      href: `/staff/${staff.id_number}/schedule`,
+      href: `/staff/${staff.id_number}/schedule?returnTo=${encodeURIComponent(returnToUrl)}`,
     },
     {
       label: "Settings",
       icon: Settings01Icon,
-      href: `/staff/${staff.id_number}/settings`,
+      href: `/staff/${staff.id_number}/settings?returnTo=${encodeURIComponent(returnToUrl)}`,
     },
   ];
+
+  const statusActions: Array<{
+    label: string;
+    icon: typeof Ban;
+    action: StaffStatusActionType;
+    visible: boolean;
+    destructive?: boolean;
+  }|any> = [
+    {
+      label: "Suspend Staff",
+      icon: Ban,
+      action: "suspend",
+      visible: staff.status !== "suspended" && staff.status !== "terminated",
+    },
+    {
+      label: "Terminate Staff",
+      icon: UserX,
+      action: "terminate",
+      visible: staff.status !== "terminated",
+      destructive: true,
+    },
+    {
+      label: "Mark On Leave",
+      icon: Clock3,
+      action: "mark_on_leave",
+      visible: staff.status !== "on_leave" && staff.status !== "terminated",
+    },
+    {
+      label: "Restore Active",
+      icon: RotateCcw,
+      action: "activate",
+      visible: staff.status !== "active",
+    },
+  ].filter((item) => item.visible);
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -237,6 +373,18 @@ function StaffActionsCell({
             <Edit2 className="mr-2 h-4 w-4" />
             <span>Edit</span>
           </DropdownMenuItem>
+          {statusActions.length > 0 && <DropdownMenuSeparator />}
+          {statusActions.map((item) => (
+            <DropdownMenuItem
+              key={item.action}
+              onClick={() => onStatusAction?.(staff, item.action)}
+              className={item.destructive ? "text-destructive" : undefined}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.label}</span>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => onDelete?.(staff)}
             className="text-destructive"

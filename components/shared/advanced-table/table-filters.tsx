@@ -27,6 +27,7 @@ export function TableFilters<TData>({ table, disabled = false }: TableFiltersPro
       const meta = column.columnDef.meta as any
       if (!meta?.filterType) return false
       if (meta.filterType === "number") return Boolean(meta?.filterConditions?.length)
+      if (meta.filterType === "daterange") return true
       return Boolean(meta?.filterOptions?.length)
     })
   }, [columns])
@@ -37,6 +38,10 @@ export function TableFilters<TData>({ table, disabled = false }: TableFiltersPro
       const filterValue = column.getFilterValue()
       if (Array.isArray(filterValue)) {
         return filterValue.length > 0
+      }
+      if (filterValue && typeof filterValue === "object" && "value" in filterValue && !("condition" in filterValue)) {
+        const dateRangeValue = filterValue as { value?: [string, string] }
+        return Boolean(dateRangeValue.value?.[0] || dateRangeValue.value?.[1])
       }
       if (filterValue && typeof filterValue === "object" && "condition" in filterValue) {
         return Boolean((filterValue as { condition?: string }).condition)

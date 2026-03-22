@@ -188,6 +188,7 @@ export interface StudentDto {
     email: string;
   } | null;
   balance?: number | null;
+  paid?: number | null;
   grade_average?: number | null;
   rank?: number | null;
   total_average: number;
@@ -292,10 +293,14 @@ export interface ListStudentsParams {
   enrollmentStatus?: string;
   academicYearId?: string;
   search?: string;
+  paid_condition?: string;
+  paid_min?: string;
+  paid_max?: string;
   include_billing?: "0" | "1" | "true" | "false";
   show_rank?: "0" | "1" | "true" | "false";
   show_grade_average?: "0" | "1" | "true" | "false";
   show_balance?: "0" | "1" | "true" | "false";
+  show_paid?: "0" | "1" | "true" | "false";
   pageNumber?: number;
   pageSize?: number;
 }
@@ -306,4 +311,49 @@ export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
+}
+
+export type StudentImportTaskStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface StudentImportResult {
+  success: boolean;
+  created: number;
+  errors: string[];
+  total_errors: number;
+  message: string;
+}
+
+export interface StudentImportStartResponse {
+  task_id?: string;
+  status?: StudentImportTaskStatus;
+  processing_mode?: "background" | "synchronous";
+  row_count?: number;
+  message?: string;
+  check_status_url?: string;
+  success?: boolean;
+  created?: number;
+  errors?: string[];
+  total_errors?: number;
+}
+
+export interface StudentImportTaskResponse {
+  task_id: string;
+  status: StudentImportTaskStatus;
+  progress: number;
+  created_at: string;
+  updated_at: string;
+  grade_level_id: string;
+  file_name: string;
+  estimated_count: number;
+  total_processed: number;
+  created: number;
+  total_errors: number;
+  errors: string[];
+  result?: StudentImportResult;
+  error?: string;
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useStudents as useStudentsApi } from "@/lib/api2/student";
 import { useGradeLevels } from "@/hooks/use-grade-level";
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
+import { useStudents, useStudentMutations } from "@/hooks/use-student";
 import {
   UserGroupIcon,
   UserCircleIcon,
@@ -13,11 +13,12 @@ import {
 import { StudentTable } from "../../../../components/students/student-table";
 import { StudentTableSkeleton } from "@/components/students/student-table-skeleton";
 import { EmptyStudents } from "@/components/students/empty-students";
-import { StudentStatsCards } from "@/components/students/student-stats-cards";
+import { StatsCards } from "@/components/shared/stats-cards";
 import { StudentFormModal } from "@/components/students/student-form";
 import { EnrollmentDialog } from "@/components/students/enrollment-dialog";
 import { DeleteStudentDialog } from "@/components/students/delete-student-dialog";
 import { AddStudentDropdown } from "@/components/students/add-student-dropdown";
+import { StudentBulkUploadDialog } from "@/components/students/student-bulk-upload-dialog";
 import { useMemo, useCallback } from "react";
 import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { showToast } from "@/lib/toast";
@@ -30,7 +31,6 @@ import { getQueryClient } from "@/lib/query-client";
 import type { StudentTableUrlParams } from "../../../../components/students/student-table";
 
 export default function StudentsPage() {
-  const studentsApi = useStudentsApi();
   const [statusFilter, setStatusFilter] = useQueryState(
     "status",
     parseAsString.withDefault("enrolled"),
@@ -43,10 +43,14 @@ export default function StudentsPage() {
   const [balanceCondition, setBalanceCondition] = useQueryState("balance_condition", parseAsString.withDefault(""));
   const [balanceMin, setBalanceMin] = useQueryState("balance_min", parseAsString.withDefault(""));
   const [balanceMax, setBalanceMax] = useQueryState("balance_max", parseAsString.withDefault(""));
+  const [paidCondition, setPaidCondition] = useQueryState("paid_condition", parseAsString.withDefault(""));
+  const [paidMin, setPaidMin] = useQueryState("paid_min", parseAsString.withDefault(""));
+  const [paidMax, setPaidMax] = useQueryState("paid_max", parseAsString.withDefault(""));
   const [includeBilling, setIncludeBilling] = useQueryState("include_billing", parseAsString.withDefault("0"));
   const [showRank, setShowRank] = useQueryState("show_rank", parseAsString.withDefault("1"));
   const [showGradeAverage, setShowGradeAverage] = useQueryState("show_grade_average", parseAsString.withDefault("1"));
-  const [showBalance, setShowBalance] = useQueryState("show_balance", parseAsString.withDefault("1"));
+  const [showBalance, setShowBalance] = useQueryState("show_balance", parseAsString.withDefault("0"));
+  const [showPaid, setShowPaid] = useQueryState("show_paid", parseAsString.withDefault("0"));
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [pageSize, setPageSize] = useQueryState(
     "page_size",
@@ -64,10 +68,14 @@ export default function StudentsPage() {
       balance_condition: balanceCondition,
       balance_min: balanceMin,
       balance_max: balanceMax,
+      paid_condition: paidCondition,
+      paid_min: paidMin,
+      paid_max: paidMax,
       include_billing: includeBilling,
       show_rank: showRank,
       show_grade_average: showGradeAverage,
       show_balance: showBalance,
+      show_paid: showPaid,
     }),
     [
       search,
@@ -79,11 +87,25 @@ export default function StudentsPage() {
       balanceCondition,
       balanceMin,
       balanceMax,
+      paidCondition,
+      paidMin,
+      paidMax,
       includeBilling,
       showRank,
       showGradeAverage,
       showBalance,
+      showPaid,
     ]
+  );
+
+  const normalizeBooleanFlag = useCallback(
+    (value: string): "0" | "1" | "true" | "false" => {
+      if (value === "0" || value === "1" || value === "true" || value === "false") {
+        return value;
+      }
+      return "0";
+    },
+    []
   );
 
   const studentQuery = useMemo(
@@ -97,10 +119,14 @@ export default function StudentsPage() {
       balance_condition: balanceCondition || undefined,
       balance_min: balanceMin || undefined,
       balance_max: balanceMax || undefined,
-      include_billing: includeBilling || "0",
-      show_rank: showRank || "0",
-      show_grade_average: showGradeAverage || "0",
-      show_balance: showBalance || "0",
+      paid_condition: paidCondition || undefined,
+      paid_min: paidMin || undefined,
+      paid_max: paidMax || undefined,
+      include_billing: normalizeBooleanFlag(includeBilling),
+      show_rank: normalizeBooleanFlag(showRank),
+      show_grade_average: normalizeBooleanFlag(showGradeAverage),
+      show_balance: normalizeBooleanFlag(showBalance),
+      show_paid: normalizeBooleanFlag(showPaid),
       page,
       page_size: pageSize,
     }),
@@ -114,24 +140,30 @@ export default function StudentsPage() {
       balanceCondition,
       balanceMin,
       balanceMax,
+      paidCondition,
+      paidMin,
+      paidMax,
       includeBilling,
+      normalizeBooleanFlag,
       showRank,
       showGradeAverage,
       showBalance,
+      showPaid,
       page,
       pageSize,
     ],
   );
 
-  const { data, isLoading, error, isFetching, refetch } = studentsApi.getStudents(studentQuery);
+  const { data, isLoading, error, isFetching, refetch } = useStudents(studentQuery);
   const { data: gradeLevels = [] } = useGradeLevels();
-  const createMutation = studentsApi.createStudent();
+  const { create: createMutation, remove: removeMutation } = useStudentMutations();
   const { data: currentYear } = useCurrentAcademicYear();
   const canManageStudents = useHasRole("teacher");
 
   const queryClient = getQueryClient()
   
   const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = React.useState(false);
   const [enrollStudent, setEnrollStudent] = React.useState<StudentDto | null>(
     null,
   );
@@ -162,9 +194,8 @@ export default function StudentsPage() {
     (force: boolean) => {
       if (!deleteStudent) return;
       setIsDeleting(true);
-      const deleteMutation = studentsApi.deleteStudent(deleteStudent.id);
-      deleteMutation.mutate(
-        force,
+      removeMutation.mutate(
+        { id: deleteStudent.id, force },
         {
           onSuccess: () => {
             showToast.success(
@@ -182,7 +213,7 @@ export default function StudentsPage() {
         },
       );
     },
-    [deleteStudent, studentsApi, queryClient],
+    [deleteStudent, removeMutation, queryClient],
   );
 
   const studentsList = useMemo(() => {
@@ -242,7 +273,7 @@ export default function StudentsPage() {
   const setUrlParams = useCallback(
     (params: StudentTableUrlParams & { page: number }) => {
       void setSearch(params.search || "");
-      void setStatusFilter(params.status && params.status !== "all" ? params.status : "enrolled");
+      void setStatusFilter(params.status || "enrolled");
       void setGradeLevelFilter(params.grade_level || "");
       void setSectionFilter(params.section || "");
       void setGenderFilter(params.gender || "");
@@ -250,10 +281,14 @@ export default function StudentsPage() {
       void setBalanceCondition(params.balance_condition || "");
       void setBalanceMin(params.balance_min || "");
       void setBalanceMax(params.balance_max || "");
+      void setPaidCondition(params.paid_condition || "");
+      void setPaidMin(params.paid_min || "");
+      void setPaidMax(params.paid_max || "");
       void setIncludeBilling(params.include_billing || "0");
       void setShowRank(params.show_rank || "0");
       void setShowGradeAverage(params.show_grade_average || "0");
       void setShowBalance(params.show_balance || "0");
+      void setShowPaid(params.show_paid || "0");
       void setPage(params.page || 1);
     },
     [
@@ -266,10 +301,14 @@ export default function StudentsPage() {
       setBalanceCondition,
       setBalanceMin,
       setBalanceMax,
+      setPaidCondition,
+      setPaidMin,
+      setPaidMax,
       setIncludeBilling,
       setShowRank,
       setShowGradeAverage,
       setShowBalance,
+      setShowPaid,
       setPage,
     ],
   );
@@ -331,12 +370,7 @@ export default function StudentsPage() {
             <AddStudentDropdown
               disabled={isLoading || isFetching || !canManageStudents}
               onAddIndividual={() => setShowCreateModal(true)}
-              onUploadBulk={() =>
-                showToast.info(
-                  "Coming soon",
-                  "Bulk upload is in the works and will be available soon.",
-                )
-              }
+              onUploadBulk={() => setShowBulkUploadModal(true)}
             />
           </>
         }
@@ -349,7 +383,7 @@ export default function StudentsPage() {
         emptyState={<EmptyStudents onAddStudent={() => setShowCreateModal(true)} />}
       >
         {/* Stats Cards */}
-        <StudentStatsCards items={stats} />
+        <StatsCards items={stats} />
 
           <StudentTable
             data={studentsList}
@@ -382,6 +416,12 @@ export default function StudentsPage() {
           }
         }}
         submitting={createMutation.isPending}
+      />
+
+      <StudentBulkUploadDialog
+        open={showBulkUploadModal}
+        onOpenChange={setShowBulkUploadModal}
+        gradeLevels={gradeLevels}
       />
 
       {/* Enrollment Dialog */}

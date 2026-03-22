@@ -587,8 +587,8 @@ export function StudentFormModal({
             </DialogTitle>
             <DialogDescription className="text-sm">
               {isEdit
-                ? "Update the student\u2019s information below."
-                : "Fill in the student\u2019s information to register them."}
+                ? "Update the students information below."
+                : "Fill in the students information to register them."}
             </DialogDescription>
           </DialogHeader>
           <StepIndicator steps={STEPS} currentIndex={stepIndex} />
@@ -1049,7 +1049,7 @@ export function StudentFormModal({
               <Button
                 onClick={handleSubmit}
                 loading={submitting}
-                loadingText={isEdit ? "Saving\u2026" : "Creating\u2026"}
+                loadingText={isEdit ? "Saving" : "Creating"}
                 iconLeft={
                   isEdit ? (
                     <HugeiconsIcon icon={PencilEdit01Icon} />

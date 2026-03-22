@@ -63,10 +63,10 @@ export function AdvancedTablePagination<TData>({
     canGoNext = table.getCanNextPage()
   }
 
-  // Hide pagination if total results fit on one page
-  if (totalRows === 0 || (totalRows <= pageSize)) {
-    return null
-  }
+  // Hide pagination when there are no results at all
+  if (totalRows === 0) return null
+  // For client-side pagination, also hide when all rows fit on one page
+  if (!isServerSidePagination && totalRows <= pageSize) return null
 
   const handlePageSizeChange = (newSize: number) => {
     if (isServerSidePagination && onPageSizeChange) {

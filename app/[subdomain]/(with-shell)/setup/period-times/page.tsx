@@ -37,6 +37,7 @@ import {
   type SectionTimeSlotDto,
 } from "./_components/types";
 import { getQueryClient } from "@/lib/query-client";
+import ClassSectionSidebar from "./_components/class-section-sidebar";
 
 export default function PeriodTimeSetupPage() {
   const queryClient = getQueryClient();
@@ -382,7 +383,7 @@ export default function PeriodTimeSetupPage() {
     setShowDeleteSlotDialog(false);
   };
 
-  const selectedSectionName = allSections.find((s) => s.id === effectiveSectionId)?.name ?? "-";
+  const selectedSectionName = allSections.find((s) => s.id === effectiveSectionId)?.section_class ?? "-";
   const filteredGradeLevels = useMemo(() => {
     const q = sidebarSearch.trim().toLowerCase();
     if (!q) return gradeLevels;
@@ -431,67 +432,12 @@ export default function PeriodTimeSetupPage() {
       }
     >
       <div className="flex gap-0 -mx-1" style={{ height: "calc(100vh - 160px)" }}>
-        <div className="w-56 shrink-0 border-r flex flex-col">
-          <div className="px-2 pb-3 shrink-0">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Find section..."
-                value={sidebarSearch}
-                onChange={(e) => setSidebarSearch(e.target.value)}
-                className="pl-8 h-8 text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1">
-            {gradeLevelsLoading ? (
-              <div className="space-y-2 pt-1 px-2">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-8 w-full rounded-lg" />)}
-              </div>
-            ) : filteredGradeLevels.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-2 pt-3">
-                {sidebarSearch ? "No sections match your search." : "No grade levels found."}
-              </p>
-            ) : (
-              <div className="space-y-4 pt-1">
-                {filteredGradeLevels.map((gl) => (
-                  <div key={gl.id}>
-                    <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                      {gl.name}
-                    </p>
-                    <div className="space-y-0.5">
-                      {gl.sections.length === 0 ? (
-                        <p className="px-2 text-xs text-muted-foreground italic">No sections</p>
-                      ) : (
-                        gl.sections.map((sec) => {
-                          const isActive = sec.id === effectiveSectionId;
-                          return (
-                            <button
-                              key={sec.id}
-                              className={cn(
-                                "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                                isActive
-                                  ? "bg-primary text-primary-foreground font-semibold"
-                                  : "hover:bg-muted text-foreground",
-                              )}
-                              onClick={() => {
-                                setSectionId(sec.id);
-                                setGradeLevelId(gl.id);
-                              }}
-                            >
-                              {sec.name}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+       
+        <ClassSectionSidebar 
+          loading={gradeLevelsLoading}
+          selectedSectionId={effectiveSectionId}
+          filteredGradeLevels={filteredGradeLevels}
+        />
 
         <div className="flex-1 min-w-0 pl-5 overflow-y-auto">
           {!effectiveSectionId ? (
@@ -504,10 +450,10 @@ export default function PeriodTimeSetupPage() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div>
-                  <h2 className="font-semibold text-base">{selectedSectionName}</h2>
-                  <p className="text-xs text-muted-foreground">
+                  <h2 className="font-semibold text-lg text-primary">{selectedSectionName}</h2>
+                  {/* <p className="text-xs text-muted-foreground">
                     {allSections.find((s) => s.id === effectiveSectionId)?.gradeLevelName}
-                  </p>
+                  </p> */}
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
                   <Badge variant="secondary">{sectionSlots.length} slots</Badge>

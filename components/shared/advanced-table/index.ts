@@ -8,6 +8,11 @@ export { CommandBar } from "./command-bar"
 export { ViewOptions } from "./view-options"
 export { TableFilters } from "./table-filters"
 export { TableFiltersInline } from "./table-filters-inline"
+export {
+  DEFAULT_NUMBER_FILTER_CONDITIONS,
+  buildNumberConditionQueryParams,
+  getPrimaryConditionValue,
+} from "./number-filter-utils"
 
 export type {
   AdvancedTableProps,
@@ -15,6 +20,8 @@ export type {
   FilterOption,
   FilterValue,
   ConditionFilter,
+  DateRangeFilter,
   TableColumnMeta,
   NumberCondition,
 } from "./types"
+export type { NumberConditionValue } from "./number-filter-utils"

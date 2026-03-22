@@ -1,126 +1,120 @@
 "use client";
 
 import * as React from "react";
+import type { Table } from "@tanstack/react-table";
 import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
-  EmptyState,
-  EmptyStateIcon,
-  EmptyStateTitle,
-  EmptyStateDescription,
-  EmptyStateAction,
-} from "@/components/ui/empty-state";
-import {
-  Search,
-  ChevronDown,
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
-  Filter,
-  Circle,
-  CheckCircle2,
-  XCircle,
-  Users,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { getStatusTextClass } from "@/lib/status-colors";
-import { StaffListItem, StaffListResponse } from "@/lib/api2/staff/types";
-import { staffColumns, type StaffTableMeta } from "./staff-columns";
-import { useStaff } from "@/lib/api2/staff";
+  AdvancedTable,
+  Searchbar,
+  TableFilters,
+  TableFiltersInline,
+  ViewOptions,
+} from "@/components/shared/advanced-table";
+import { DialogBox } from "@/components/ui/dialog-box";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Textarea } from "@/components/ui/textarea";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils/error-handler";
-import { AddStaffDropdown } from "./add-staff-dropdown";
+import { useStaff } from "@/lib/api2/staff";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useRouter } from "next/navigation";
+  getStaffColumns,
+  type StaffStatusActionType,
+} from "./staff-columns";
+import type { StaffListItem, StaffListResponse } from "@/lib/api2/staff/types";
+import StaffHeader from "./staff-header";
 
-const statusConfig: Record<
-  string,
-  { label: string; icon: React.ElementType }
-> = {
-  active: {
-    label: "Active",
-    icon: CheckCircle2,
-  },
-  inactive: {
-    label: "Inactive",
-    icon: XCircle,
-  },
-  on_leave: {
-    label: "On Leave",
-    icon: Circle,
-  },
-  retired: {
-    label: "Retired",
-    icon: Circle,
-  },
-};
+export interface StaffTableUrlParams {
+  search: string;
+  status: string;
+  department: string;
+  role: string;
+  gender: string;
+}
 
 interface StaffTableProps {
   data?: StaffListResponse;
-  isLoading?: boolean;
-  onAddClick?: () => void;
-  onUploadBulk?: () => void;
+  urlParams: StaffTableUrlParams;
+  setUrlParams: (params: StaffTableUrlParams & { page: number }) => void;
+  departmentFilterOptions?: Array<{ label: string; value: string }>;
+  serverPagination?: {
+    totalCount: number;
+    currentPage: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (size: number) => void;
+  };
+  loading?: boolean;
+  onDataChanged?: () => void;
+}
+
+function parseCsv(value?: string): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 }
 
 export function StaffTable({
   data,
-  isLoading = false,
-  onAddClick,
-  onUploadBulk,
+  urlParams,
+  setUrlParams,
+  departmentFilterOptions = [],
+  serverPagination,
+  loading,
+  onDataChanged,
 }: StaffTableProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState("all");
-  const [positionFilter, setPositionFilter] = React.useState("all");
-  const [departmentFilter, setDepartmentFilter] = React.useState("all");
-  const [roleFilter, setRoleFilter] = React.useState("all");
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnToUrl = React.useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }, [pathname, searchParams]);
+  const staffApi = useStaff();
+
+  const [tableInstance, setTableInstance] = React.useState<Table<StaffListItem> | null>(null);
+  const isApplyingUrlFilters = React.useRef(false);
+  const previousColumnFilters = React.useRef<string>("");
+
   const [deleteStaff, setDeleteStaff] = React.useState<StaffListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteConfirmed, setDeleteConfirmed] = React.useState(false);
 
-  const staffApi = useStaff();
-  const { deleteStaff: deleteStaffMutation } = staffApi;
+  const [statusAction, setStatusAction] = React.useState<{
+    type: StaffStatusActionType;
+    staff: StaffListItem;
+  } | null>(null);
+  const [statusActionConfirmed, setStatusActionConfirmed] = React.useState(false);
+  const [statusActionDate, setStatusActionDate] = React.useState<Date | undefined>(new Date());
+  const [statusActionReason, setStatusActionReason] = React.useState("");
+
+  const [searchInputValue, setSearchInputValue] = React.useState(urlParams.search);
+  const isSearchDirty = searchInputValue.trim() !== urlParams.search.trim();
+
+  React.useEffect(() => {
+    setSearchInputValue(urlParams.search);
+  }, [urlParams.search]);
+
   const { mutateAsync: performDelete, isPending: isDeleting } =
-    deleteStaffMutation(deleteStaff?.id || "");
+    staffApi.deleteStaff(deleteStaff?.id || "");
 
-  const handleDelete = (staff: StaffListItem) => {
+  const { mutateAsync: patchStaffStatus, isPending: isUpdatingStatus } =
+    staffApi.patchStaff(statusAction?.staff.id || "");
+
+  const handleDelete = React.useCallback((staff: StaffListItem) => {
     setDeleteStaff(staff);
+    setDeleteConfirmed(false);
     setDeleteDialogOpen(true);
-  };
+  }, []);
+
+  const handleStatusAction = React.useCallback((staff: StaffListItem, action: StaffStatusActionType) => {
+    setStatusAction({ staff, type: action });
+    setStatusActionConfirmed(false);
+    setStatusActionReason("");
+    setStatusActionDate(new Date());
+  }, []);
 
   const handleConfirmDelete = async () => {
     if (!deleteStaff) return;
@@ -130,414 +124,403 @@ export function StaffTable({
       showToast.success("Staff member deleted successfully");
       setDeleteDialogOpen(false);
       setDeleteStaff(null);
-      // The list will be refetched by parent component
+      setDeleteConfirmed(false);
+      onDataChanged?.();
     } catch (error) {
       showToast.error(getErrorMessage(error));
     }
   };
 
-  const staffList = React.useMemo<StaffListItem[]>(
-    () => data?.results || [],
-    [data]
+  const getStatusActionConfig = React.useCallback((action: StaffStatusActionType) => {
+    switch (action) {
+      case "suspend":
+        return {
+          title: "Suspend staff member",
+          description: "This updates the staff member status to suspended. They will remain in the system, but their employment status will reflect the suspension.",
+          actionLabel: "Suspend staff",
+          loadingText: "Suspending",
+          successTitle: "Staff suspended",
+          getSuccessMessage: (staff: StaffListItem) => `${staff.full_name} has been suspended.`,
+          requiresReason: true,
+          requiresDate: true,
+          confirmLabel: "I confirm I want to suspend this staff member.",
+          buildPayload: (date: string, reason: string) => ({
+            status: "suspended",
+            suspension_date: date,
+            suspension_reason: reason.trim(),
+          }),
+        };
+      case "terminate":
+        return {
+          title: "Terminate staff member",
+          description: "This marks the staff member as terminated. Use this only when employment has officially ended.",
+          actionLabel: "Terminate staff",
+          loadingText: "Terminating",
+          successTitle: "Staff terminated",
+          getSuccessMessage: (staff: StaffListItem) => `${staff.full_name} has been marked as terminated.`,
+          requiresReason: true,
+          requiresDate: true,
+          confirmLabel: "I confirm I want to terminate this staff member.",
+          buildPayload: (date: string, reason: string) => ({
+            status: "terminated",
+            termination_date: date,
+            termination_reason: reason.trim(),
+          }),
+        };
+      case "mark_on_leave":
+        return {
+          title: "Mark staff member on leave",
+          description: "This updates the staff member status to on leave without removing them from the system.",
+          actionLabel: "Mark on leave",
+          loadingText: "Updating",
+          successTitle: "Staff updated",
+          getSuccessMessage: (staff: StaffListItem) => `${staff.full_name} is now marked as on leave.`,
+          requiresReason: false,
+          requiresDate: false,
+          confirmLabel: "I confirm I want to mark this staff member as on leave.",
+          buildPayload: () => ({
+            status: "on_leave",
+          }),
+        };
+      case "activate":
+      default:
+        return {
+          title: "Restore staff to active",
+          description: "This restores the staff member to active status.",
+          actionLabel: "Restore active",
+          loadingText: "Restoring",
+          successTitle: "Staff restored",
+          getSuccessMessage: (staff: StaffListItem) => `${staff.full_name} is now active.`,
+          requiresReason: false,
+          requiresDate: false,
+          confirmLabel: "I confirm I want to restore this staff member to active status.",
+          buildPayload: () => ({
+            status: "active",
+            suspension_date: null,
+            suspension_reason: null,
+            termination_date: null,
+            termination_reason: null,
+          }),
+        };
+    }
+  }, []);
+
+  const formatDateForApi = React.useCallback((date: Date | undefined) => {
+    if (!date) return "";
+    return date.toISOString().split("T")[0];
+  }, []);
+
+  const handleConfirmStatusAction = async () => {
+    if (!statusAction) return;
+
+    const config = getStatusActionConfig(statusAction.type);
+    const formattedActionDate = formatDateForApi(statusActionDate);
+
+    if (config.requiresDate && !formattedActionDate) {
+      showToast.error("Action date is required");
+      return;
+    }
+
+    if (config.requiresReason && !statusActionReason.trim()) {
+      showToast.error("Reason is required");
+      return;
+    }
+
+    try {
+      await patchStaffStatus(config.buildPayload(formattedActionDate, statusActionReason));
+      showToast.success(config.successTitle, config.getSuccessMessage(statusAction.staff));
+      setStatusAction(null);
+      setStatusActionConfirmed(false);
+      setStatusActionReason("");
+      onDataChanged?.();
+    } catch (error) {
+      showToast.error("Update failed", getErrorMessage(error));
+    }
+  };
+
+  const staffRows = React.useMemo<StaffListItem[]>(() => data?.results || [], [data]);
+
+  const columns = React.useMemo(
+    () =>
+      getStaffColumns({
+        departmentFilterOptions,
+        onDelete: handleDelete,
+        onStatusAction: handleStatusAction,
+        returnToUrl,
+      }),
+    [departmentFilterOptions, handleDelete, handleStatusAction, returnToUrl]
   );
 
-  const positionOptions = React.useMemo(() => {
-    const positions = new Set<string>();
-    staffList.forEach((staff) => {
-      const label = getPositionLabel(staff);
-      if (label) positions.add(label);
-    });
-    return Array.from(positions).sort();
-  }, [staffList]);
+  React.useEffect(() => {
+    if (!tableInstance) return;
 
-  const departmentOptions = React.useMemo(() => {
-    const departments = new Set<string>();
-    staffList.forEach((staff) => {
-      const label = getDepartmentLabel(staff);
-      if (label) departments.add(label);
-    });
-    return Array.from(departments).sort();
-  }, [staffList]);
+    isApplyingUrlFilters.current = true;
 
-  const filteredStaff = React.useMemo(() => {
-    return staffList.filter((staff) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        staff.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        staff.id_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        staff.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (staff.phone_number || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const applyArrayFilter = (columnId: string, csv: string) => {
+      const column = tableInstance.getColumn(columnId);
+      if (!column) return;
+      const values = parseCsv(csv).filter((value) => value !== "all");
+      column.setFilterValue(values.length > 0 ? values : undefined);
+    };
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (staff.status || "").toLowerCase() === statusFilter;
+    const applySelectFilter = (columnId: string, value: string) => {
+      const column = tableInstance.getColumn(columnId);
+      if (!column) return;
+      column.setFilterValue(value && value !== "all" ? value : undefined);
+    };
 
-      const matchesPosition =
-        positionFilter === "all" || getPositionLabel(staff) === positionFilter;
+    applyArrayFilter("status", urlParams.status);
+    applyArrayFilter("department", urlParams.department);
+    applySelectFilter("is_teacher", urlParams.role || "all");
+    applySelectFilter("gender", urlParams.gender || "all");
 
-      const matchesDepartment =
-        departmentFilter === "all" ||
-        getDepartmentLabel(staff) === departmentFilter;
+    setTimeout(() => {
+      previousColumnFilters.current = JSON.stringify(tableInstance.getState().columnFilters);
+      isApplyingUrlFilters.current = false;
+    }, 0);
+  }, [tableInstance, urlParams]);
 
-      const matchesRole =
-        roleFilter === "all" ||
-        (roleFilter === "teacher" ? staff.is_teacher : !staff.is_teacher);
+  React.useEffect(() => {
+    if (!tableInstance) return;
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesPosition &&
-        matchesDepartment &&
-        matchesRole
-      );
-    });
-  }, [staffList, searchQuery, statusFilter, positionFilter, departmentFilter, roleFilter]);
+    const handleStateChange = () => {
+      if (isApplyingUrlFilters.current) return;
 
-  const tableMeta = React.useMemo<StaffTableMeta>(
-    () => ({ onDelete: handleDelete }),
-    []
+      const columnFilters = tableInstance.getState().columnFilters;
+      const currentFiltersString = JSON.stringify(columnFilters);
+      if (currentFiltersString === previousColumnFilters.current) return;
+      previousColumnFilters.current = currentFiltersString;
+
+      const nextParams: StaffTableUrlParams & { page: number } = {
+        search: urlParams.search,
+        status: "all",
+        department: "",
+        role: "all",
+        gender: "",
+        page: 1,
+      };
+
+      columnFilters.forEach((filter) => {
+        if (filter.id === "status") {
+          const selected = Array.isArray(filter.value)
+            ? filter.value.map((value) => String(value).toLowerCase()).filter((value) => value !== "all")
+            : [];
+          nextParams.status = selected.length > 0 ? selected.join(",") : "all";
+          return;
+        }
+
+        if (filter.id === "department") {
+          nextParams.department = Array.isArray(filter.value) ? filter.value.join(",") : "";
+          return;
+        }
+
+        if (filter.id === "is_teacher") {
+          const selected = String(filter.value || "all");
+          nextParams.role = selected === "teacher" || selected === "staff" ? selected : "all";
+          return;
+        }
+
+        if (filter.id === "gender") {
+          const selected = String(filter.value || "all");
+          nextParams.gender =
+            selected === "male" || selected === "female" || selected === "unknown"
+              ? selected
+              : "";
+        }
+      });
+
+      setUrlParams(nextParams);
+    };
+
+    handleStateChange();
+    const interval = setInterval(handleStateChange, 120);
+    return () => clearInterval(interval);
+  }, [tableInstance, urlParams.search, setUrlParams]);
+
+  const handleRowClick = React.useCallback(
+    (staff: StaffListItem) => {
+      const returnTo = `${window.location.pathname}${window.location.search}`;
+      router.push(`/staff/${staff.id_number}?returnTo=${encodeURIComponent(returnTo)}`);
+    },
+    [router]
   );
-
-  const table = useReactTable({
-    data: filteredStaff,
-    columns: staffColumns,
-    meta: tableMeta,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 8,
-      },
-    },
-  });
-
-  
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-card">
-        {/* Filter Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-b border-border p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search staff..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9 w-full md:w-62.5"
-              />
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="w-42.5 h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-                <span className="truncate">
-                  {positionFilter === "all" ? "All Positions" : positionFilter}
-                </span>
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuCheckboxItem
-                  checked={positionFilter === "all"}
-                  onCheckedChange={() => setPositionFilter("all")}
-                >
-                  All Positions
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                {positionOptions.map((position) => (
-                  <DropdownMenuCheckboxItem
-                    key={position}
-                    checked={positionFilter === position}
-                    onCheckedChange={() => setPositionFilter(position)}
-                  >
-                    {position}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="w-42.5 h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-                <span className="truncate">
-                  {departmentFilter === "all" ? "All Departments" : departmentFilter}
-                </span>
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuCheckboxItem
-                  checked={departmentFilter === "all"}
-                  onCheckedChange={() => setDepartmentFilter("all")}
-                >
-                  All Departments
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                {departmentOptions.map((department) => (
-                  <DropdownMenuCheckboxItem
-                    key={department}
-                    checked={departmentFilter === department}
-                    onCheckedChange={() => setDepartmentFilter(department)}
-                  >
-                    {department}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-                <Filter className="size-4 shrink-0" />
-                {statusFilter === "all"
-                  ? "All Status"
-                  : (statusConfig[statusFilter]?.label || statusFilter)}
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-auto overflow-y-auto">
-                <DropdownMenuCheckboxItem
-                  checked={statusFilter === "all"}
-                  onCheckedChange={() => setStatusFilter("all")}
-                >
-                  All Status
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                {Object.entries(statusConfig).map(([key, config]) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={statusFilter === key}
-                    onCheckedChange={() => setStatusFilter(key)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <config.icon className={cn("size-3.5", getStatusTextClass(key))} />
-                      {config.label}
-                    </div>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
-                <Users className="size-4 shrink-0" />
-                {roleFilter === "all"
-                  ? "All Roles"
-                  : roleFilter === "teacher"
-                    ? "Teachers"
-                    : "Non-teachers"}
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuCheckboxItem
-                  checked={roleFilter === "all"}
-                  onCheckedChange={() => setRoleFilter("all")}
-                >
-                  All Roles
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={roleFilter === "teacher"}
-                  onCheckedChange={() => setRoleFilter("teacher")}
-                >
-                  Teachers
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={roleFilter === "staff"}
-                  onCheckedChange={() => setRoleFilter("staff")}
-                >
-                  Non-teachers
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* <AddStaffDropdown
-            onAddIndividual={onAddClick || (() => {})}
-            onUploadBulk={onUploadBulk || (() => {})}
-          /> */}
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="bg-muted/50">
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="text-muted-foreground font-medium whitespace-nowrap"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => router.push(`/staff/${row.original.id_number}`)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={staffColumns.length} className="h-48">
-                    <EmptyState className="border-none py-6">
-                      <EmptyStateIcon>
-                        <Search className="size-5" />
-                      </EmptyStateIcon>
-                      <EmptyStateTitle className="text-base">No staff found</EmptyStateTitle>
-                      <EmptyStateDescription>
-                        Try adjusting your search or filters to find what you&apos;re looking for.
-                      </EmptyStateDescription>
-                    </EmptyState>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-                icon={<ChevronsLeft />}
-                tooltip="First page"
-              />
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                icon={<ChevronLeft />}
-                tooltip="Previous page"
-              />
-            </div>
-
-            <div className="flex items-center gap-1">
-              {Array.from(
-                { length: Math.min(5, table.getPageCount()) },
-                (_, i) => {
-                  const pageIndex = i;
-                  const isActive =
-                    table.getState().pagination.pageIndex === pageIndex;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => table.setPageIndex(pageIndex)}
-                      className={cn(
-                        "size-8 rounded-lg text-sm font-semibold",
-                        isActive
-                          ? "bg-muted text-foreground"
-                          : "text-foreground hover:bg-muted"
-                      )}
-                    >
-                      {pageIndex + 1}
-                    </button>
-                  );
-                }
-              )}
-              {table.getPageCount() > 5 && (
-                <>
-                  <span className="px-2 text-muted-foreground">...</span>
-                  <button
-                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    className="size-8 rounded-lg text-sm font-semibold text-foreground hover:bg-muted"
-                  >
-                    {table.getPageCount()}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                icon={<ChevronRight />}
-                tooltip="Next page"
-              />
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-                icon={<ChevronsRight />}
-                tooltip="Last page"
-              />
+      <AdvancedTable
+        loading={loading}
+        columns={columns}
+        data={staffRows}
+        pageSize={serverPagination?.pageSize ?? 20}
+        totalCount={serverPagination?.totalCount}
+        currentPage={serverPagination?.currentPage ?? 1}
+        onPageChange={serverPagination?.onPageChange}
+        onPageSizeChange={serverPagination?.onPageSizeChange}
+        onRowClick={handleRowClick}
+        showPagination={true}
+        showRowSelection={false}
+        showBulkActions={false}
+        onTableInstanceReady={setTableInstance}
+        toolbar={(table) => (
+          <div className="p-1 space-y-4 overflow-x-auto no-scrollbar">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-2 flex-1">
+                <Searchbar
+                  value={searchInputValue}
+                  disabled={loading}
+                  onChange={(event) => {
+                    setSearchInputValue(event.target.value);
+                  }}
+                  onClear={() => {
+                    setSearchInputValue("");
+                    setUrlParams({
+                      ...urlParams,
+                      search: "",
+                      page: 1,
+                    });
+                  }}
+                  onSearch={() => {
+                    setUrlParams({
+                      ...urlParams,
+                      search: searchInputValue,
+                      page: 1,
+                    });
+                  }}
+                  showDirtyIndicator={isSearchDirty}
+                  placeholder="Search staff..."
+                  className="w-full min-w-62.5 max-w-sm"
+                />
+                <div className="md:hidden">
+                  <TableFilters table={table} disabled={Boolean(loading)} />
+                </div>
+                <div className="hidden md:block">
+                  <TableFiltersInline table={table} disabled={Boolean(loading)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <ViewOptions table={table} />
+              </div>
             </div>
           </div>
+        )}
+      />
 
-          <div className="text-sm text-muted-foreground">
-            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of {table.getFilteredRowModel().rows.length} entries
+      <DialogBox
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setDeleteStaff(null);
+            setDeleteConfirmed(false);
+          }
+        }}
+        title="Delete staff record"
+        description="This permanently removes the staff record from the system. This action cannot be undone."
+        cancelLabel="Cancel"
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setDeleteStaff(null);
+          setDeleteConfirmed(false);
+        }}
+        actionLabel="Delete permanently"
+        actionVariant="destructive"
+        actionLoading={isDeleting}
+        actionLoadingText="Deleting"
+        actionDisabled={!deleteConfirmed || !deleteStaff}
+        onAction={handleConfirmDelete}
+      >
+        {deleteStaff ? (
+          <div className="space-y-4">
+            <StaffHeader staff={deleteStaff} />
+
+            <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Before you continue</p>
+              <p className="mt-1">
+                Deleting this record may affect staff history, linked schedules, or future references to this staff member.
+              </p>
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm">
+              <Checkbox
+                checked={deleteConfirmed}
+                onCheckedChange={(checked) => setDeleteConfirmed(Boolean(checked))}
+                className="mt-0.5"
+              />
+              <span>
+                I understand this will permanently delete <span className="font-medium text-foreground">{deleteStaff.full_name}</span> and cannot be undone.
+              </span>
+            </label>
           </div>
-        </div>
-      </div>
+        ) : null}
+      </DialogBox>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Staff Member</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">{deleteStaff?.full_name}</span>?
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DialogBox
+        open={!!statusAction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusAction(null);
+            setStatusActionConfirmed(false);
+            setStatusActionReason("");
+          }
+        }}
+        title={statusAction ? getStatusActionConfig(statusAction.type).title : "Update staff status"}
+        description={statusAction ? getStatusActionConfig(statusAction.type).description : undefined}
+        cancelLabel="Cancel"
+        onCancel={() => {
+          setStatusAction(null);
+          setStatusActionConfirmed(false);
+          setStatusActionReason("");
+        }}
+        actionLabel={statusAction ? getStatusActionConfig(statusAction.type).actionLabel : "Confirm"}
+        actionVariant="destructive"
+        actionLoading={isUpdatingStatus}
+        actionLoadingText={statusAction ? getStatusActionConfig(statusAction.type).loadingText : "Saving"}
+        actionDisabled={
+          !statusAction ||
+          !statusActionConfirmed ||
+          (statusAction && getStatusActionConfig(statusAction.type).requiresDate && !statusActionDate) ||
+          (statusAction && getStatusActionConfig(statusAction.type).requiresReason && !statusActionReason.trim())
+        }
+        onAction={handleConfirmStatusAction}
+      >
+        {statusAction ? (
+          <div className="space-y-4">
+            <StaffHeader staff={statusAction.staff} />
+
+            {getStatusActionConfig(statusAction.type).requiresDate && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Effective date</label>
+                <DatePicker
+                  value={statusActionDate}
+                  onChange={setStatusActionDate}
+                  allowFutureDates={false}
+                  dateFormat="MM/DD/YYYY"
+                />
+              </div>
+            )}
+
+            {getStatusActionConfig(statusAction.type).requiresReason && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason</label>
+                <Textarea
+                  value={statusActionReason}
+                  onChange={(event) => setStatusActionReason(event.target.value)}
+                  placeholder="Provide a clear reason for this status change"
+                />
+              </div>
+            )}
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm">
+              <Checkbox
+                checked={statusActionConfirmed}
+                onCheckedChange={(checked) => setStatusActionConfirmed(Boolean(checked))}
+                className="mt-0.5"
+              />
+              <span>{getStatusActionConfig(statusAction.type).confirmLabel}</span>
+            </label>
+          </div>
+        ) : null}
+      </DialogBox>
     </>
   );
-}
-
-function getPositionLabel(staff: StaffListItem) {
-  if (!staff.position) return "";
-  if (typeof staff.position === "string") return staff.position;
-  return staff.position.title || "";
-}
-
-function getDepartmentLabel(staff: StaffListItem) {
-  if (!staff.primary_department) return "";
-  if (typeof staff.primary_department === "string") return staff.primary_department;
-  return staff.primary_department.name || "";
 }

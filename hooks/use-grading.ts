@@ -349,13 +349,19 @@ export function useBulkUploadGrades() {
   const queryClient = getQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, sectionId }: { file: File; sectionId: string }) =>
-      bulkUploadGrades(subdomain, sectionId, file),
+    mutationFn: ({
+      file,
+      sectionId,
+      overrideGrades,
+    }: {
+      file: File;
+      sectionId: string;
+      overrideGrades?: boolean;
+    }) => bulkUploadGrades(subdomain, sectionId, file, overrideGrades),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: gradingKeys.grades(subdomain),
+        queryKey: gradingKeys.all(subdomain),
       });
-      showToast.success("Grades uploaded successfully");
     },
     onError: (error: Error) => {
       showToast.error(error.message || "Failed to upload grades");

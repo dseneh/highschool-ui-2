@@ -44,6 +44,7 @@ export type SectionCalendarProjectionDto = {
   section: {
     id: string;
     name: string;
+    section_class: string;
   };
   range: {
     start: string;

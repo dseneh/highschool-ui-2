@@ -8,7 +8,7 @@ import {
   UserAdd01Icon,
   UserEdit01Icon,
 } from "@hugeicons/core-free-icons";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GradeWorkflowBadge } from "./grade-workflow-badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,12 @@ export function GradebookCard({
   fromUrl,
   onAssignTeacher,
 }: GradebookCardProps) {
+  const router = useRouter();
+
+  const stopCardClick = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+  };
+
   // Determine if using statistics object (old API) or top-level properties (API2)
   const stats = gradebook.statistics || gradebook;
   const totalEnrolled = stats.total_enrolled_students || undefined;
@@ -37,10 +43,9 @@ export function GradebookCard({
   
   // Get workflow status from gradebook data
   const workflowStatus = gradebook.workflow_status?.predominant_status || "draft";
-
   // Determine progress based on available data
-  const hasStudentProgress =
-    totalEnrolled !== undefined && studentsGraded !== undefined;
+  // const hasStudentProgress =
+  //   totalEnrolled !== undefined && studentsGraded !== undefined;
 
   let progressValue = 0;
   const progressLabel_ = "Grading Progress";
@@ -60,10 +65,18 @@ export function GradebookCard({
     : `/grading/gradebooks/${gradebook.id}?section=${gradebook.section.id}&gradeLevel=${gradebook.grade_level.id}`;
 
   return (
-    <Link
-      href={targetUrl}
+    <Card
+      role="link"
+      tabIndex={0}
+      className="group relative h-full cursor-pointer overflow-hidden border-border/70 bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 space-y-0 p-0"
+      onClick={() => router.push(targetUrl)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(targetUrl);
+        }
+      }}
     >
-      <Card className="group relative h-full cursor-pointer overflow-hidden border-border/70 bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 space-y-0 p-0">
         <div className="absolute inset-0 bg-linear-to-br from-primary/3 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
         <CardContent className="relative space-y-4 p-4">
           {/* Header with icon, title, and status */}
@@ -89,7 +102,11 @@ export function GradebookCard({
                 </div>
               </div>
             </div>
-            <div className="flex items-start gap-2">
+            <div
+              className="flex items-center gap-2"
+              onClick={stopCardClick}
+              onPointerDown={stopCardClick}
+            >
               <GradeWorkflowBadge status={workflowStatus} />
               {statusBadge}
               {actionMenu}
@@ -158,6 +175,5 @@ export function GradebookCard({
 
         </CardContent>
       </Card>
-    </Link>
   );
 }

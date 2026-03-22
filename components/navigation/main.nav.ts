@@ -1,4 +1,4 @@
-import { Add01Icon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileIcon, Invoice01Icon, SchoolIcon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, ArrowShrinkIcon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileIcon, Invoice01Icon, SchoolIcon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
 import { NavSection } from "./type";
 
 // Main Navigation - Organized by functional areas
@@ -38,15 +38,8 @@ export const primaryNavSections: NavSection[] = [
         ]
       },
       {
-        icon: UserMultiple02Icon,
-        label: "Users Management",
-        path: "/users",
-        meta: "User accounts and authentication",
-        requiredRoles: "admin",
-      },
-      {
-        icon: Building02Icon,
-        label: "Staff",
+        icon: ArrowShrinkIcon,
+        label: "Human Resources",
         path: "/staff",
         meta: "Staff and teachers",
         requiredRoles: "teacher",
@@ -269,6 +262,13 @@ export const primaryNavSections: NavSection[] = [
   {
     title: "System",
     items: [
+         {
+        icon: UserMultiple02Icon,
+        label: "Users Accounts",
+        path: "/users",
+        meta: "User accounts and authentication",
+        requiredRoles: "admin",
+      },
       {
         icon: ChartIcon,
         label: "Reports",

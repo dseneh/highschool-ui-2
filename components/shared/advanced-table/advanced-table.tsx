@@ -126,7 +126,7 @@ export function AdvancedTable<TData, TValue>({
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {toolbar && <div>{typeof toolbar === 'function' ? toolbar(table) : toolbar}</div>}
 
       <div className="rounded-lg border border-border overflow-hidden relative">

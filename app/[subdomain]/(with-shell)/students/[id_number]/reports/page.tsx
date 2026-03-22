@@ -7,6 +7,8 @@ import {
 } from "@/hooks/use-academic-year";
 import { useResolvedStudentIdNumber } from "@/hooks/use-resolved-student-id-number";
 import { getStudentReportCardPdf } from "@/lib/api2/grading-service";
+import { downloadStudentBillingPdf } from "@/lib/api2/billing-service";
+import { downloadStudentIndividualReport } from "@/lib/api2/report-service";
 import { useTenantSubdomain } from "@/hooks/use-tenant-subdomain";
 import { PageContent } from "@/components/dashboard/page-content";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +17,10 @@ import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   FileExportIcon,
-  Download01Icon
+  Download01Icon,
+  File02Icon,
+  Invoice02Icon,
+  File01Icon,
 } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
@@ -47,35 +52,94 @@ export default function StudentReportsPage() {
   const { data: currentYear } = useCurrentAcademicYear();
   const { data: allYears } = useAcademicYears();
   const [selectedYearId, setSelectedYearId] = useState<string>("");
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingReportCard, setDownloadingReportCard] = useState(false);
+  const [downloadingBio, setDownloadingBio] = useState(false);
+  const [downloadingFinancialPdf, setDownloadingFinancialPdf] = useState(false);
+  const [downloadingFullReport, setDownloadingFullReport] = useState(false);
 
   const activeYearId = selectedYearId || currentYear?.id || "";
   const activeYear = allYears?.find((y) => y.id === activeYearId);
 
+  const triggerBlobDownload = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
   const handleDownloadReportCard = useCallback(async () => {
     if (!student?.id || !activeYearId) return;
-    setDownloading(true);
+    setDownloadingReportCard(true);
     try {
       const blob = await getStudentReportCardPdf(
         subdomain,
         student.id,
         activeYearId,
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Report_Card_${student.full_name.replace(/\s+/g, "_")}_${activeYear?.name || activeYearId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(
+        blob,
+        `Report_Card_${student.full_name.replace(/\s+/g, "_")}_${activeYear?.name || activeYearId}.pdf`
+      );
       toast.success("Report card downloaded successfully");
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
-      setDownloading(false);
+      setDownloadingReportCard(false);
     }
-  }, [student, activeYearId, activeYear, subdomain]);
+  }, [student, activeYearId, activeYear, subdomain, triggerBlobDownload]);
+
+  const handleDownloadBio = useCallback(async () => {
+    if (!student?.id) return;
+    setDownloadingBio(true);
+    try {
+      const blob = await downloadStudentIndividualReport(subdomain, student.id, {
+        reportType: "bio",
+        format: "csv",
+      });
+      triggerBlobDownload(blob, `Student_Bio_${student.id_number}.csv`);
+      toast.success("Student bio downloaded");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDownloadingBio(false);
+    }
+  }, [student, subdomain, triggerBlobDownload]);
+
+  const handleDownloadFinancialPdf = useCallback(async () => {
+    if (!student?.id) return;
+    setDownloadingFinancialPdf(true);
+    try {
+      const blob = await downloadStudentBillingPdf(subdomain, student.id);
+      triggerBlobDownload(blob, `Financial_Statement_${student.id_number}.pdf`);
+      toast.success("Financial statement downloaded");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDownloadingFinancialPdf(false);
+    }
+  }, [student, subdomain, triggerBlobDownload]);
+
+  const handleDownloadFullReport = useCallback(async () => {
+    if (!student?.id) return;
+    setDownloadingFullReport(true);
+    try {
+      const blob = await downloadStudentIndividualReport(subdomain, student.id, {
+        reportType: "full",
+        format: "json",
+        academicYearId: activeYearId || undefined,
+      });
+      triggerBlobDownload(blob, `Student_Full_Report_${student.id_number}.json`);
+      toast.success("Full student report downloaded");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDownloadingFullReport(false);
+    }
+  }, [student, subdomain, activeYearId, triggerBlobDownload]);
 
   if (studentLoading) return <ReportsSkeleton />;
 
@@ -130,7 +194,7 @@ export default function StudentReportsPage() {
                 onClick={handleDownloadReportCard}
                 disabled={!activeYearId}
                 variant="outline"
-                loading={downloading}
+                  loading={downloadingReportCard}
                 loadingText="Downloading..."
                 icon={<HugeiconsIcon icon={Download01Icon} />}
               >
@@ -139,6 +203,66 @@ export default function StudentReportsPage() {
             </div>
           </CardContent>
         </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Additional Student Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">Bio Details</p>
+                  <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                    Student identity and profile information as CSV.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingBio}
+                    loadingText="Downloading..."
+                    onClick={handleDownloadBio}
+                    icon={<HugeiconsIcon icon={File02Icon} />}
+                  >
+                    Download Bio CSV
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">Financial Record</p>
+                  <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                    Billing statement PDF for finance and parent communication.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingFinancialPdf}
+                    loadingText="Downloading..."
+                    onClick={handleDownloadFinancialPdf}
+                    icon={<HugeiconsIcon icon={Invoice02Icon} />}
+                  >
+                    Download Finance PDF
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">Full Student Report</p>
+                  <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                    Consolidated JSON bundle with bio and financial sections.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingFullReport}
+                    loadingText="Downloading..."
+                    onClick={handleDownloadFullReport}
+                    icon={<HugeiconsIcon icon={File01Icon} />}
+                  >
+                    Download Full JSON
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
         {student.enrollments.length > 0 && (
           <Card>

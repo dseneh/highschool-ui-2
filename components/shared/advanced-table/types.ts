@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-export type FilterType = "select" | "checkbox" | "number"
+export type FilterType = "select" | "checkbox" | "radio" | "number" | "daterange"
 
 export interface FilterOption {
   label: string
@@ -21,6 +21,7 @@ export interface FilterOption {
 export interface NumberCondition {
   label: string
   value: string
+  selectedLabel?: string
 }
 
 export interface ConditionFilter {
@@ -28,7 +29,11 @@ export interface ConditionFilter {
   value: [number | string, number | string]
 }
 
-export type FilterValue = string | string[] | ConditionFilter | undefined
+export interface DateRangeFilter {
+  value: [string, string]
+}
+
+export type FilterValue = string | string[] | ConditionFilter | DateRangeFilter | undefined
 
 export interface AdvancedTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]

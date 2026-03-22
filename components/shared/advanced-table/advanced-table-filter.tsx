@@ -9,26 +9,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import {
   FilterType,
   FilterOption,
   ConditionFilter,
+  DateRangeFilter,
   FilterValue,
   NumberCondition,
 } from "./types"
 import { SelectField } from "@/components/ui/select-field"
 import { RangeFilter } from "./range-filter"
+import { Separator } from "@/components/ui/separator"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { format } from "date-fns"
 
 const focusRing = "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 
@@ -82,6 +78,46 @@ const ColumnFiltersLabel = ({
   )
 }
 
+function areFilterValuesEqual(a: FilterValue | undefined, b: FilterValue | undefined): boolean {
+  if (Object.is(a, b)) return true
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false
+    return a.every((value, index) => Object.is(value, b[index]))
+  }
+
+  if (
+    a &&
+    b &&
+    typeof a === "object" &&
+    typeof b === "object" &&
+    !Array.isArray(a) &&
+    !Array.isArray(b)
+  ) {
+    const aWithCondition = a as ConditionFilter
+    const bWithCondition = b as ConditionFilter
+    if ("condition" in aWithCondition || "condition" in bWithCondition) {
+      const aValue = aWithCondition.value ?? ["", ""]
+      const bValue = bWithCondition.value ?? ["", ""]
+      return (
+        (aWithCondition.condition ?? "") === (bWithCondition.condition ?? "") &&
+        (aValue[0] ?? "") === (bValue[0] ?? "") &&
+        (aValue[1] ?? "") === (bValue[1] ?? "")
+      )
+    }
+
+    const aDate = a as DateRangeFilter
+    const bDate = b as DateRangeFilter
+    if ("value" in aDate || "value" in bDate) {
+      const aValue = aDate.value ?? ["", ""]
+      const bValue = bDate.value ?? ["", ""]
+      return (aValue[0] ?? "") === (bValue[0] ?? "") && (aValue[1] ?? "") === (bValue[1] ?? "")
+    }
+  }
+
+  return false
+}
+
 export function AdvancedTableFilter<TData, TValue>({
   column,
   title,
@@ -93,12 +129,15 @@ export function AdvancedTableFilter<TData, TValue>({
   disabled = false,
 }: AdvancedTableFilterProps<TData, TValue>) {
   const columnFilters = column?.getFilterValue() as FilterValue
-  const [selectedValues, setSelectedValues] = React.useState<FilterValue>(columnFilters)
+  const [selectedValues, setSelectedValues] = React.useState<FilterValue | any>(columnFilters)
 
   const activeFilterCount = React.useMemo(() => {
     if (!selectedValues) return 0
     if (Array.isArray(selectedValues)) return selectedValues.length
     if (typeof selectedValues === "string") return selectedValues !== "" ? 1 : 0
+    if (typeof selectedValues === "object" && "value" in selectedValues && !("condition" in selectedValues)) {
+      return selectedValues.value?.some((value: string) => Boolean(value)) ? 1 : 0
+    }
     if (typeof selectedValues === "object" && "condition" in selectedValues) {
       return selectedValues.condition ? 1 : 0
     }
@@ -116,10 +155,19 @@ export function AdvancedTableFilter<TData, TValue>({
       return [formatter(selectedValues)]
     }
 
+    if (typeof selectedValues === "object" && "value" in selectedValues && !("condition" in selectedValues)) {
+      const from = selectedValues.value?.[0]
+      const to = selectedValues.value?.[1]
+      if (!from && !to) return undefined
+      if (from && to) return [`${formatter(from)} to ${formatter(to)}`]
+      if (from) return [`From ${formatter(from)}`]
+      return [`To ${formatter(to)}`]
+    }
+
     if (typeof selectedValues === "object" && "condition" in selectedValues) {
       const conditionLabel = conditions?.find(
         (c) => c.value === selectedValues.condition
-      )?.label
+      )?.selectedLabel ?? conditions?.find((c) => c.value === selectedValues.condition)?.label
       if (!conditionLabel) return undefined
       if (!selectedValues.value?.[0] && !selectedValues.value?.[1])
         return [`${conditionLabel}`]
@@ -153,15 +201,16 @@ export function AdvancedTableFilter<TData, TValue>({
 
       case "checkbox":
         return (
-          <div className="space-y-2 p-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 pt-2 max-h-64 overflow-y-auto">
             {options?.map((option) => (
+              <div key={option.value} className="hover:text-primary cursor-pointer">
               <div key={option.value} className="flex items-center gap-2">
                 <Checkbox
                   id={option.value}
                   checked={(selectedValues as string[])?.includes(option.value) ?? false}
                   disabled={disabled}
                   onCheckedChange={(checked) => {
-                    setSelectedValues((prev) => {
+                    setSelectedValues((prev: any) => {
                       const current = (prev as string[]) ?? []
                       if (checked) {
                         return [...current, option.value]
@@ -174,16 +223,46 @@ export function AdvancedTableFilter<TData, TValue>({
                   {option.label}
                 </Label>
               </div>
+                {option.label.includes("All") && (
+                  <Separator className="my-1" />
+                )}
+              </div>
+            ))}
+          </div>
+        )
+
+      case "radio":
+        return (
+          <div className="space-y-2 pt-2 max-h-64 overflow-y-auto">
+            {options?.map((option) => (
+              <div key={option.value} className="hover:text-primary cursor-pointer">
+              <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`radio-filter-${column?.id ?? title ?? "filter"}`}
+                  value={option.value}
+                  checked={(selectedValues as string) === option.value}
+                  disabled={disabled}
+                  onChange={() => setSelectedValues(option.value)}
+                  className="size-4 border-input text-primary"
+                />
+                <span className="text-sm font-normal">{option.label}</span>
+              </label>
+                {option.label.includes("All") && (
+                  <Separator className="my-1" />
+                )}
+              </div>
             ))}
           </div>
         )
 
       case "number":
-        const isBetween = (selectedValues as ConditionFilter)?.condition === "is-between"
+        const selectedCondition = (selectedValues as ConditionFilter)?.condition ?? ""
+        const isBetween = selectedCondition === "is-between" || selectedCondition === "pct-is-between"
         const hasCondition = Boolean((selectedValues as ConditionFilter)?.condition)
         return (
-          <div className="space-y-3 p-2">
-            <Select
+          <div className="space-y-3 pt-2">
+            {/* <Select
               value={(selectedValues as ConditionFilter)?.condition ?? ""}
               disabled={disabled}
               onValueChange={(value) => {
@@ -194,7 +273,11 @@ export function AdvancedTableFilter<TData, TValue>({
               }}
             >
               <SelectTrigger className="h-8">
-                <SelectValue placeholder="Select condition..." />
+                {selectedConditionLabel ? (
+                  <span className="text-sm">{selectedConditionLabel}</span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Select condition...</span>
+                )}
               </SelectTrigger>
               <SelectContent>
                 {conditions?.map((condition) => (
@@ -203,19 +286,31 @@ export function AdvancedTableFilter<TData, TValue>({
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+            </Select> */}
+            <SelectField
+              value={(selectedValues as ConditionFilter)?.condition ?? ""}
+              items={conditions ?? []}
+              className="w-full"
+              disabled={disabled}
+              onValueChange={(value) => {
+                setSelectedValues({
+                  condition: value ?? "",
+                  value: ["", ""],
+                })
+              }}
+            />
 
             <RangeFilter
               minValue={(selectedValues as ConditionFilter)?.value?.[0] ?? ""}
               maxValue={(selectedValues as ConditionFilter)?.value?.[1] ?? ""}
               onMinChange={(minValue) => {
-                setSelectedValues((prev) => ({
+                setSelectedValues((prev: any) => ({
                   condition: (prev as ConditionFilter)?.condition,
                   value: [minValue, (prev as ConditionFilter)?.value?.[1] ?? ""],
                 }))
               }}
               onMaxChange={(maxValue) => {
-                setSelectedValues((prev) => ({
+                setSelectedValues((prev: any) => ({
                   condition: (prev as ConditionFilter)?.condition,
                   value: [(prev as ConditionFilter)?.value?.[0] ?? "", maxValue],
                 }))
@@ -228,6 +323,33 @@ export function AdvancedTableFilter<TData, TValue>({
           </div>
         )
 
+      case "daterange":
+        return (
+          <div className="pt-2">
+            <DateRangePicker
+              value={{
+                from: (selectedValues as DateRangeFilter | undefined)?.value?.[0]
+                  ? new Date((selectedValues as DateRangeFilter).value[0])
+                  : undefined,
+                to: (selectedValues as DateRangeFilter | undefined)?.value?.[1]
+                  ? new Date((selectedValues as DateRangeFilter).value[1])
+                  : undefined,
+              }}
+              onChange={(range) => {
+                setSelectedValues({
+                  value: [
+                    range?.from ? format(range.from, "yyyy-MM-dd") : "",
+                    range?.to ? format(range.to, "yyyy-MM-dd") : "",
+                  ],
+                })
+              }}
+              placeholder="Select date range"
+              disabled={disabled}
+              className="h-8"
+            />
+          </div>
+        )
+
       default:
         return null
     }
@@ -236,12 +358,23 @@ export function AdvancedTableFilter<TData, TValue>({
   const handleReset = () => {
     column?.setFilterValue("")
     setSelectedValues(
-      filterType === "checkbox" ? [] : filterType === "number" ? { condition: "", value: ["", ""] } : ""
+      filterType === "checkbox"
+        ? []
+        : filterType === "number"
+          ? { condition: "", value: ["", ""] }
+          : filterType === "daterange"
+            ? { value: ["", ""] }
+          : ""
     )
   }
 
   React.useEffect(() => {
-    setSelectedValues(columnFilters)
+    setSelectedValues((previousValues: FilterValue | undefined) => {
+      if (areFilterValuesEqual(previousValues, columnFilters)) {
+        return previousValues
+      }
+      return columnFilters
+    })
   }, [columnFilters])
 
   return (
@@ -254,6 +387,10 @@ export function AdvancedTableFilter<TData, TValue>({
             "flex w-full items-center gap-x-1.5 whitespace-nowrap rounded-md border px-2 py-1.5 font-medium hover:bg-accent sm:w-fit sm:text-xs",
             selectedValues &&
               ((typeof selectedValues === "object" &&
+                "value" in selectedValues &&
+                !("condition" in selectedValues) &&
+                Boolean(selectedValues.value?.[0] || selectedValues.value?.[1])) ||
+                (typeof selectedValues === "object" &&
                 "condition" in selectedValues &&
                 selectedValues.condition !== "") ||
                 (typeof selectedValues === "string" && selectedValues !== "") ||
@@ -268,12 +405,21 @@ export function AdvancedTableFilter<TData, TValue>({
             aria-hidden="true"
             onClick={(e) => {
               if (selectedValues && 
-                ((typeof selectedValues === "object" && "condition" in selectedValues && selectedValues.condition !== "") ||
+                ((typeof selectedValues === "object" && "value" in selectedValues && !("condition" in selectedValues) && Boolean(selectedValues.value?.[0] || selectedValues.value?.[1])) ||
+                (typeof selectedValues === "object" && "condition" in selectedValues && selectedValues.condition !== "") ||
                 (typeof selectedValues === "string" && selectedValues !== "") ||
                 (Array.isArray(selectedValues) && selectedValues.length > 0))) {
                 e.stopPropagation()
                 column?.setFilterValue("")
-                setSelectedValues(filterType === "checkbox" ? [] : filterType === "number" ? { condition: "", value: ["", ""] } : "")
+                setSelectedValues(
+                  filterType === "checkbox"
+                    ? []
+                    : filterType === "number"
+                      ? { condition: "", value: ["", ""] }
+                      : filterType === "daterange"
+                        ? { value: ["", ""] }
+                      : ""
+                )
               }
             }}
           >
@@ -281,9 +427,10 @@ export function AdvancedTableFilter<TData, TValue>({
               className={cn(
                 "-ml-px size-5 shrink-0 transition sm:size-4",
                 selectedValues && 
+                  ((typeof selectedValues === "object" && "value" in selectedValues && !("condition" in selectedValues) && Boolean(selectedValues.value?.[0] || selectedValues.value?.[1])) ||
                   ((typeof selectedValues === "object" && "condition" in selectedValues && selectedValues.condition !== "") ||
                   (typeof selectedValues === "string" && selectedValues !== "") ||
-                  (Array.isArray(selectedValues) && selectedValues.length > 0)) && 
+                  (Array.isArray(selectedValues) && selectedValues.length > 0))) && 
                   "rotate-45 hover:text-destructive",
               )}
               aria-hidden="true"
@@ -331,7 +478,7 @@ export function AdvancedTableFilter<TData, TValue>({
             column?.setFilterValue(selectedValues)
           }}
         >
-          <div className="space-y-3">
+          <div className="space-y-1">
             <div>
               <Label className="text-base font-medium sm:text-sm">
                 Filter by {title}
@@ -343,9 +490,9 @@ export function AdvancedTableFilter<TData, TValue>({
             </Button>
             {columnFilterLabels && columnFilterLabels.length > 0 && (
               <Button
-                variant="outline"
+                variant="link"
                 size="sm"
-                className="w-full "
+                className="w-full h-4"
                 type="button"
                 onClick={handleReset}
                 disabled={disabled}

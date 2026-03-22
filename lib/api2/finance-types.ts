@@ -282,6 +282,9 @@ export interface TransactionListParams {
   academic_year?: string;
   date_from?: string;
   date_to?: string;
+  amount?: string;
+  amount_min?: string;
+  amount_max?: string;
   search?: string;
   ordering?: string;
 }

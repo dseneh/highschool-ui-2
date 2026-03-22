@@ -33,7 +33,7 @@ export interface SelectFieldItem {
 }
 
 export interface SelectFieldProps extends React.ComponentProps<typeof Select> {
-  items: SelectFieldItem[];
+  items: SelectFieldItem[] | any[];
   type?: "select" | "checkbox";
   placeholder?: string;
   className?: string;

@@ -7,6 +7,7 @@ export interface SectionDto {
   id: string;
   name: string;
   students: number;
+  section_class: string | null;
 }
 
 export interface DivisionDto {

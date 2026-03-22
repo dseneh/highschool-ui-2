@@ -13,7 +13,7 @@ import { useSubjects } from "@/hooks/use-subject";
 import { useSectionSubjects, useAssignSubjects, useRemoveSectionSubject } from "@/hooks/use-section-subjects";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
-import { Search, BookOpen, Plus, Trash2, Check, Circle, Info } from "lucide-react";
+import { Search, BookOpen, Plus, Trash2, Check, Circle, Info, Lock } from "lucide-react";
 import {
   EmptyState,
   EmptyStateTitle,
@@ -31,6 +31,7 @@ import {
 import { DialogBox } from "@/components/ui/dialog-box";
 import {
   Tooltip,
+  ToolTipComponent,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
@@ -262,44 +263,19 @@ export function AddSubjectDialog({
                               </td>
                               <td className="py-3 px-3 text-center">
                                 {ss.subject.description ? (
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Info className="h-4 w-4 text-muted-foreground inline-block cursor-help" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right" className="max-w-xs">
-                                      <p className="text-xs">{ss.subject.description}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                  <ToolTipComponent content={ss.subject.description} />
                                 ) : null}
                               </td>
                               <td className="py-3 px-3 text-right">
-                                {!ss.can_delete ? (
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 px-3 text-destructive/50 cursor-not-allowed opacity-50 hover:bg-transparent hover:text-destructive/50"
-                                        disabled
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" className="bg-destructive text-destructive-foreground">
-                                      <p className="text-xs">Cannot delete: grades have been entered for this subject</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : (
                                   <Button
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     className="h-8 px-3 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => setDeleteTarget({ id: ss.id, name: ss.subject.name })}
-                                    disabled={removeSubject.isPending}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
+                                    disabled={removeSubject.isPending || !ss.can_delete}
+                                    icon={ ss.can_delete ? <Trash2 className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" /> }
+                                    tooltip={ss.can_delete ? undefined : "Cannot remove subject with existing grades"}
+                                  />
                               </td>
                             </tr>
                           ))}
@@ -412,14 +388,7 @@ export function AddSubjectDialog({
                                   </td>
                                   <td className="py-3 px-3 text-center">
                                     {subject.description ? (
-                                      <Tooltip>
-                                        <TooltipTrigger>
-                                          <Info className="h-4 w-4 text-muted-foreground inline-block cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" className="max-w-xs">
-                                          <p className="text-xs">{subject.description}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
+                                      <ToolTipComponent content={subject.description} />
                                     ) : null}
                                   </td>
                                 </tr>

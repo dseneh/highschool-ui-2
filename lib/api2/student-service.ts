@@ -8,6 +8,8 @@ import type {
   AddGuardianCommand,
   ListStudentsParams,
   PaginatedResponse,
+  StudentImportStartResponse,
+  StudentImportTaskResponse,
 } from "./student-types";
 
 export type { StudentDto, ListStudentsParams, PaginatedResponse };
@@ -205,4 +207,48 @@ export async function deleteStudentPhoto(
   studentId: string
 ) {
   await apiClient.delete(`Students/${studentId}/photo`);
+}
+
+/** POST /grade-levels/{grade_level_id}/student-uploads/ */
+export async function startStudentBulkUpload(
+  _subdomain: string,
+  gradeLevelId: string,
+  file: File
+) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await apiClient.post<StudentImportStartResponse>(
+    `grade-levels/${gradeLevelId}/student-uploads`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return data;
+}
+
+/** GET /students/uploads/status/{task_id}/ */
+export async function getStudentBulkUploadStatus(
+  _subdomain: string,
+  taskId: string
+) {
+  const { data } = await apiClient.get<StudentImportTaskResponse>(
+    `students/uploads/status/${taskId}`
+  );
+  return data;
+}
+
+/** DELETE /students/uploads/status/{task_id}/ */
+export async function cancelStudentBulkUpload(
+  _subdomain: string,
+  taskId: string
+) {
+  const { data } = await apiClient.delete<{ detail: string; task_id: string }>(
+    `students/uploads/status/${taskId}`
+  );
+  return data;
 }

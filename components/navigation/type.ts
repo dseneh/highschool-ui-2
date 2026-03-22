@@ -10,6 +10,8 @@ export type NavItem = {
   icon: IconType;
   badge?: string;
   meta?: string;
+  disabled?: boolean;
+  disabledReason?: string;
   requiredRoles?: string | string[];
   subItems?: Omit<NavItem, 'subItems'>[];
 };

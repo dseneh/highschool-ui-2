@@ -4,13 +4,19 @@ import * as React from "react";
 import { DialogBox } from "@/components/ui/dialog-box";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import type { TransactionDto } from "@/lib/api2/finance-types";
 import { getStatusBadgeClass } from "@/lib/status-colors";
 import { formatCurrency, cn, getErrorMessage } from "@/lib/utils";
 import { format } from "date-fns";
 
-import { Check, Pencil, Trash2, Undo, XCircle } from "lucide-react";
+import { Check, MoreHorizontal, MoreVertical, Pencil, Trash2, Undo, XCircle } from "lucide-react";
 import { useTransactionMutations } from "@/hooks/use-finance";
 import { toast } from "sonner";
 import { AuthButton } from "../auth/auth-button";
@@ -29,6 +35,7 @@ interface TransactionActionButtonsProps {
   onEdit?: (tx: TransactionDto) => void;
   onActionSuccess?: () => void;
   compact?: boolean;
+  mode?: "inline" | "dropdown";
   className?: string;
 }
 
@@ -62,6 +69,7 @@ export function TransactionActionButtons({
   onEdit,
   onActionSuccess,
   compact = true,
+  mode = "inline",
   className,
 }: TransactionActionButtonsProps) {
   const studentId = typeof tx.student === "string" ? tx.student : tx.student?.id;
@@ -206,69 +214,123 @@ export function TransactionActionButtons({
 
   return (
     <>
-      <div className={cn("flex items-center gap-1 sm:gap-2 flex-wrap", className)}>
-        {canApprove && (
-          <AuthButton
+      {mode === "dropdown" ? (
+        <div className={cn("flex items-center", className)}>
+          <DropdownMenu >
+            <DropdownMenuTrigger asChild>
+              <AuthButton
+                roles={["finance", "registrar", "accountant"]}
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Open transaction actions"
+                icon={<MoreVertical size={16} />}
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-50">
+              {canApprove && (
+                <DropdownMenuItem onClick={() => setPendingAction("approve")}> 
+                  <Check size={14} className="mr-2" />
+                  Approve Transaction
+                </DropdownMenuItem>
+              )}
+              {canCancel && (
+                <DropdownMenuItem onClick={() => setPendingAction("cancel")}>
+                  <XCircle size={14} className="mr-2" />
+                  Cancel Transaction
+                </DropdownMenuItem>
+              )}
+              {canReverse && (
+                <DropdownMenuItem onClick={() => setPendingAction("reverse")}>
+                  <Undo size={14} className="mr-2" />
+                  Reverse Cancellation
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setPendingAction("edit")}>
+                  <Pencil size={14} className="mr-2" />
+                  Edit Transaction
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <>
+                <Separator className="my-1" />
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600 "
+                  onClick={() => setPendingAction("delete")}
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Delete Transaction
+                </DropdownMenuItem>
+              </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : (
+        <div className={cn("flex items-center gap-1 sm:gap-2 flex-wrap", className)}>
+          {canApprove && (
+            <AuthButton
+              roles={["finance", "registrar", "accountant"]}
+              size={btnSize}
+              variant="success-outline"
+              onClick={() => setPendingAction("approve")}
+              tooltip="Approve Transaction"
+              icon={<Check size={16} />}
+            >
+              Approve
+            </AuthButton>
+          )}
+          {canCancel && (
+            <AuthButton
+              roles={["finance", "registrar", "accountant"]}
+              size={btnSize}
+              variant="destructive-outline"
+              onClick={() => setPendingAction("cancel")}
+              tooltip="Cancel Transaction"
+              icon={<XCircle size={16} />}
+            >
+              Cancel 
+            </AuthButton>
+          )}
+          {canReverse && (
+            <AuthButton
+              roles={["finance", "registrar", "accountant"]}
+              size={btnSize}
+              variant="warning-outline"
+              onClick={() => setPendingAction("reverse")}
+              tooltip="Reverse Cancellation"
+              icon={<Undo size={16} />}
+            >
+              Reverse 
+            </AuthButton>
+          )}
+          {canEdit && (
+            <AuthButton
             roles={["finance", "registrar", "accountant"]}
             size={btnSize}
-            variant="success-outline"
-            onClick={() => setPendingAction("approve")}
-            tooltip="Approve"
-            icon={<Check size={16} />}
-          >
-            Approve
-          </AuthButton>
-        )}
-        {canCancel && (
-          <AuthButton
-            roles={["finance", "registrar", "accountant"]}
-            size={btnSize}
-            variant="destructive-outline"
-            onClick={() => setPendingAction("cancel")}
-            tooltip="Cancel"
-            icon={<XCircle size={16} />}
-          >
-            Cancel
-          </AuthButton>
-        )}
-        {canReverse && (
-          <AuthButton
-            roles={["finance", "registrar", "accountant"]}
-            size={btnSize}
-            variant="warning-outline"
-            onClick={() => setPendingAction("reverse")}
-            tooltip="Reverse"
-            icon={<Undo size={16} />}
-          >
-            Reverse
-          </AuthButton>
-        )}
-        {canDelete && (
-          <AuthButton
-            roles={["finance", "registrar", "accountant"]}
-            size={btnSize}
-            variant="ghost"
-            className="text-red-600 hover:text-red-700"
-            onClick={() => setPendingAction("delete")}
-            tooltip="Delete"
-            icon={<Trash2 size={16} />}
-          >
-            Delete
-          </AuthButton>
-        )}
-        {canEdit && (
-          <AuthButton
-            roles={["finance", "registrar", "accountant"]}
-            size={btnSize}
-            variant="ghost"
+            variant="info-outline"
             onClick={() => setPendingAction("edit")}
-            tooltip="Edit"
+            tooltip="Edit Transaction"
             icon={<Pencil size={16} />}
-          >
-            Edit
-          </AuthButton>
-        )}
-      </div>
+            >
+              Edit 
+            </AuthButton>
+          )}
+          {canDelete && (
+            <AuthButton
+              roles={["finance", "registrar", "accountant"]}
+              size={btnSize}
+              variant="destructive-outline"
+              className="text-red-600 hover:text-red-700"
+              onClick={() => setPendingAction("delete")}
+              tooltip="Delete Transaction"
+              icon={<Trash2 size={16} />}
+            >
+              Delete 
+            </AuthButton>
+          )}
+        </div>
+      )}
 
       <DialogBox
         open={pendingAction !== null}

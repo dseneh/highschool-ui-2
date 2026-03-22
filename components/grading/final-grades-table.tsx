@@ -24,7 +24,7 @@ import { getQueryClient } from "@/lib/query-client";
 import AlertDialogBox from "../shared/alert-dialogbox";
 import { GradeHistoryModal } from "./grade-history-modal";
 import { GradeCorrectionModal } from "./grade-correction-modal";
-import { History, Unlock, Lock, X } from "lucide-react";
+import { History, Unlock, Lock, X, ExternalLink } from "lucide-react";
 import { useMarkGradeCorrection } from "@/hooks/use-mark-grade-correction";
 
 interface FinalGradesTableProps {
@@ -308,9 +308,12 @@ export function FinalGradesTable({
         cell: ({ row }) => (
           <Link
             href={`/students/${row.original.id_number}/grades`}
-            className="font-semibold text-primary hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-1 font-semibold text-primary hover:underline"
           >
             {row.original.id_number}
+            <ExternalLink className="size-3.5 text-primary hidden group-hover:inline-block" />
           </Link>
         ),
       },
@@ -665,19 +668,7 @@ export function FinalGradesTable({
     }
 
     return baseColumns;
-  }, [
-    allowTeacherOverride, 
-    showActions, 
-    showStatus, 
-    type, 
-    loadingAction, 
-    useLetterGrades, 
-    requireReview, 
-    requireApproval, 
-    handleStudentStatusChange,
-    markGradeCorrectionMutation,
-    unlockingGradeId,
-  ]);
+  }, [useLetterGrades, showStatus, showActions, type, requireReview, loadingAction, requireApproval, handleStudentStatusChange, unlockingGradeId, allowTeacherOverride, markGradeCorrectionMutation, queryClient]);
 
   if (isLoading) {
     return (
@@ -734,7 +725,7 @@ export function FinalGradesTable({
           )}
 
           <Card className="overflow-hidden">
-            <div className="border-b p-4">
+            <div className="border-b px-4 pb-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="relative w-full max-w-sm">
                   <Input

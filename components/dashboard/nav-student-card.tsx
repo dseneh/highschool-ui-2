@@ -37,7 +37,7 @@ export default function NavStudentCard({ student, className }: NavStudentCardPro
             {student?.status && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 capitalize text-[10px] font-medium mt-1 px-1.5 py-0.5 rounded-full",
+                  "inline-flex items-center gap-1 capitalize text-[10px] font-medium mt-1 px-1.5 py-0.5 rounded-full mb-1",
                   getStatusBadgeClass(student.status)
                 )}
               >
@@ -51,12 +51,12 @@ export default function NavStudentCard({ student, className }: NavStudentCardPro
               </span>
             )}
             {classInfo && (
-          <div className="py-1 mt-1 border-t bg-primary /20 font-semibold text-primary-foreground">
-              <p className="text-[11px] ftext-muted-foreground truncate mt-0.5">
-                {classInfo}
-              </p>
-          </div>
-            )}
+              <div className="py-1 border-t bg-primary /20 font-semibold text-primary-foreground">
+                  <p className="text-[11px] ftext-muted-foreground truncate mt-0.5">
+                    {classInfo}
+                  </p>
+              </div>
+                )}
           </div>
         </div>
       </div>

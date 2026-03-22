@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Search, Settings, SlidersHorizontal, X } from "lucide-react";
+import { CalendarArrowDown, CalendarCheck, CheckCircle, CheckCircle2, ChevronLeft, ChevronRight, Filter, Search, Settings, SlidersHorizontal, X } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -85,16 +85,16 @@ export function CalendarControls({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative flex items-center gap-1.5">
+          <div className="relative flex items-center gap-0.5">
             <Button
               size="sm"
-              variant={selectedSectionName ? "default" : "outline"}
+              variant={selectedSectionName ? "default" : "info-outline"}
               className={cn("gap-2 pr-2.5", selectedSectionName && "shadow-sm")}
               onClick={onSectionFilterClick}
-              iconLeft={<Settings className="h-3.5 w-3.5" />}
+              iconLeft={selectedSectionName ? <CheckCircle className="h-3.5 w-3.5" /> : <Filter className="h-3.5 w-3.5" />}
             >
               <span className="max-w-28 truncate">
-                {selectedSectionName ?? "All Sections"}
+                {selectedSectionName ?? "Filter By Class"}
               </span>
             </Button>
             {selectedSectionName ? (
@@ -103,12 +103,12 @@ export function CalendarControls({
                 variant="ghost"
                 className="h-8 w-8 rounded-full border border-border/60 p-0 text-muted-foreground hover:border-border hover:bg-muted"
                 onClick={onClearSection}
-                icon={<X className="size-3.5" />}
+                icon={<X className="size-3.5 text-destructive" />}
                 aria-label="Clear section filter"
               />
             ) : null}
             {selectedSectionName && (
-              <Badge className="absolute -right-1 -top-1.5 h-4 min-w-4 px-1 text-[10px]">
+              <Badge className="absolute -right-1 -top-1.5 h-4 min-w-4 px-1 text-[10px] ">
                 1
               </Badge>
             )}

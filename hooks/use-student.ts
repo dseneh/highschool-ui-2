@@ -13,6 +13,9 @@ import {
   reinstateStudent,
   addContact,
   addGuardian,
+  startStudentBulkUpload,
+  getStudentBulkUploadStatus,
+  cancelStudentBulkUpload,
 } from "@/lib/api2/student-service";
 import type {
   StudentDto,
@@ -23,15 +26,19 @@ import type {
   AddGuardianCommand,
   ListStudentsParams,
   PaginatedResponse,
+  StudentImportTaskResponse,
 } from "@/lib/api2/student-types";
-import {getQueryClient} from '@/lib/query-client';
+import { getQueryClient } from "@/lib/query-client";
+import { showToast } from "@/lib/toast";
 
 
 const studentKeys = {
   all: (sub: string) => ["students", sub] as const,
-  detail: (sub: string, id: string) => ["student", sub, id] as const,
+  detail: (sub: string, id: string) => ["students", sub, id] as const,
   byNumber: (sub: string, idNumber: string) =>
-    ["student", idNumber] as const,
+    ["students", idNumber] as const,
+  importTask: (sub: string, taskId: string) =>
+    ["students", sub, "bulk-import", "task", taskId] as const,
 };
 
 
@@ -88,15 +95,9 @@ export function useStudentMutations() {
     queryClient.invalidateQueries({ queryKey: studentKeys.all(subdomain) });
 
   const invalidateDetail = (id: string) =>
-    Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: studentKeys.detail(subdomain, id),
-      }),
-      // Also invalidate byNumber queries so detail pages using id_number see updates
-      queryClient.invalidateQueries({
-        queryKey: ["student", "byNumber", subdomain],
-      }),
-    ]);
+    queryClient.invalidateQueries({
+      queryKey: studentKeys.detail(subdomain, id),
+    });
 
   const create = useMutation({
     mutationFn: (payload: CreateStudentCommand) =>
@@ -182,4 +183,65 @@ export function useStudentMutations() {
     createContact,
     createGuardian,
   };
+}
+
+export function useStartStudentBulkUpload() {
+  const subdomain = useTenantSubdomain();
+
+  return useMutation({
+    mutationFn: ({
+      gradeLevelId,
+      file,
+    }: {
+      gradeLevelId: string;
+      file: File;
+    }) => startStudentBulkUpload(subdomain, gradeLevelId, file),
+    onError: (error: Error) => {
+      showToast.error("Bulk upload failed", error.message);
+    },
+  });
+}
+
+export function useStudentBulkUploadTask(
+  taskId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const subdomain = useTenantSubdomain();
+
+  return useQuery<StudentImportTaskResponse>({
+    queryKey: studentKeys.importTask(subdomain, taskId ?? ""),
+    queryFn: () => getStudentBulkUploadStatus(subdomain, taskId ?? ""),
+    enabled: Boolean(subdomain) && Boolean(taskId) && (options?.enabled ?? true),
+    refetchInterval: (query) => {
+      const task = query.state.data;
+      if (!task) {
+        return 2000;
+      }
+
+      if (task.status === "pending" || task.status === "processing") {
+        return 2000;
+      }
+
+      return false;
+    },
+  });
+}
+
+export function useCancelStudentBulkUpload() {
+  const subdomain = useTenantSubdomain();
+  const queryClient = getQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskId }: { taskId: string }) =>
+      cancelStudentBulkUpload(subdomain, taskId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: studentKeys.importTask(subdomain, variables.taskId),
+      });
+      showToast.info("Bulk upload cancelled");
+    },
+    onError: (error: Error) => {
+      showToast.error("Cancel failed", error.message);
+    },
+  });
 }

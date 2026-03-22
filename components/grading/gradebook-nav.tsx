@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueryState } from "nuqs";
 import { useGrading } from "@/lib/api2/grading";
 import { useCurrentAcademicYear } from "@/hooks/use-academic-year";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent } from "@/components/ui/card";
 import { GradeLevelSelect, SectionSelect } from "@/components/shared/data-reusable";
-import { Filter } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 interface GradebookNavProps {
   currentGradebookId?: string;
@@ -20,9 +21,10 @@ interface GradebookNavProps {
     section: { name: string; id: string };
     grade_level: { name: string; id: string };
   };
+  rightContent?: ReactNode;
 }
 
-export function GradebookNav({ currentGradebook }: GradebookNavProps) {
+export function GradebookNav({ currentGradebook, rightContent }: GradebookNavProps) {
   const router = useRouter();
   const params = useParams();
 
@@ -184,23 +186,21 @@ export function GradebookNav({ currentGradebook }: GradebookNavProps) {
   if (!currentGradebook) return null;
 
   return (
-    <Card className="">
-      <CardContent className="flex flex-col gap-4 fpt-6 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <div className="text-sm font-medium text-muted-foreground">Current Selection</div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-md bg-muted px-2 py-1">
-              {currentGradebook.grade_level.name}
-            </span>
-            <span className="rounded-md bg-muted px-2 py-1">
+    <Card>
+      <CardContent className="flex flex-col gap-4 fpt-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1 min-w-0">
+          {/* <div className="text-sm font-medium text-muted-foreground">Current Selection</div> */}
+          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary bg-primary/5 px-2 py-1 text-base font-semibold sm:text-lg divide-x divide-primary">
+            <span className="pe-2">
+              {currentGradebook.grade_level.name} {" - "}
               {currentGradebook.section.name}
             </span>
-            <span className="rounded-md bg-muted px-2 py-1">
+            <span className="text-primary">
               {currentGradebook.subject.name}
             </span>
-          </div>
-        </div>
-
+            </div>
+           
         <Popover
           open={isOpen}
           onOpenChange={(open) => {
@@ -213,9 +213,10 @@ export function GradebookNav({ currentGradebook }: GradebookNavProps) {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              icon={<Filter className="h-4 w-4" />}
+              size="xs"
+              icon={<Pencil className="h-4 w-4" />}
             >
-              Change Filter
+              Change
             </Button>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="end" className="w-90">
@@ -267,6 +268,9 @@ export function GradebookNav({ currentGradebook }: GradebookNavProps) {
             </div>
           </PopoverContent>
         </Popover>
+          </div>
+        </div>
+           {rightContent}
       </CardContent>
     </Card>
   );

@@ -321,6 +321,37 @@ export interface BulkUploadGradesCommand {
   file: File;
 }
 
+export interface BulkUploadGradeIssue {
+  row: number;
+  student_id?: string;
+  assessment?: string;
+  error?: string;
+  warning?: string;
+}
+
+export interface BulkUploadGradesResponse {
+  detail: string;
+  metadata: {
+    grade_level: string;
+    section: string;
+    subject: string;
+    academic_year: string;
+    marking_period: string;
+    header_row: number;
+  };
+  statistics: {
+    total_rows: number;
+    students_processed: number;
+    grades_created: number;
+    grades_updated: number;
+    grades_locked: number;
+    warning_count: number;
+    error_count: number;
+  };
+  warnings: BulkUploadGradeIssue[];
+  errors: BulkUploadGradeIssue[];
+}
+
 /* ============================= GRADE LETTER ============================= */
 
 export interface GradeLetterDto {

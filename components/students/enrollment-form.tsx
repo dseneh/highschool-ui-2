@@ -13,6 +13,7 @@ import { getErrorMessage } from "@/lib/utils"
 import { useEnrollments } from "@/lib/api2/enrollment"
 import type { StudentDto } from "@/lib/api2/student-types"
 import { GradeLevelSelect, SectionSelect } from "../shared/data-reusable"
+import { getQueryClient } from "@/lib/query-client"
 
 /* ------------------------------------------------------------------ */
 /*  Schema                                                             */
@@ -80,6 +81,7 @@ export const EnrollmentForm = React.forwardRef<
   })
 
   const selectedGradeLevelId = watch("grade_level")
+  const queryClient = getQueryClient()
 
   const onSubmit = async (values: EnrollmentFields) => {
     try {
@@ -90,6 +92,9 @@ export const EnrollmentForm = React.forwardRef<
         section: values.section || undefined,
         enrolled_as: values.enrolled_as,
         ...(isReEnroll && { re_enroll: true, force: true }),
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["students"],
       })
       toast.success(
         `${student.full_name} has been enrolled successfully`

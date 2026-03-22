@@ -297,7 +297,7 @@ export default function CalendarPage() {
 
   const selectedSectionLabel = useMemo(() => {
     if (!selectedSectionId) return null;
-    return sectionProjection?.section?.name ?? "Selected section";
+    return sectionProjection?.section?.section_class ?? "Selected class";
   }, [selectedSectionId, sectionProjection]);
 
   const handleCreateEvent = async (payload: Partial<SchoolCalendarEventDto>) => {

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useNavigation } from "@/contexts/navigation-context";
 import { useStudents as useStudentsApi } from "@/lib/api2/student";
-import { getStudentNavigation } from "@/components/navigation";
+import { applyStudentNavigationAvailability, getStudentNavigation } from "@/components/navigation";
 import { DetailSideNav } from "@/components/dashboard/detail-side-nav";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useHeaderBreadcrumbs } from "@/hooks/use-header-breadcrumbs";
@@ -16,8 +16,16 @@ export default function StudentDetailLayout({
 }): React.ReactElement {
   const params = useParams();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { setStudentNavigation, isPortalUser } = useNavigation();
   const idNumber = params.id_number as string;
+  
+  const returnTo = useMemo(() => {
+    const rawValue = searchParams.get("returnTo");
+    if (!rawValue || !rawValue.startsWith("/students")) return "/students";
+    return rawValue;
+  }, [searchParams]);
+  
   const studentsApi = useStudentsApi();
   const { data: student, isLoading } = studentsApi.getStudent(idNumber, {
     enabled: !!idNumber && window.location.href.includes("/students/"), // Only fetch if idNumber is present and URL contains "/students/"
@@ -52,19 +60,19 @@ export default function StudentDetailLayout({
   const breadcrumbs = useMemo(() => {
     const studentLabel = student?.full_name || `Student #${idNumber}`;
     const base = [
-      { label: "Students", href: "/students" },
-      { label: studentLabel, href: `/students/${idNumber}` },
+      { label: "Students", href: returnTo },
+      { label: studentLabel, href: `/students/${idNumber}?returnTo=${encodeURIComponent(returnTo)}` },
     ];
 
     if (currentTabLabel === "Overview") {
       return [
-        { label: "Students", href: "/students" },
+        { label: "Students", href: returnTo },
         { label: studentLabel, current: true },
       ];
     }
 
     return [...base, { label: currentTabLabel, current: true }];
-  }, [student?.full_name, idNumber, currentTabLabel]);
+  }, [student?.full_name, idNumber, currentTabLabel, returnTo]);
 
   useHeaderBreadcrumbs(breadcrumbs);
 
@@ -74,7 +82,10 @@ export default function StudentDetailLayout({
   }
 
   // Admin/registrar: render vertical tab rail (desktop) or dropdown bar (tablet) alongside content
-  const navItems = getStudentNavigation(idNumber);
+  const navItems = applyStudentNavigationAvailability(
+    getStudentNavigation(idNumber, returnTo),
+    student,
+  );
 
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-0">
