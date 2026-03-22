@@ -15,6 +15,8 @@ import { StaffFormModal } from "@/components/staff/staff-form-modal";
 import RefreshButton from "@/components/shared/refresh-button";
 import EmptyStateComponent from "@/components/shared/empty-state";
 import { StaffSelectDialog } from "@/components/staff/staff-select-dialog";
+import { parseAsString, useQueryState } from "nuqs";
+import type { StaffTableUrlParams } from "@/components/staff/staff-table";
 
 function isTeachingPosition(staff: StaffListItem): boolean {
   if (!staff.position) return false;
@@ -30,9 +32,45 @@ function isTeachingPosition(staff: StaffListItem): boolean {
 }
 
 export default function TeachersPage() {
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsString.withDefault("all"),
+  );
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [departmentFilter, setDepartmentFilter] = useQueryState(
+    "department",
+    parseAsString.withDefault(""),
+  );
+  const [genderFilter, setGenderFilter] = useQueryState("gender", parseAsString.withDefault(""));
+
+  const urlParams = useMemo<StaffTableUrlParams>(
+    () => ({
+      search,
+      status: statusFilter,
+      department: departmentFilter,
+      role: "teacher",
+      gender: genderFilter,
+    }),
+    [search, statusFilter, departmentFilter, genderFilter],
+  );
+
+  const setUrlParams = useCallback(
+    (params: StaffTableUrlParams & { page: number }) => {
+      void setSearch(params.search || "");
+      void setStatusFilter(params.status || "all");
+      void setDepartmentFilter(params.department || "");
+      void setGenderFilter(params.gender || "");
+    },
+    [setSearch, setStatusFilter, setDepartmentFilter, setGenderFilter],
+  );
+
   const staffApi = useStaff();
   
   const { data, isLoading, error, isFetching, refetch } = staffApi.getStaff({
+    search: search || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    department: departmentFilter || undefined,
+    gender: genderFilter || undefined,
     is_teacher: true,
   });
 
@@ -156,7 +194,12 @@ export default function TeachersPage() {
       }
     >
       <div className="space-y-4">
-        <StaffTable data={data as any} isLoading={isLoading} />
+        <StaffTable
+          data={data as any}
+          urlParams={urlParams}
+          setUrlParams={setUrlParams}
+          loading={isLoading}
+        />
       </div>
 
       <StaffSelectDialog
