@@ -11,96 +11,86 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Edit2, Trash, ChevronDown } from "lucide-react";
-import type { Position } from "@/lib/api2/staff/types";
+import type {
+  CreateEmployeePositionCommand,
+  EmployeePositionDto,
+} from "@/lib/api2/employee-types";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import { useStaffApi } from "@/lib/api2/staff/api";
-import { useApiMutation } from "@/lib/api2/utils";
 import { PositionFormModal } from "@/components/positions/position-form-modal";
 import { DataTable } from "@/components/shared/data-table";
+import { useEmployeeMutations } from "@/hooks/use-employee";
+import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface PositionsTableProps {
-  positions: Position[];
+  positions: EmployeePositionDto[];
   onRefresh: () => void;
 }
 
 export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) => {
-  const api = useStaffApi();
-  const deletePositionMutation = useApiMutation((positionId: string) =>
-    api.deletePositionApi(positionId).then((res: { data: unknown }) => res.data)
-  );
-  const updatePositionMutation = useApiMutation(
-    ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      api.updatePositionApi(id, data).then((res: { data: unknown }) => res.data)
-  );
-  const [editingPosition, setEditingPosition] = React.useState<Position | null>(null);
+  const { removePosition, updatePosition } = useEmployeeMutations();
+  const [editingPosition, setEditingPosition] = React.useState<EmployeePositionDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = React.useState("all");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [typeFilter, setTypeFilter] = React.useState("all");
   const [teacherFilter, setTeacherFilter] = React.useState("all");
 
   const departmentOptions = React.useMemo(() => {
     const departments = new Set<string>();
-    positions.forEach((pos) => {
-      if (pos.department?.name) departments.add(pos.department.name);
+    positions.forEach((position) => {
+      if (position.departmentName) {
+        departments.add(position.departmentName);
+      }
     });
     return Array.from(departments).sort();
   }, [positions]);
 
-  const categoryOptions = React.useMemo(() => {
-    const categories = new Set<string>();
-    positions.forEach((pos) => {
-      if (pos.category?.name) categories.add(pos.category.name);
+  const typeOptions = React.useMemo(() => {
+    const types = new Set<string>();
+    positions.forEach((position) => {
+      if (position.employmentType) {
+        types.add(position.employmentType);
+      }
     });
-    return Array.from(categories).sort();
+    return Array.from(types).sort();
   }, [positions]);
 
   const filteredPositions = React.useMemo(() => {
     return positions.filter((position) => {
       const matchesDepartment =
-        departmentFilter === "all" || position.department?.name === departmentFilter;
+        departmentFilter === "all" || position.departmentName === departmentFilter;
 
-      const matchesCategory =
-        categoryFilter === "all" || position.category?.name === categoryFilter;
+      const matchesType =
+        typeFilter === "all" || position.employmentType === typeFilter;
 
       const matchesTeacher =
         teacherFilter === "all" ||
-        (teacherFilter === "teacher" ? position.teaching_role : !position.teaching_role);
+        (teacherFilter === "teacher" ? position.canTeach : !position.canTeach);
 
-      return matchesDepartment && matchesCategory && matchesTeacher;
+      return matchesDepartment && matchesType && matchesTeacher;
     });
-  }, [positions, departmentFilter, categoryFilter, teacherFilter]);
+  }, [positions, departmentFilter, typeFilter, teacherFilter]);
 
-  const handleDelete = async (positionId: string) => {
-    if (window.confirm("Are you sure you want to delete this position?")) {
-      try {
-        await deletePositionMutation.mutateAsync(positionId);
-        showToast.success("Deleted", "Position has been removed");
-        onRefresh();
-      } catch (error) {
-        showToast.error("Delete failed", getErrorMessage(error));
-      }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await removePosition.mutateAsync(deleteTarget);
+      showToast.success("Deleted", "Position has been removed");
+      onRefresh();
+    } catch (error) {
+      showToast.error("Delete failed", getErrorMessage(error));
     }
   };
 
-  const handleEditSubmit = async (data: {
-    title: string;
-    description?: string;
-    department?: string;
-    category?: string;
-    teaching_role?: boolean;
-  }) => {
+  const handleEditSubmit = async (data: CreateEmployeePositionCommand) => {
     if (!editingPosition) return;
+
     setIsSubmitting(true);
     try {
-      const payload = {
-        ...data,
-        department: data.department || null,
-        category: data.category || null,
-      };
-      await updatePositionMutation.mutateAsync({
+      await updatePosition.mutateAsync({
         id: editingPosition.id,
-        data: payload,
+        payload: data,
       });
       showToast.success("Updated", "Position updated successfully");
       setEditingPosition(null);
@@ -112,36 +102,36 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
     }
   };
 
-  const columns: ColumnDef<Position>[] = [
+  const columns: ColumnDef<EmployeePositionDto>[] = [
     {
       accessorKey: "title",
       header: "Title",
-      cell: ({ getValue, row }) => (
+      cell: ({ row }) => (
         <div>
-          <p className="font-medium">{getValue<string>()}</p>
-          {row.original.description && (
-            <p className="text-sm text-muted-foreground">{row.original.description}</p>
+          <p className="font-medium">{row.original.title}</p>
+          {row.original.code && (
+            <p className="text-sm text-muted-foreground">{row.original.code}</p>
           )}
         </div>
       ),
     },
     {
-      accessorKey: "department.name",
+      accessorKey: "departmentName",
       header: "Department",
-      cell: ({ row }) => row.original.department?.name || "-",
+      cell: ({ row }) => row.original.departmentName || "-",
     },
     {
-      accessorKey: "category.name",
-      header: "Category",
-      cell: ({ row }) => row.original.category?.name || "-",
+      accessorKey: "employmentType",
+      header: "Employment Type",
+      cell: ({ row }) => row.original.employmentType || "-",
     },
     {
-      accessorKey: "teaching_role",
-      header: "Teacher",
+      accessorKey: "canTeach",
+      header: "Teaching",
       cell: ({ getValue }) => {
         const isTeacher = getValue<boolean>() ?? false;
         return (
-          <span className={isTeacher ? "text-green-600 font-medium" : "text-muted-foreground"}>
+          <span className={isTeacher ? "font-medium text-green-600" : "text-muted-foreground"}>
             {isTeacher ? "Yes" : "No"}
           </span>
         );
@@ -165,7 +155,7 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => handleDelete(row.original.id)}
+              onClick={() => setDeleteTarget(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash className="h-4 w-4" />
@@ -180,7 +170,7 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
   const filters = (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
+        <DropdownMenuTrigger className="inline-flex h-9 items-center justify-between gap-1 rounded-[min(var(--radius-md),10px)] border border-border bg-background px-2.5 text-sm font-medium shadow-xs transition-colors hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50">
           <span className="truncate">
             {departmentFilter === "all" ? "All Departments" : departmentFilter}
           </span>
@@ -194,53 +184,53 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
             All Departments
           </DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-          {departmentOptions.map((dept) => (
+          {departmentOptions.map((department) => (
             <DropdownMenuCheckboxItem
-              key={dept}
-              checked={departmentFilter === dept}
-              onCheckedChange={() => setDepartmentFilter(dept)}
+              key={department}
+              checked={departmentFilter === department}
+              onCheckedChange={() => setDepartmentFilter(department)}
             >
-              {dept}
+              {department}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
+        <DropdownMenuTrigger className="inline-flex h-9 items-center justify-between gap-1 rounded-[min(var(--radius-md),10px)] border border-border bg-background px-2.5 text-sm font-medium shadow-xs transition-colors hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50">
           <span className="truncate">
-            {categoryFilter === "all" ? "All Categories" : categoryFilter}
+            {typeFilter === "all" ? "All Types" : typeFilter}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuCheckboxItem
-            checked={categoryFilter === "all"}
-            onCheckedChange={() => setCategoryFilter("all")}
+            checked={typeFilter === "all"}
+            onCheckedChange={() => setTypeFilter("all")}
           >
-            All Categories
+            All Types
           </DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-          {categoryOptions.map((cat) => (
+          {typeOptions.map((employmentType) => (
             <DropdownMenuCheckboxItem
-              key={cat}
-              checked={categoryFilter === cat}
-              onCheckedChange={() => setCategoryFilter(cat)}
+              key={employmentType}
+              checked={typeFilter === employmentType}
+              onCheckedChange={() => setTypeFilter(employmentType)}
             >
-              {cat}
+              {employmentType}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs text-sm font-medium inline-flex items-center justify-between transition-colors">
+        <DropdownMenuTrigger className="inline-flex h-9 items-center justify-between gap-1 rounded-[min(var(--radius-md),10px)] border border-border bg-background px-2.5 text-sm font-medium shadow-xs transition-colors hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50">
           <span className="truncate">
             {teacherFilter === "all"
               ? "All Roles"
               : teacherFilter === "teacher"
-                ? "Teachers"
-                : "Non-teachers"}
+                ? "Teaching"
+                : "Non-teaching"}
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
@@ -256,18 +246,19 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
             checked={teacherFilter === "teacher"}
             onCheckedChange={() => setTeacherFilter("teacher")}
           >
-            Teachers
+            Teaching
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={teacherFilter === "staff"}
             onCheckedChange={() => setTeacherFilter("staff")}
           >
-            Non-teachers
+            Non-teaching
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>
   );
+
   return (
     <>
       <DataTable
@@ -287,6 +278,16 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingPosition ?? undefined}
+      />
+
+      <AlertDialogBox
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete Position"
+        description="Are you sure you want to delete this position? This action cannot be undone."
+        actionLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDelete}
       />
     </>
   );

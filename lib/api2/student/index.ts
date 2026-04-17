@@ -56,6 +56,13 @@ export function useStudents() {
             options,
         )
 
+    const patchStudent = (studentId: string, options = {}) =>
+        useApiMutation(
+            (data: any) =>
+                api.patchStudentApi(studentId, data).then((res: any) => res.data),
+            options,
+        )
+
     const deleteStudent = (studentId: string, options = {}) =>
         useApiMutation(
             (forceDelete: boolean = false) => api.deleteStudentApi(studentId, forceDelete).then((res: any) => res.data),
@@ -80,6 +87,7 @@ export function useStudents() {
         getStudent,
         createStudent,
         updateStudent,
+        patchStudent,
         deleteStudent,
         getStudentBills,
         getStudentTransactions,

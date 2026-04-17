@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import EmptyStateComponent from "@/components/shared/empty-state"
 import { cn } from "@/lib/utils"
 import { AdvancedTablePagination } from "./advanced-table-pagination"
 import { BulkEditor } from "./bulk-editor"
@@ -63,6 +64,11 @@ export function AdvancedTable<TData, TValue>({
   onPageChange,
   onPageSizeChange,
   loading,
+  noData,
+  emptyStateTitle = "No Data Available",
+  emptyStateDescription = "There is no data to display at the moment.",
+  emptyStateAction,
+  emptyStateIcon,
 }: AdvancedTableComponentProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -209,11 +215,20 @@ export function AdvancedTable<TData, TValue>({
               ))
              ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-sm text-muted-foreground"
-                >
-                  No results.
+                <TableCell colSpan={columns.length} className="p-4">
+                  {noData ? (
+                    <EmptyStateComponent
+                      title={emptyStateTitle}
+                      description={emptyStateDescription}
+                      actionTitle={emptyStateAction ? "Take Action" : undefined}
+                      handleAction={emptyStateAction}
+                      icon={emptyStateIcon}
+                    />
+                  ) : (
+                    <div className="h-24 text-center flex items-center justify-center text-sm text-muted-foreground">
+                      No results.
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             )}
@@ -233,7 +248,7 @@ export function AdvancedTable<TData, TValue>({
         )}
       </div>
 
-      {showPagination && onPageChange && onPageSizeChange ? (
+      {showPagination && !noData && onPageChange && onPageSizeChange ? (
         <AdvancedTablePagination 
           table={table} 
           pageSize={pageSize}
@@ -242,7 +257,7 @@ export function AdvancedTable<TData, TValue>({
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
         />
-      ) : showPagination ? (
+      ) : showPagination && !noData ? (
         <AdvancedTablePagination table={table} pageSize={pageSize} />
       ) : null}
     </div>

@@ -5,6 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -301,7 +302,19 @@ export function StaffForm({
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} value={field.value ?? ""} />
+                      <DatePicker
+                        value={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                        onChange={(date) => {
+                          if (!date) {
+                            field.onChange("");
+                            return;
+                          }
+                          const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                          field.onChange(formatted);
+                        }}
+                        placeholder="MM/DD/YYYY"
+                        allowFutureDates={false}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -444,7 +457,18 @@ export function StaffForm({
                   <FormItem>
                     <FormLabel>Hire Date *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                        onChange={(date) => {
+                          if (!date) {
+                            field.onChange("");
+                            return;
+                          }
+                          const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                          field.onChange(formatted);
+                        }}
+                        placeholder="MM/DD/YYYY"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

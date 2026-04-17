@@ -1,21 +1,33 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+type HugeIconType = ComponentProps<typeof HugeiconsIcon>["icon"];
+type IconLike = HugeIconType | ComponentType<{ className?: string }>;
+
 export type StatsCardItem = {
   title: string;
-  value: string | React.ReactNode;
-  subtitle: string | React.ReactNode;
-  icon: ComponentProps<typeof HugeiconsIcon>["icon"];
-  subtitleIcon?: ComponentProps<typeof HugeiconsIcon>["icon"];
+  value: string | ReactNode;
+  subtitle: string | ReactNode;
+  icon: IconLike;
+  subtitleIcon?: IconLike;
 };
 
 interface StatsCardsProps {
   items: StatsCardItem[];
   className?: string;
+}
+
+function renderIcon(icon: IconLike, className: string) {
+  if (Array.isArray(icon)) {
+    return <HugeiconsIcon icon={icon} className={className} />;
+  }
+
+  const Icon = icon;
+  return <Icon className={className} />;
 }
 
 export function StatsCards({ items, className }: StatsCardsProps) {
@@ -42,17 +54,17 @@ export function StatsCards({ items, className }: StatsCardsProps) {
             </div>
 
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary shadow-xs transition-all duration-200 group-hover:scale-105 group-hover:border-primary/30 group-hover:bg-primary/15">
-              <HugeiconsIcon icon={item.icon} className="h-5 w-5" />
+              {renderIcon(item.icon, "h-5 w-5")}
             </div>
           </div>
 
           <div className="relative fmt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-2.5 py-1 backdrop-blur-sm transition-all duration-200 group-hover:border-primary/20 group-hover:bg-primary/5">
               {item.subtitleIcon ? (
-                <HugeiconsIcon
-                  icon={item.subtitleIcon}
-                  className="h-3.5 w-3.5 text-primary transition-transform duration-200 group-hover:scale-110"
-                />
+                renderIcon(
+                  item.subtitleIcon,
+                  "h-3.5 w-3.5 text-primary transition-transform duration-200 group-hover:scale-110"
+                )
               ) : null}
               <span className="truncate">{item.subtitle}</span>
             </div>

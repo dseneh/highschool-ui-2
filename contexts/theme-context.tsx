@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 // Theme types
-export type ColorTheme = "ocean" | "sunset" | "forest" | "royal" | "slate";
+export type ColorTheme = "ocean" | "sky" | "navy" | "indigo" | "royal" | "rose" | "ruby" | "sunset" | "amber" | "emerald" | "forest" | "slate";
 export type ShapeStyle = "rounded" | "sharp" | "pill";
 export type FontFamily = "sans" | "serif" | "mono";
 export type ShadowIntensity = "subtle" | "medium" | "bold";

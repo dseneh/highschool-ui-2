@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ThemeCustomizer } from "@/components/theme/theme-customizer";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DashboardSquare01Icon,
@@ -201,7 +200,6 @@ export function DashboardHeader({
               </>
             ) : null} */}
             <ThemeToggle />
-            <ThemeCustomizer />
           </div>
 
           {/* Mobile view - compact controls + dropdown menu */}
@@ -238,11 +236,6 @@ export function DashboardHeader({
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
-
-                <DropdownMenuItem disabled className="text-xs font-medium">
-                  Theme
-                </DropdownMenuItem>
-                <ThemeCustomizer />
 
                 {showLayoutControls ? (
                   <>

@@ -351,6 +351,9 @@ export function StaffTable({
         loading={loading}
         columns={columns}
         data={staffRows}
+        noData={!loading && staffRows.length === 0}
+        emptyStateTitle="No Staff Found"
+        emptyStateDescription="There are no staff members to display at the moment."
         pageSize={serverPagination?.pageSize ?? 20}
         totalCount={serverPagination?.totalCount}
         currentPage={serverPagination?.currentPage ?? 1}

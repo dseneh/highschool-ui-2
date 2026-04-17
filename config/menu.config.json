@@ -53,11 +53,11 @@
           "title": "ADMINISTRATION",
           "items": [
             {
-              "id": "staff",
-              "label": "Staff",
-              "path": "/staff",
+              "id": "employees",
+              "label": "Employees",
+              "path": "/employees",
               "icon": "Building02Icon",
-              "description": "Staff management"
+              "description": "Employee management"
             }
           ]
         },

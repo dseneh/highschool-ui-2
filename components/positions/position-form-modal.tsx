@@ -15,18 +15,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useStaff } from "@/lib/api2/staff";
-import { useMemo } from "react";
-import type { Position } from "@/lib/api2/staff/types";
-import { SelectField } from "../ui/select-field";
-import DepartmentSelect from "../shared/data-reusable/department-select";
+import { SelectField } from "@/components/ui/select-field";
+import {
+  CreateEmployeePositionCommand,
+  EmployeePositionDto,
+} from "@/lib/api2/employee-types";
+import { useEmployeeDepartments } from "@/hooks/use-employee";
+
+const EMPLOYMENT_TYPE_OPTIONS = [
+  { value: "Full-Time", label: "Full-Time" },
+  { value: "Part-Time", label: "Part-Time" },
+  { value: "Contract", label: "Contract" },
+  { value: "Temporary", label: "Temporary" },
+  { value: "Intern", label: "Intern" },
+];
 
 const positionFormSchema = z.object({
   title: z.string().min(2, "Title is required"),
+  code: z.string().optional(),
   description: z.string().optional(),
-  department: z.string().optional(),
-  category: z.string().optional(),
-  teaching_role: z.boolean().optional(),
+  departmentId: z.string().optional(),
+  employmentType: z.string().min(1, "Employment type is required"),
+  canTeach: z.boolean().optional(),
 });
 
 type PositionFormData = z.infer<typeof positionFormSchema>;
@@ -34,9 +44,9 @@ type PositionFormData = z.infer<typeof positionFormSchema>;
 interface PositionFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: PositionFormData) => Promise<void>;
+  onSubmit: (data: CreateEmployeePositionCommand) => Promise<void>;
   isSubmitting: boolean;
-  initialData?: Position;
+  initialData?: EmployeePositionDto;
 }
 
 export function PositionFormModal({
@@ -46,93 +56,88 @@ export function PositionFormModal({
   isSubmitting,
   initialData,
 }: PositionFormModalProps) {
-  const staffApi = useStaff();
-  const { data: positionCategoriesData } = staffApi.getPositionCategories({});
+  const { data: departments = [] } = useEmployeeDepartments();
 
-
-  const categories = useMemo<Array<{ id: string; name: string }>>(() => {
-    if (!positionCategoriesData) return [];
-    if (Array.isArray(positionCategoriesData)) {
-      return positionCategoriesData as Array<{ id: string; name: string }>;
-    }
-    if (Array.isArray(positionCategoriesData.results)) {
-      return positionCategoriesData.results as Array<{ id: string; name: string }>;
-    }
-    return [];
-  }, [positionCategoriesData]);
-
-  const categoryOptions = useMemo(() => {
-    return categories.map((category) => ({
-      value: category.id,
-      label: category.name,
-    }));
-  }, [categories]);
+  const departmentOptions = React.useMemo(
+    () =>
+      departments.map((department) => ({
+        value: department.id,
+        label: department.name,
+      })),
+    [departments]
+  );
 
   const form = useForm<PositionFormData>({
     resolver: zodResolver(positionFormSchema),
     defaultValues: {
       title: initialData?.title || "",
+      code: initialData?.code || "",
       description: initialData?.description || "",
-      department: initialData?.department?.id || "",
-      category: initialData?.category?.id || "",
-      teaching_role: initialData?.teaching_role || false,
+      departmentId: initialData?.departmentId || "",
+      employmentType: initialData?.employmentType || "Full-Time",
+      canTeach: initialData?.canTeach || false,
     },
   });
 
   const departmentValue = useWatch({
     control: form.control,
-    name: "department",
+    name: "departmentId",
   });
-  const categoryValue = useWatch({
+  const employmentTypeValue = useWatch({
     control: form.control,
-    name: "category",
+    name: "employmentType",
   });
-  const teachingRoleValue = useWatch({
+  const canTeachValue = useWatch({
     control: form.control,
-    name: "teaching_role",
+    name: "canTeach",
   });
 
   React.useEffect(() => {
     if (open) {
       form.reset({
         title: initialData?.title || "",
+        code: initialData?.code || "",
         description: initialData?.description || "",
-        department: initialData?.department?.id || "",
-        category: initialData?.category?.id || "",
-        teaching_role: initialData?.teaching_role || false,
+        departmentId: initialData?.departmentId || "",
+        employmentType: initialData?.employmentType || "Full-Time",
+        canTeach: initialData?.canTeach || false,
       });
     }
   }, [open, initialData, form]);
 
   const handleSubmit = async (data: PositionFormData) => {
-    await onSubmit(data);
+    await onSubmit({
+      title: data.title,
+      code: data.code || null,
+      description: data.description || null,
+      departmentId: data.departmentId || null,
+      employmentType: data.employmentType,
+      canTeach: data.canTeach ?? false,
+    });
     form.reset();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-125">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Edit Position" : "Add New Position"}
           </DialogTitle>
           <DialogDescription>
             {initialData
-              ? "Update the position details"
-              : "Create a new position for your institution"}
+              ? "Update the employee position details"
+              : "Create a new position for employee onboarding and HR management"}
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="space-y-4"
-        >
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
               Position Title <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="e.g., Head Teacher, Deputy Principal"
+              placeholder="e.g., Head Teacher, Finance Officer"
               {...form.register("title")}
             />
             {form.formState.errors.title && (
@@ -140,70 +145,59 @@ export function PositionFormModal({
             )}
           </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Position Code</label>
+              <Input placeholder="e.g., HT-001" {...form.register("code")} />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Employment Type</label>
+              <SelectField
+                searchable
+                items={EMPLOYMENT_TYPE_OPTIONS}
+                value={employmentTypeValue || ""}
+                onValueChange={(value) => form.setValue("employmentType", value)}
+                placeholder="Select employment type"
+              />
+              {form.formState.errors.employmentType && (
+                <p className="text-xs text-red-500">{form.formState.errors.employmentType.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Department</label>
+            <SelectField
+              searchable
+              items={departmentOptions}
+              value={departmentValue || ""}
+              onValueChange={(value) => form.setValue("departmentId", value)}
+              placeholder="Select department"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Description</label>
             <Textarea
-              placeholder="Describe the responsibilities and requirements..."
+              placeholder="Describe the responsibilities and scope of this position"
               className="min-h-20"
               {...form.register("description")}
             />
-            {form.formState.errors.description && (
-              <p className="text-xs text-red-500">{form.formState.errors.description.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Department</label>
-              <DepartmentSelect
-                searchable
-                value={departmentValue || ""}
-                onChange={(value: unknown) => {
-                  const nextValue = typeof value === "string" ? value : "";
-                  form.setValue("department", nextValue);
-                }}
-                placeholder="Select department"
-                useUrlState={false}
-                noTitle
-              />
-              {form.formState.errors.department && (
-                <p className="text-xs text-red-500">{form.formState.errors.department.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Category</label>
-              <SelectField
-                searchable
-                items={categoryOptions}
-                value={categoryValue || ""}
-                onValueChange={(value: unknown) => {
-                  const nextValue = typeof value === "string" ? value : "";
-                  form.setValue("category", nextValue);
-                }}
-                placeholder="Select category"
-              />
-    
-              {form.formState.errors.category && (
-                <p className="text-xs text-red-500">{form.formState.errors.category.message}</p>
-              )}
-            </div>
           </div>
 
           <div className="flex items-start gap-3 rounded-lg border border-dashed p-4">
             <Checkbox
-              id="teaching_role"
-              checked={teachingRoleValue}
-              onCheckedChange={(checked) =>
-                form.setValue("teaching_role", checked === true)
-              }
+              id="canTeach"
+              checked={canTeachValue}
+              onCheckedChange={(checked) => form.setValue("canTeach", checked === true)}
             />
-            <label htmlFor="teaching_role" className="text-sm font-medium">
-              This is a teacher position
+            <label htmlFor="canTeach" className="text-sm font-medium">
+              This position is eligible for teaching duties
             </label>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -212,11 +206,7 @@ export function PositionFormModal({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              disabled={isSubmitting}
-            >
+            <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
               {initialData ? "Update Position" : "Add Position"}
             </Button>
           </div>

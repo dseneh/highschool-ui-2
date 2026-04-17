@@ -2,7 +2,7 @@
 import { useAxiosAuth } from '@/hooks/use-axios-auth'
 
 export const useStudentsApi = () => {
-    const { get, post, put, delete: del } = useAxiosAuth()
+    const { get, post, put, patch, delete: del } = useAxiosAuth()
 
     const getStudentsApi = async (query?: any) => {
         return get(`/students/`, { params: query })
@@ -37,6 +37,10 @@ export const useStudentsApi = () => {
         return put(`/students/${id}/`, data)
     }
 
+    const patchStudentApi = async (id: string, data: any) => {
+        return patch(`/students/${id}/`, data)
+    }
+
     const deleteStudentApi = async (id: string, forceDelete: boolean = false) => {
         return del(`/students/${id}/`, { 
             params: { force_delete: forceDelete } 
@@ -58,6 +62,7 @@ export const useStudentsApi = () => {
         getStudentTransactionsApi,
         createStudentUploadApi,
         getStudentPaymentStatusApi,
+        patchStudentApi,
     }
 }
 

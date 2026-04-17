@@ -42,7 +42,7 @@ interface ThemeSectionProps {
 type ThemeConfigPreview = {
   dark_mode?: boolean
   border_radius?: 'small' | 'medium' | 'large'
-  color_theme?: 'ocean' | 'sunset' | 'forest' | 'royal' | 'slate'
+  color_theme?: 'ocean' | 'sky' | 'navy' | 'indigo' | 'royal' | 'rose' | 'ruby' | 'sunset' | 'amber' | 'emerald' | 'forest' | 'slate'
   background_style?: 'clean' | 'paper' | 'mist' | 'graphite'
   font_family?: 'sans' | 'serif' | 'mono'
   font_size?: 'small' | 'normal' | 'large'
@@ -79,10 +79,17 @@ const BACKGROUND_STYLES = [
 ]
 
 const COLOR_THEME_SWATCHES: Record<string, string> = {
-  ocean: '#2563eb',
-  sunset: '#f97316',
-  forest: '#16a34a',
+  ocean: '#0891b2',
+  sky: '#3b82f6',
+  navy: '#1e3a5f',
+  indigo: '#4f46e5',
   royal: '#7c3aed',
+  rose: '#e11d74',
+  ruby: '#dc2626',
+  sunset: '#f97316',
+  amber: '#d97706',
+  emerald: '#059669',
+  forest: '#16a34a',
   slate: '#475569',
 }
 
@@ -96,8 +103,44 @@ const COLOR_THEMES = [
   {
     value: 'ocean',
     label: 'Ocean',
-    description: 'Professional blue with cool accents',
+    description: 'Modern teal with cool accents',
     swatch: COLOR_THEME_SWATCHES.ocean,
+  },
+  {
+    value: 'sky',
+    label: 'Sky Blue',
+    description: 'Fresh and professional blue',
+    swatch: COLOR_THEME_SWATCHES.sky,
+  },
+  {
+    value: 'navy',
+    label: 'Navy',
+    description: 'Deep and authoritative blue',
+    swatch: COLOR_THEME_SWATCHES.navy,
+  },
+  {
+    value: 'indigo',
+    label: 'Indigo',
+    description: 'Rich and creative violet-blue',
+    swatch: COLOR_THEME_SWATCHES.indigo,
+  },
+  {
+    value: 'royal',
+    label: 'Royal',
+    description: 'Premium purple with elegance',
+    swatch: COLOR_THEME_SWATCHES.royal,
+  },
+  {
+    value: 'rose',
+    label: 'Rose',
+    description: 'Soft and warm pink tones',
+    swatch: COLOR_THEME_SWATCHES.rose,
+  },
+  {
+    value: 'ruby',
+    label: 'Ruby',
+    description: 'Bold crimson with impact',
+    swatch: COLOR_THEME_SWATCHES.ruby,
   },
   {
     value: 'sunset',
@@ -106,16 +149,22 @@ const COLOR_THEMES = [
     swatch: COLOR_THEME_SWATCHES.sunset,
   },
   {
+    value: 'amber',
+    label: 'Amber',
+    description: 'Golden warmth and energy',
+    swatch: COLOR_THEME_SWATCHES.amber,
+  },
+  {
+    value: 'emerald',
+    label: 'Emerald',
+    description: 'Vibrant green with clarity',
+    swatch: COLOR_THEME_SWATCHES.emerald,
+  },
+  {
     value: 'forest',
     label: 'Forest',
     description: 'Balanced green with calm focus',
     swatch: COLOR_THEME_SWATCHES.forest,
-  },
-  {
-    value: 'royal',
-    label: 'Royal',
-    description: 'Deep violet with premium feel',
-    swatch: COLOR_THEME_SWATCHES.royal,
   },
   {
     value: 'slate',
@@ -159,12 +208,12 @@ const ANIMATION_SPEED = [
 // Theme Presets
 const THEME_PRESETS = [
   {
-    name: 'Modern Blue',
-    description: 'Clean and professional',
+    name: 'Professional Blue',
+    description: 'Clean and corporate — ideal for formal institutions',
     config: {
       dark_mode: false,
       border_radius: 'medium' as const,
-      color_theme: 'ocean' as const,
+      color_theme: 'sky' as const,
       background_style: 'clean' as const,
       font_family: 'sans' as const,
       font_size: 'normal' as const,
@@ -174,12 +223,27 @@ const THEME_PRESETS = [
     },
   },
   {
-    name: 'Minimal Dark',
-    description: 'Sleek and modern',
+    name: 'Ocean Breeze',
+    description: 'Fresh teal with airy surfaces',
+    config: {
+      dark_mode: false,
+      border_radius: 'medium' as const,
+      color_theme: 'ocean' as const,
+      background_style: 'mist' as const,
+      font_family: 'sans' as const,
+      font_size: 'normal' as const,
+      shadow_intensity: 'subtle' as const,
+      spacing_scale: 'comfortable' as const,
+      animation_speed: 'normal' as const,
+    },
+  },
+  {
+    name: 'Deep Navy',
+    description: 'Sophisticated dark theme for focused use',
     config: {
       dark_mode: true,
       border_radius: 'small' as const,
-      color_theme: 'slate' as const,
+      color_theme: 'navy' as const,
       background_style: 'graphite' as const,
       font_family: 'sans' as const,
       font_size: 'normal' as const,
@@ -189,11 +253,11 @@ const THEME_PRESETS = [
     },
   },
   {
-    name: 'Classic Serif',
-    description: 'Traditional and elegant',
+    name: 'Royal Elegance',
+    description: 'Premium purple with classic typography',
     config: {
       dark_mode: false,
-      border_radius: 'small' as const,
+      border_radius: 'medium' as const,
       color_theme: 'royal' as const,
       background_style: 'paper' as const,
       font_family: 'serif' as const,
@@ -204,33 +268,63 @@ const THEME_PRESETS = [
     },
   },
   {
-    name: 'Bold & Vibrant',
-    description: 'Eye-catching with control',
+    name: 'Rose Garden',
+    description: 'Warm and approachable with soft edges',
+    config: {
+      dark_mode: false,
+      border_radius: 'large' as const,
+      color_theme: 'rose' as const,
+      background_style: 'clean' as const,
+      font_family: 'sans' as const,
+      font_size: 'normal' as const,
+      shadow_intensity: 'medium' as const,
+      spacing_scale: 'comfortable' as const,
+      animation_speed: 'normal' as const,
+    },
+  },
+  {
+    name: 'Emerald Focus',
+    description: 'Balanced green for productivity and calm',
+    config: {
+      dark_mode: false,
+      border_radius: 'medium' as const,
+      color_theme: 'emerald' as const,
+      background_style: 'clean' as const,
+      font_family: 'sans' as const,
+      font_size: 'normal' as const,
+      shadow_intensity: 'medium' as const,
+      spacing_scale: 'comfortable' as const,
+      animation_speed: 'normal' as const,
+    },
+  },
+  {
+    name: 'Sunset Warmth',
+    description: 'Warm orange tones with inviting feel',
     config: {
       dark_mode: false,
       border_radius: 'large' as const,
       color_theme: 'sunset' as const,
       background_style: 'mist' as const,
       font_family: 'sans' as const,
-      font_size: 'large' as const,
-      shadow_intensity: 'bold' as const,
+      font_size: 'normal' as const,
+      shadow_intensity: 'medium' as const,
       spacing_scale: 'spacious' as const,
       animation_speed: 'normal' as const,
     },
   },
   {
-    name: 'Accessible',
-    description: 'Readable and calm',
+    name: 'Minimal Slate',
+    description: 'Understated neutral for distraction-free UI',
     config: {
       dark_mode: false,
-      border_radius: 'medium' as const,
-      color_theme: 'forest' as const,
-      background_style: 'clean' as const,
+      border_radius: 'small' as const,
+      color_theme: 'slate' as const,
+      background_style: 'graphite' as const,
       font_family: 'sans' as const,
-      font_size: 'large' as const,
-      shadow_intensity: 'medium' as const,
-      spacing_scale: 'spacious' as const,
-      animation_speed: 'slow' as const,
+      font_size: 'normal' as const,
+      shadow_intensity: 'subtle' as const,
+      spacing_scale: 'compact' as const,
+      animation_speed: 'fast' as const,
     },
   },
 ]

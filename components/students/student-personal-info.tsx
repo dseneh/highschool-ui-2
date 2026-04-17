@@ -135,7 +135,7 @@ interface StudentPersonalInfoProps {
 export function StudentPersonalInfo({ student }: StudentPersonalInfoProps) {
   const [editSection, setEditSection] = React.useState<EditSection>(null)
   const studentsApi = useStudentsApi()
-  const updateMutation = studentsApi.updateStudent(student.id)
+  const updateMutation = studentsApi.patchStudent(student.id)
 
   const queryClient = getQueryClient()
 
@@ -147,10 +147,6 @@ export function StudentPersonalInfo({ student }: StudentPersonalInfoProps) {
   const handleUpdate = async (values: Partial<UpdateStudentCommand>) => {
     try {
       await updateMutation.mutateAsync({
-        first_name: student.first_name,
-        last_name: student.last_name,
-        date_of_birth: student.date_of_birth,
-        gender: student.gender as "male" | "female",
         ...values,
       })
       queryClient.invalidateQueries({

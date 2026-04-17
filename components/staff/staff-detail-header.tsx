@@ -17,10 +17,12 @@ import moment from "moment"
 
 interface StaffDetailHeaderProps {
   staff: StaffDto
+  entityLabel?: string
 }
 
 export function StaffDetailHeader({
   staff,
+  entityLabel = "Staff",
 }: StaffDetailHeaderProps) {
   const status = staff?.status
 
@@ -47,6 +49,8 @@ export function StaffDetailHeader({
     ? staff.primary_department
     : staff.primary_department?.name
 
+  const identifierLabel = entityLabel === "Employee" ? "Employee Number" : "ID Number"
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       {/* Main Header Content */}
@@ -71,7 +75,7 @@ export function StaffDetailHeader({
                   {staff.full_name}
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground font-mono">
-                  ID Number: <b>{staff.id_number}</b>
+                  {identifierLabel}: <b>{staff.id_number}</b>
                 </p>
               </div>
               {staff.is_teacher && (
@@ -79,7 +83,7 @@ export function StaffDetailHeader({
                   variant="outline"
                   className="text-xs uppercase tracking-wider bg-background"
                 >
-                  Teaching Staff
+                  {`Teaching ${entityLabel}`}
                 </Badge>
               )}
             </div>

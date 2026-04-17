@@ -1,44 +1,28 @@
 "use client";
 
 import * as React from "react";
-import { useStaff } from "@/lib/api2/staff";
-import {
-  BriefcaseIcon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
 import { PositionsTable } from "@/components/positions/positions-table";
 import { PositionFormModal } from "@/components/positions/position-form-modal";
 import { AuthButton } from "@/components/auth/auth-button";
 import { useMemo, useCallback } from "react";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import type { Position } from "@/lib/api2/staff/types";
+import type {
+  CreateEmployeePositionCommand,
+  EmployeePositionDto,
+} from "@/lib/api2/employee-types";
 import PageLayout from "@/components/dashboard/page-layout";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  EmptyState,
-  EmptyStateIcon,
-  EmptyStateTitle,
-  EmptyStateDescription,
-  EmptyStateAction,
-} from "@/components/ui/empty-state";
-import { Card, CardContent } from "@/components/ui/card";
 import RefreshButton from "@/components/shared/refresh-button";
 import EmptyStateComponent from "@/components/shared/empty-state";
 import { Plus } from "lucide-react";
-
-type PositionFormPayload = {
-  title: string;
-  description?: string;
-  department?: string;
-  category?: string;
-  teaching_role?: boolean;
-};
+import {
+  useEmployeeMutations,
+  useEmployeePositions,
+} from "@/hooks/use-employee";
 
 export default function PositionsPage() {
-  const staffApi = useStaff();
-  const { data, isLoading, error, isFetching, refetch } = staffApi.getPositions({});
-  const createMutation = staffApi.createPosition();
+  const { data, isLoading, error, isFetching, refetch } = useEmployeePositions();
+  const { createPosition } = useEmployeeMutations();
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -46,10 +30,10 @@ export default function PositionsPage() {
     refetch();
   }, [refetch]);
 
-  const handleCreateSubmit = async (formData: PositionFormPayload) => {
+  const handleCreateSubmit = async (formData: CreateEmployeePositionCommand) => {
     setIsSubmitting(true);
     try {
-      await createMutation.mutateAsync(formData);
+      await createPosition.mutateAsync(formData);
       showToast.success(
         "Position created",
         "The position has been added to the system",
@@ -63,13 +47,8 @@ export default function PositionsPage() {
     }
   };
 
-  const positionsList = useMemo<Position[]>(() => {
-    if (Array.isArray(data)) return data as Position[];
-    return data?.results || [];
-  }, [data]);
+  const positionsList = useMemo<EmployeePositionDto[]>(() => data ?? [], [data]);
   
-  const isEmpty = !isLoading && positionsList.length === 0;
-
   if (error) {
     return (
       <PageLayout
@@ -107,7 +86,7 @@ export default function PositionsPage() {
       emptyState={
         <EmptyStateComponent 
          title="No positions yet"
-          description="Create your first position to get started with staff management."
+          description="Create your first position to support employee onboarding and organization setup."
           actionTitle="Add Position"
           handleAction={() => setShowCreateModal(true)}
         />

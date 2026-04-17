@@ -5,6 +5,7 @@ import { NavSection } from "./type";
 export const primaryNavSections: NavSection[] = [
   // Dashboard
   {
+    title: "Dashboard",
     items: [
       {
         icon: DashboardSquare01Icon,
@@ -40,8 +41,8 @@ export const primaryNavSections: NavSection[] = [
       {
         icon: ArrowShrinkIcon,
         label: "Human Resources",
-        path: "/staff",
-        meta: "Staff and teachers",
+        path: "/employees",
+        meta: "Employees and teachers",
         requiredRoles: "teacher",
         subItems: [
           // {
@@ -50,14 +51,56 @@ export const primaryNavSections: NavSection[] = [
           //   icon: Add01Icon,
           // },
           {
-            label: "All Staff",
-            path: "/staff",
+            label: "All Employees",
+            path: "/employees",
             icon: UserGroupIcon,
           },
           {
             label: "Teachers",
             path: "/staff/teachers",
             icon: UserGroupIcon,
+          },
+          {
+            icon: Calendar01Icon,
+            label: "Attendance",
+            path: "/employee-attendance",
+            meta: "Employee presence and work hours",
+            requiredRoles: "admin",
+          },
+          {
+            icon: Calendar01Icon,
+            label: "Leaves",
+            path: "/leaves",
+            meta: "Leave requests and approvals",
+            requiredRoles: "admin",
+          },
+          {
+            icon: Coins01Icon,
+            label: "Payroll",
+            path: "/payroll",
+            meta: "Compensation, earnings, and deductions",
+            requiredRoles: "admin",
+          },
+          {
+            icon: ArrowShrinkIcon,
+            label: "Workflows",
+            path: "/employee-workflows",
+            meta: "Onboarding and offboarding checklists",
+            requiredRoles: "admin",
+          },
+          {
+            icon: FileIcon,
+            label: "Documents",
+            path: "/employee-documents",
+            meta: "Contracts, licenses, and certifications",
+            requiredRoles: "admin",
+          },
+          {
+            icon: ChartIcon,
+            label: "Performance",
+            path: "/performance",
+            meta: "Employee reviews and development tracking",
+            requiredRoles: "admin",
           },
           {
             icon: Briefcase01Icon,

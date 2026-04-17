@@ -53,7 +53,7 @@ export function DialogBox2({
   const sizeClasses = {
     sm: "h-full max-h-[90vh] w-full md:max-w-[30vw] ",
     md: "h-full md:max-h-[60vh] w-full md:max-w-[40vw]",
-    lg: "h-full max-h-[90vh] w-full md:max-w-[90vw]",
+    lg: "h-full max-h-[90vh] w-full md:max-w-[60vw]",
     xl: "h-full max-h-[90vh] md:max-w-[98vw] w-full",
     full: "w-full max-w-full h-full max-h-[100vh] rounded-none",
   };

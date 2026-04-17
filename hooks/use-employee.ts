@@ -11,10 +11,22 @@ import {
   terminateEmployee,
   addContact,
   addDependent,
+  listEmployeeDepartments,
+  createEmployeeDepartment,
+  updateEmployeeDepartment,
+  deleteEmployeeDepartment,
+  listEmployeePositions,
+  createEmployeePosition,
+  updateEmployeePosition,
+  deleteEmployeePosition,
 } from "@/lib/api2/employee-service";
 import type {
   EmployeeDto,
+  EmployeeDepartmentDto,
+  EmployeePositionDto,
   CreateEmployeeCommand,
+  CreateEmployeeDepartmentCommand,
+  CreateEmployeePositionCommand,
   UpdateEmployeeCommand,
   TerminateEmployeeCommand,
   AddContactCommand,
@@ -30,6 +42,8 @@ import {getQueryClient} from '@/lib/query-client';
 const employeeKeys = {
   all: (sub: string) => ["employees", sub] as const,
   detail: (sub: string, id: string) => ["employee", sub, id] as const,
+  departments: (sub: string) => ["employee-departments", sub] as const,
+  positions: (sub: string) => ["employee-positions", sub] as const,
 };
 
 /* ------------------------------------------------------------------ */
@@ -64,6 +78,26 @@ export function useEmployeeDetail(id: string | undefined) {
   return query;
 }
 
+export function useEmployeeDepartments() {
+  const subdomain = useTenantSubdomain();
+
+  return useQuery<EmployeeDepartmentDto[]>({
+    queryKey: employeeKeys.departments(subdomain),
+    queryFn: () => listEmployeeDepartments(),
+    enabled: Boolean(subdomain),
+  });
+}
+
+export function useEmployeePositions() {
+  const subdomain = useTenantSubdomain();
+
+  return useQuery<EmployeePositionDto[]>({
+    queryKey: employeeKeys.positions(subdomain),
+    queryFn: () => listEmployeePositions(),
+    enabled: Boolean(subdomain),
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Hook: useEmployeeMutations (create, update, delete, terminate)     */
 /* ------------------------------------------------------------------ */
@@ -74,6 +108,12 @@ export function useEmployeeMutations() {
 
   const invalidateList = () =>
     queryClient.invalidateQueries({ queryKey: employeeKeys.all(subdomain) });
+
+  const invalidateDepartments = () =>
+    queryClient.invalidateQueries({ queryKey: employeeKeys.departments(subdomain) });
+
+  const invalidatePositions = () =>
+    queryClient.invalidateQueries({ queryKey: employeeKeys.positions(subdomain) });
 
   const invalidateDetail = (id: string) =>
     queryClient.invalidateQueries({
@@ -145,6 +185,62 @@ export function useEmployeeMutations() {
     },
   });
 
+  const createDepartment = useMutation({
+    mutationFn: (payload: CreateEmployeeDepartmentCommand) =>
+      createEmployeeDepartment(subdomain, payload),
+    onSuccess: () => {
+      void invalidateDepartments();
+    },
+  });
+
+  const updateDepartment = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: CreateEmployeeDepartmentCommand;
+    }) => updateEmployeeDepartment(subdomain, id, payload),
+    onSuccess: () => {
+      void invalidateDepartments();
+    },
+  });
+
+  const removeDepartment = useMutation({
+    mutationFn: (id: string) => deleteEmployeeDepartment(subdomain, id),
+    onSuccess: () => {
+      void invalidateDepartments();
+    },
+  });
+
+  const createPosition = useMutation({
+    mutationFn: (payload: CreateEmployeePositionCommand) =>
+      createEmployeePosition(subdomain, payload),
+    onSuccess: () => {
+      void invalidatePositions();
+    },
+  });
+
+  const updatePosition = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: CreateEmployeePositionCommand;
+    }) => updateEmployeePosition(subdomain, id, payload),
+    onSuccess: () => {
+      void invalidatePositions();
+    },
+  });
+
+  const removePosition = useMutation({
+    mutationFn: (id: string) => deleteEmployeePosition(subdomain, id),
+    onSuccess: () => {
+      void invalidatePositions();
+    },
+  });
+
   return {
     create,
     update,
@@ -152,5 +248,11 @@ export function useEmployeeMutations() {
     terminate,
     createContact,
     createDependent,
+    createDepartment,
+    updateDepartment,
+    removeDepartment,
+    createPosition,
+    updatePosition,
+    removePosition,
   };
 }

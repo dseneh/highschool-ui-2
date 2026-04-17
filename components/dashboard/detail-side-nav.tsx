@@ -21,8 +21,10 @@ import type { NavItem } from "@/components/navigation";
 import { useMemo } from "react";
 import NavStudentCard from "./nav-student-card";
 import NavStaffCard from "./nav-staff-card";
+import NavEmployeeCard from "./nav-employee-card";
 import { useStudentByNumber } from "@/hooks/use-student";
 import { useStaff } from "@/lib/api2/staff";
+import { useEmployee } from "@/lib/api2/employee";
 import { LockKeyhole } from "lucide-react";
 import { ToolTipComponent } from "../ui/tooltip";
 
@@ -41,6 +43,7 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
   // Determine context once to avoid redundant checks
   const isStudentContext = pathname?.includes('/students/');
   const isStaffContext = pathname?.includes('/staff/');
+  const isEmployeeContext = pathname?.includes('/employees/');
   
   // Only fetch student data in student context
   const {data: student, isLoading: studentLoading } = useStudentByNumber(
@@ -53,6 +56,13 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
   const { data: staff, isLoading: staffLoading } = staffApi.getStaffMember(
     studentIdNumber || '', 
     { enabled: !!studentIdNumber && isStaffContext }
+  );
+
+  // Only fetch employee data in employee context
+  const employeeApi = useEmployee();
+  const { data: employee, isLoading: employeeLoading } = employeeApi.getEmployeeMember(
+    studentIdNumber || '',
+    { enabled: !!studentIdNumber && isEmployeeContext }
   );
 
   const normalizedPath = useMemo(() => {
@@ -74,7 +84,7 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
   );
 
   // Only show loading for the active context
-  const isLoading = isStudentContext ? studentLoading : isStaffContext ? staffLoading : false;
+  const isLoading = isStudentContext ? studentLoading : isStaffContext ? staffLoading : isEmployeeContext ? employeeLoading : false;
 
   if (isLoading) {
     return (
@@ -175,6 +185,8 @@ export function DetailSideNav({ items }: DetailSideNavProps) {
       {/* Context Card */}
       {isStaffContext && staff ? (
         <NavStaffCard staff={staff} />
+      ) : isEmployeeContext && employee ? (
+        <NavEmployeeCard employee={employee} />
       ) : student ? (
         <NavStudentCard student={student} />
       ) : null}

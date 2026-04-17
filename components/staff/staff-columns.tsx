@@ -47,6 +47,9 @@ interface StaffColumnsProps {
   onEdit?: (staff: StaffListItem) => void;
   onStatusAction?: (staff: StaffListItem, action: StaffStatusActionType) => void;
   returnToUrl?: string;
+  basePath?: string;
+  entityLabel?: string;
+  showSecondaryLinks?: boolean;
 }
 
 export function getStaffColumns({
@@ -55,6 +58,9 @@ export function getStaffColumns({
   onEdit,
   onStatusAction,
   returnToUrl,
+  basePath = "/staff",
+  entityLabel = "Staff",
+  showSecondaryLinks = true,
 }: StaffColumnsProps = {}): ColumnDef<StaffListItem>[] {
   const departmentLabelById = new Map(
     departmentFilterOptions.map((option) => [option.value, option.label])
@@ -70,7 +76,7 @@ export function getStaffColumns({
       const staff = row.original;
       return (
         <Link
-          href={`/staff/${staff.id_number}${returnToUrl ? `?returnTo=${encodeURIComponent(returnToUrl)}` : ''}`}
+          href={`${basePath}/${staff.id_number}${returnToUrl ? `?returnTo=${encodeURIComponent(returnToUrl)}` : ''}`}
           className="font-semibold text-primary hover:underline"
         >
           {staff.id_number}
@@ -273,6 +279,9 @@ export function getStaffColumns({
           onEdit={onEdit}
           onDelete={onDelete}
           onStatusAction={onStatusAction}
+          basePath={basePath}
+          entityLabel={entityLabel}
+          showSecondaryLinks={showSecondaryLinks}
         />
       );
     },
@@ -286,11 +295,17 @@ function StaffActionsCell({
   onEdit,
   onDelete,
   onStatusAction,
+  basePath = "/staff",
+  entityLabel = "Staff",
+  showSecondaryLinks = true,
 }: {
   staff: StaffListItem;
   onEdit?: (staff: StaffListItem) => void;
   onDelete?: (staff: StaffListItem) => void;
   onStatusAction?: (staff: StaffListItem, action: StaffStatusActionType) => void;
+  basePath?: string;
+  entityLabel?: string;
+  showSecondaryLinks?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -303,18 +318,22 @@ function StaffActionsCell({
     {
       label: "View Details",
       icon: ViewIcon,
-      href: `/staff/${staff.id_number}?returnTo=${encodeURIComponent(returnToUrl)}`,
+      href: `${basePath}/${staff.id_number}?returnTo=${encodeURIComponent(returnToUrl)}`,
     },
-    {
-      label: "Schedule",
-      icon: Calendar03Icon,
-      href: `/staff/${staff.id_number}/schedule?returnTo=${encodeURIComponent(returnToUrl)}`,
-    },
-    {
-      label: "Settings",
-      icon: Settings01Icon,
-      href: `/staff/${staff.id_number}/settings?returnTo=${encodeURIComponent(returnToUrl)}`,
-    },
+    ...(showSecondaryLinks
+      ? [
+          {
+            label: "Schedule",
+            icon: Calendar03Icon,
+            href: `${basePath}/${staff.id_number}/schedule?returnTo=${encodeURIComponent(returnToUrl)}`,
+          },
+          {
+            label: "Settings",
+            icon: Settings01Icon,
+            href: `${basePath}/${staff.id_number}/settings?returnTo=${encodeURIComponent(returnToUrl)}`,
+          },
+        ]
+      : []),
   ];
 
   const statusActions: Array<{
@@ -325,13 +344,13 @@ function StaffActionsCell({
     destructive?: boolean;
   }|any> = [
     {
-      label: "Suspend Staff",
+      label: `Suspend ${entityLabel}`,
       icon: Ban,
       action: "suspend",
       visible: staff.status !== "suspended" && staff.status !== "terminated",
     },
     {
-      label: "Terminate Staff",
+      label: `Terminate ${entityLabel}`,
       icon: UserX,
       action: "terminate",
       visible: staff.status !== "terminated",

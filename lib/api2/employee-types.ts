@@ -12,6 +12,41 @@ export interface Address {
   country: string | null;
 }
 
+export interface EmployeeDepartmentDto {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+  active: boolean;
+}
+
+export interface EmployeePositionDto {
+  id: string;
+  title: string;
+  code: string | null;
+  description: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+  employmentType: string | null;
+  canTeach: boolean;
+  active: boolean;
+}
+
+export interface CreateEmployeeDepartmentCommand {
+  name: string;
+  code?: string | null;
+  description?: string | null;
+}
+
+export interface CreateEmployeePositionCommand {
+  title: string;
+  code?: string | null;
+  description?: string | null;
+  departmentId?: string | null;
+  employmentType?: string | null;
+  canTeach?: boolean;
+}
+
 /** Emergency / related contact */
 export interface ContactDto {
   id: string;
@@ -37,6 +72,33 @@ export interface DependentDto {
   hasPhoto: boolean;
 }
 
+export interface EmployeeLeaveRequestDto {
+  id: string;
+  leaveTypeName: string;
+  leaveTypeCode: string | null;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string | null;
+  status: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+}
+
+export interface EmployeeLeaveBalanceDto {
+  year: number;
+  leaveType: string;
+  leaveTypeCode: string | null;
+  defaultDays: number;
+  entitledDays: number;
+  carriedOverDays: number;
+  usedDays: number;
+  remainingDays: number;
+  accrualFrequency: string;
+  allowCarryover: boolean;
+  maxCarryoverDays: number;
+}
+
 /** Full employee representation returned by the API */
 export interface EmployeeDto {
   id: string;
@@ -47,6 +109,12 @@ export interface EmployeeDto {
   fullName: string | null; // read-only, computed by the API
   email: string | null;
   phoneNumber: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+  placeOfBirth: string | null;
   dateOfBirth: string; // ISO 8601
   gender: string | null;
   nationalId: string | null;
@@ -55,19 +123,24 @@ export interface EmployeeDto {
   terminationDate: string | null;
   employmentStatus: string | null;
   departmentId: string | null;
+  departmentName: string | null;
   positionId: string | null;
+  positionName: string | null;
   managerId: string | null;
+  managerName: string | null;
   jobTitle: string | null;
   employmentType: string | null;
   photoUrl: string | null;
   hasPhoto: boolean;
   contacts: ContactDto[] | null;
   dependents: DependentDto[] | null;
+  leaveRequests: EmployeeLeaveRequestDto[] | null;
+  leaveBalances: EmployeeLeaveBalanceDto[] | null;
 }
 
 /** POST /Employees - body */
 export interface CreateEmployeeCommand {
-  employeeNumber: string | null;
+  employeeNumber?: string | null;
   firstName: string | null;
   lastName: string | null;
   middleName: string | null;

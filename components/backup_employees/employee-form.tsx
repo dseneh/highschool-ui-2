@@ -4,13 +4,7 @@ import * as React from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +35,11 @@ import type {
   UpdateEmployeeCommand,
   EmployeeDto,
 } from "@/lib/api2/employee-types";
+import {
+  useEmployeeDepartments,
+  useEmployees,
+  useEmployeePositions,
+} from "@/hooks/use-employee";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -84,9 +83,7 @@ const personalSchema = z.object({
     .min(1, "Email is required")
     .email("Enter a valid email address"),
   phoneNumber: z.string().optional(),
-  dateOfBirth: z
-    .date({ required_error: "Date of birth is required" })
-    .optional(),
+  dateOfBirth: z.date({ required_error: "Date of birth is required" }),
   gender: z.string().optional(),
   nationalId: z.string().optional(),
   passportNumber: z.string().optional(),
@@ -94,9 +91,12 @@ const personalSchema = z.object({
 
 const employmentSchema = z.object({
   employeeNumber: z.string().optional(),
-  jobTitle: z.string().min(1, "Job title is required"),
+  jobTitle: z.string().min(1, "Position is required"),
   employmentType: z.string().min(1, "Employment type is required"),
-  hireDate: z.date({ required_error: "Hire date is required" }).optional(),
+  departmentId: z.string().optional(),
+  positionId: z.string().optional(),
+  managerId: z.string().optional(),
+  hireDate: z.date({ required_error: "Hire date is required" }),
 });
 
 const addressSchema = z.object({
@@ -313,9 +313,68 @@ export function EmployeeFormModal({
     Record<string, string | undefined>
   >({});
   const currentStep = STEPS[stepIndex].key;
+  const { data: departments = [] } = useEmployeeDepartments();
+  const { data: positions = [] } = useEmployeePositions();
+  const { data: employees = [] } = useEmployees();
+
+  const genderOptions = React.useMemo(
+    () => GENDER_OPTIONS.map((value) => ({ value, label: value })),
+    []
+  );
+  const employmentTypeOptions = React.useMemo(
+    () => EMPLOYMENT_TYPE_OPTIONS.map((value) => ({ value, label: value })),
+    []
+  );
 
   // Form data
   const [form, setForm] = React.useState(() => buildInitialForm(employee));
+
+  const departmentOptions = React.useMemo(
+    () =>
+      departments.map((department) => ({
+        value: department.id,
+        label: department.name,
+      })),
+    [departments]
+  );
+
+  const availablePositions = React.useMemo(
+    () =>
+      positions.filter(
+        (position) => !form.departmentId || position.departmentId === form.departmentId
+      ),
+    [positions, form.departmentId]
+  );
+
+  const jobTitleOptions = React.useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...availablePositions.map((position) => position.title?.trim() ?? ""),
+            ...employees.map((employeeOption) => employeeOption.jobTitle?.trim() ?? ""),
+          ].filter((value): value is string => Boolean(value))
+        )
+      )
+        .sort((left, right) => left.localeCompare(right))
+        .map((value) => ({ value, label: value })),
+    [availablePositions, employees]
+  );
+
+  const managerOptions = React.useMemo(
+    () =>
+      employees
+        .filter((employeeOption) => employeeOption.id !== employee?.id)
+        .map((employeeOption) => ({
+          value: employeeOption.id,
+          label:
+            employeeOption.fullName ||
+            [employeeOption.firstName, employeeOption.lastName].filter(Boolean).join(" ") ||
+            employeeOption.employeeNumber ||
+            "Unnamed Employee",
+        })),
+    [employees, employee?.id]
+  );
 
   // Reset when modal opens or employee reference changes
   React.useEffect(() => {
@@ -395,6 +454,9 @@ export function EmployeeFormModal({
       country: form.country || null,
     };
 
+    const dateOfBirth = toApiDate(form.dateOfBirth);
+    const hireDate = toApiDate(form.hireDate);
+
     if (isEdit && employee) {
       const payload: UpdateEmployeeCommand = {
         employeeId: employee.id,
@@ -403,16 +465,14 @@ export function EmployeeFormModal({
         middleName: form.middleName || null,
         email: form.email || null,
         phoneNumber: form.phoneNumber || null,
-        dateOfBirth: form.dateOfBirth
-          ? form.dateOfBirth.toISOString()
-          : new Date().toISOString(),
+        dateOfBirth: dateOfBirth || "",
         gender: form.gender || null,
         nationalId: form.nationalId || null,
         passportNumber: form.passportNumber || null,
         address,
-        departmentId: employee.departmentId ?? null,
-        positionId: employee.positionId ?? null,
-        managerId: employee.managerId ?? null,
+        departmentId: form.departmentId || null,
+        positionId: form.positionId || null,
+        managerId: form.managerId || null,
         jobTitle: form.jobTitle || null,
         employmentType: form.employmentType || null,
         modifiedBy: null,
@@ -420,25 +480,21 @@ export function EmployeeFormModal({
       await onSubmit(payload);
     } else {
       const payload: CreateEmployeeCommand = {
-        employeeNumber: form.employeeNumber || null,
+        employeeNumber: form.employeeNumber.trim() || null,
         firstName: form.firstName || null,
         lastName: form.lastName || null,
         middleName: form.middleName || null,
         email: form.email || null,
         phoneNumber: form.phoneNumber || null,
-        dateOfBirth: form.dateOfBirth
-          ? form.dateOfBirth.toISOString()
-          : new Date().toISOString(),
+        dateOfBirth: dateOfBirth || "",
         gender: form.gender || null,
         nationalId: form.nationalId || null,
         passportNumber: form.passportNumber || null,
         address,
-        hireDate: form.hireDate
-          ? form.hireDate.toISOString()
-          : new Date().toISOString(),
-        departmentId: null,
-        positionId: null,
-        managerId: null,
+        hireDate: hireDate || "",
+        departmentId: form.departmentId || null,
+        positionId: form.positionId || null,
+        managerId: form.managerId || null,
         jobTitle: form.jobTitle || null,
         employmentType: form.employmentType || null,
         createdBy: null,
@@ -463,7 +519,7 @@ export function EmployeeFormModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex h-[90vh] max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[800px]"
+        className="flex h-[90vh] max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-200"
         showCloseButton
       >
         {/* ── Header ── */}
@@ -562,21 +618,13 @@ export function EmployeeFormModal({
                   />
                 </FormField>
                 <FormField name="gender" label="Gender" errors={errors}>
-                  <Select
+                  <SelectField
+                    searchable
+                    items={genderOptions}
                     value={form.gender}
-                    onValueChange={(v) => update("gender", v!)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GENDER_OPTIONS.map((g) => (
-                        <SelectItem key={g} value={g}>
-                          {g}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={(value) => update("gender", value)}
+                    placeholder="Select gender"
+                  />
                 </FormField>
                 <FormField
                   name="nationalId"
@@ -613,25 +661,42 @@ export function EmployeeFormModal({
                     label="Employee Number"
                     errors={errors}
                   >
-                    <Input
-                      value={form.employeeNumber}
-                      onChange={(e) =>
-                        update("employeeNumber", e.target.value)
-                      }
-                      placeholder="EMP-001"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        value={form.employeeNumber}
+                        onChange={(e) =>
+                          update("employeeNumber", e.target.value)
+                        }
+                        placeholder="Leave blank to auto-generate"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Optional. A number will be generated automatically if left empty.
+                      </p>
+                    </div>
                   </FormField>
                 )}
                 <FormField
                   name="jobTitle"
-                  label="Job Title"
+                  label="Position"
                   required
                   errors={errors}
                 >
-                  <Input
+                  <SelectField
+                    searchable
+                    allowCustomValue
+                    items={jobTitleOptions}
                     value={form.jobTitle}
-                    onChange={(e) => update("jobTitle", e.target.value)}
-                    placeholder="Software Engineer"
+                    onValueChange={(value) => {
+                      update("jobTitle", value);
+
+                      const normalizedValue = value.trim().toLowerCase();
+                      const matchedPosition = availablePositions.find(
+                        (position) => position.title.trim().toLowerCase() === normalizedValue
+                      );
+
+                      update("positionId", matchedPosition?.id ?? "");
+                    }}
+                    placeholder="Select or type position"
                     aria-invalid={!!errors.jobTitle}
                   />
                 </FormField>
@@ -641,24 +706,44 @@ export function EmployeeFormModal({
                   required
                   errors={errors}
                 >
-                  <Select
+                  <SelectField
+                    searchable
+                    items={employmentTypeOptions}
                     value={form.employmentType}
-                    onValueChange={(v) => update("employmentType", v!)}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-invalid={!!errors.employmentType}
-                    >
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EMPLOYMENT_TYPE_OPTIONS.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={(value) => update("employmentType", value)}
+                    placeholder="Select type"
+                    aria-invalid={!!errors.employmentType}
+                  />
+                </FormField>
+                <FormField
+                  name="departmentId"
+                  label="Department"
+                  errors={errors}
+                >
+                  <SelectField
+                    searchable
+                    items={departmentOptions}
+                    value={form.departmentId}
+                    onValueChange={(value) => {
+                      update("departmentId", value);
+                      update("positionId", "");
+                    }}
+                    placeholder="Select department"
+                  />
+                </FormField>
+                <FormField
+                  name="managerId"
+                  label="Reporting Manager"
+                  errors={errors}
+                  className="sm:col-span-2"
+                >
+                  <SelectField
+                    searchable
+                    items={managerOptions}
+                    value={form.managerId}
+                    onValueChange={(value) => update("managerId", value)}
+                    placeholder="Select manager"
+                  />
                 </FormField>
                 {!isEdit && (
                   <FormField
@@ -769,10 +854,18 @@ export function EmployeeFormModal({
                         value={form.employeeNumber}
                       />
                     )}
-                    <ReviewRow label="Job Title" value={form.jobTitle} />
+                    <ReviewRow label="Position" value={form.jobTitle} />
                     <ReviewRow
                       label="Employment Type"
                       value={form.employmentType}
+                    />
+                    <ReviewRow
+                      label="Department"
+                      value={departmentOptions.find((item) => item.value === form.departmentId)?.label}
+                    />
+                    <ReviewRow
+                      label="Manager"
+                      value={managerOptions.find((item) => item.value === form.managerId)?.label}
                     />
                     {!isEdit && (
                       <ReviewRow
@@ -849,6 +942,20 @@ export function EmployeeFormModal({
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+function toApiDate(value?: Date | null): string | null {
+  if (!value) return null;
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateOnly(value?: string | null): Date | undefined {
+  if (!value) return undefined;
+  const normalized = value.split("T")[0];
+  return new Date(`${normalized}T00:00:00`);
+}
+
 function buildInitialForm(employee?: EmployeeDto | null) {
   return {
     employeeNumber: employee?.employeeNumber ?? "",
@@ -857,21 +964,20 @@ function buildInitialForm(employee?: EmployeeDto | null) {
     middleName: employee?.middleName ?? "",
     email: employee?.email ?? "",
     phoneNumber: employee?.phoneNumber ?? "",
-    dateOfBirth: employee?.dateOfBirth
-      ? new Date(employee.dateOfBirth)
-      : (undefined as Date | undefined),
+    dateOfBirth: parseDateOnly(employee?.dateOfBirth),
     gender: employee?.gender ?? "",
     nationalId: employee?.nationalId ?? "",
     passportNumber: employee?.passportNumber ?? "",
-    hireDate: employee?.hireDate
-      ? new Date(employee.hireDate)
-      : (new Date() as Date | undefined),
+    hireDate: parseDateOnly(employee?.hireDate) ?? (new Date() as Date | undefined),
     jobTitle: employee?.jobTitle ?? "",
     employmentType: employee?.employmentType ?? "",
-    street: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "",
+    departmentId: employee?.departmentId ?? "",
+    positionId: employee?.positionId ?? "",
+    managerId: employee?.managerId ?? "",
+    street: employee?.address ?? "",
+    city: employee?.city ?? "",
+    state: employee?.state ?? "",
+    postalCode: employee?.postalCode ?? "",
+    country: employee?.country ?? "",
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { ColumnDef, Table } from "@tanstack/react-table";
 
 import { StatsCards, type StatsCardItem } from "@/components/shared/stats-cards";
@@ -21,6 +21,12 @@ interface AccountingAdvancedTableProps<TData> {
   searchPredicate?: (row: TData, normalizedSearch: string) => boolean;
   stats?: StatsCardItem[];
   onRowClick?: (row: TData) => void;
+  // Empty state
+  noData?: boolean;
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
+  emptyStateAction?: () => void;
+  emptyStateIcon?: React.ReactNode;
 }
 
 export function AccountingAdvancedTable<TData>({
@@ -32,6 +38,11 @@ export function AccountingAdvancedTable<TData>({
   searchPredicate,
   stats,
   onRowClick,
+  noData,
+  emptyStateTitle,
+  emptyStateDescription,
+  emptyStateAction,
+  emptyStateIcon,
 }: AccountingAdvancedTableProps<TData>) {
   const [searchValue, setSearchValue] = useState("");
   const [tableInstance, setTableInstance] = useState<Table<TData> | null>(null);
@@ -49,7 +60,7 @@ export function AccountingAdvancedTable<TData>({
 
   return (
     <div className="space-y-6">
-      <StatsCards items={stats ?? []} /> 
+      {stats && stats.length > 0 ? <StatsCards items={stats} /> : null}
 
       <AdvancedTable
         loading={loading}
@@ -60,6 +71,11 @@ export function AccountingAdvancedTable<TData>({
         showRowSelection={false}
         showBulkActions={false}
         onTableInstanceReady={setTableInstance}
+        noData={noData}
+        emptyStateTitle={emptyStateTitle}
+        emptyStateDescription={emptyStateDescription}
+        emptyStateAction={emptyStateAction}
+        emptyStateIcon={emptyStateIcon}
         toolbar={(table) => (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-65 flex-1 items-center gap-2">

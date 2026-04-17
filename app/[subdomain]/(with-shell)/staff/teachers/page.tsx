@@ -1,35 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { useStaff } from "@/lib/api2/staff";
-import { StaffTable } from "@/components/staff/staff-table";
+import { useEmployee } from "@/lib/api2/employee";
+import { StaffTable } from "@/components/employees/staff-table";
 import { useMemo, useCallback } from "react";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import type { StaffFormSchema } from "@/components/staff/staff-form";
-import type { StaffListItem } from "@/lib/api2/staff/types";
+import type { StaffFormSchema } from "@/components/employees/staff-form";
+import type { EmployeeListItem } from "@/lib/api2/employee/types";
 import PageLayout from "@/components/dashboard/page-layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AddTeacherDropdown } from "@/components/staff/add-teacher-dropdown";
-import { StaffFormModal } from "@/components/staff/staff-form-modal";
+import { AddTeacherDropdown } from "@/components/employees/add-teacher-dropdown";
+import { StaffFormModal } from "@/components/employees/staff-form-modal";
 import RefreshButton from "@/components/shared/refresh-button";
 import EmptyStateComponent from "@/components/shared/empty-state";
-import { StaffSelectDialog } from "@/components/staff/staff-select-dialog";
+import { StaffSelectDialog } from "@/components/employees/staff-select-dialog";
 import { parseAsString, useQueryState } from "nuqs";
-import type { StaffTableUrlParams } from "@/components/staff/staff-table";
-
-function isTeachingPosition(staff: StaffListItem): boolean {
-  if (!staff.position) return false;
-
-  if (typeof staff.position === "string") {
-    return staff.position.toLowerCase().includes("teaching");
-  }
-
-  if (staff.position.teaching_role === true) return true;
-
-  const title = staff.position.title?.toLowerCase() ?? "";
-  return title.includes("teaching") || title.includes("teacher");
-}
+import type { StaffTableUrlParams } from "@/components/employees/staff-table";
 
 export default function TeachersPage() {
   const [statusFilter, setStatusFilter] = useQueryState(
@@ -64,9 +51,9 @@ export default function TeachersPage() {
     [setSearch, setStatusFilter, setDepartmentFilter, setGenderFilter],
   );
 
-  const staffApi = useStaff();
+  const employeeApi = useEmployee();
   
-  const { data, isLoading, error, isFetching, refetch } = staffApi.getStaff({
+  const { data, isLoading, error, isFetching, refetch } = employeeApi.getEmployees({
     search: search || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     department: departmentFilter || undefined,
@@ -75,7 +62,7 @@ export default function TeachersPage() {
   });
 
 
-  const createMutation = staffApi.createStaff();
+  const createMutation = employeeApi.createEmployee();
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [showSelectStaffDialog, setShowSelectStaffDialog] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -133,21 +120,6 @@ export default function TeachersPage() {
       setIsSubmitting(false);
     }
   };
-
-  const staffList = useMemo<StaffListItem[]>(() => {
-    if (Array.isArray(data)) return data as StaffListItem[];
-    return data?.results || [];
-  }, [data]);
-
-  const teacherList = useMemo(() => {
-    const filtered = staffList.filter((staff) => isTeachingPosition(staff));
-
-    return {
-      ...data,
-      results: filtered,
-      count: filtered.length,
-    };
-  }, [data, staffList]);
 
   const isEmpty = !isLoading && data && data.results.length === 0;
 

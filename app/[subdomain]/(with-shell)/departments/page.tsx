@@ -1,36 +1,28 @@
 "use client";
 
 import * as React from "react";
-import { useStaff } from "@/lib/api2/staff";
-import {
-  Building02Icon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
 import { DepartmentsTable } from "@/components/departments/departments-table";
 import { DepartmentFormModal } from "@/components/departments/department-form-modal";
 import { AuthButton } from "@/components/auth/auth-button";
 import { useMemo, useCallback } from "react";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import type { Department } from "@/lib/api2/staff/types";
+import type {
+  CreateEmployeeDepartmentCommand,
+  EmployeeDepartmentDto,
+} from "@/lib/api2/employee-types";
 import PageLayout from "@/components/dashboard/page-layout";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  EmptyState,
-  EmptyStateIcon,
-  EmptyStateTitle,
-  EmptyStateDescription,
-  EmptyStateAction,
-} from "@/components/ui/empty-state";
-import { Card, CardContent } from "@/components/ui/card";
 import RefreshButton from "@/components/shared/refresh-button";
 import { Plus } from "lucide-react";
 import EmptyStateComponent from "@/components/shared/empty-state";
+import {
+  useEmployeeDepartments,
+  useEmployeeMutations,
+} from "@/hooks/use-employee";
 
 export default function DepartmentsPage() {
-  const staffApi = useStaff();
-  const { data, isLoading, error, isFetching, refetch } = staffApi.getDepartments({});
-  const createMutation = staffApi.createDepartment();
+  const { data, isLoading, error, isFetching, refetch } = useEmployeeDepartments();
+  const { createDepartment } = useEmployeeMutations();
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -38,10 +30,10 @@ export default function DepartmentsPage() {
     refetch();
   }, [refetch]);
 
-  const handleCreateSubmit = async (formData: Partial<Department>) => {
+  const handleCreateSubmit = async (formData: CreateEmployeeDepartmentCommand) => {
     setIsSubmitting(true);
     try {
-      await createMutation.mutateAsync(formData as any);
+      await createDepartment.mutateAsync(formData);
       showToast.success(
         "Department created",
         "The department has been added to the system",
@@ -55,10 +47,7 @@ export default function DepartmentsPage() {
     }
   };
 
-  const departmentsList = useMemo<Department[]>(() => {
-    if (Array.isArray(data)) return data as Department[];
-    return data?.results || [];
-  }, [data]);
+  const departmentsList = useMemo<EmployeeDepartmentDto[]>(() => data ?? [], [data]);
   
   const isEmpty = !isLoading && departmentsList.length === 0;
 
@@ -95,7 +84,7 @@ export default function DepartmentsPage() {
       emptyState={
         <EmptyStateComponent
           title="No departments yet"
-          description="Create your first department to get started with staff management."
+          description="Create your first department to organize your employees and HR workflows."
           actionTitle="Add Department"
           handleAction={() => setShowCreateModal(true)}
         />

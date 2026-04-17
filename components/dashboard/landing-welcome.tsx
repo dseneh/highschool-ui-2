@@ -55,8 +55,8 @@ export function LandingWelcome() {
     },
     {
       icon: Users,
-      label: "Add Staff",
-      action: () => router.push("/staff"),
+      label: "Manage Employees",
+      action: () => router.push("/employees"),
       hasPermission: canManageStaff,
     },
     {

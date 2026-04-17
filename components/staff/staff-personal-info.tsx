@@ -129,12 +129,13 @@ const sectionConfig: Record<Exclude<EditSection, null>, { title: string; descrip
 
 interface StaffPersonalInfoProps {
   staff: StaffDto
+  entityLabel?: string
 }
 
-export function StaffPersonalInfo({ staff }: StaffPersonalInfoProps) {
+export function StaffPersonalInfo({ staff, entityLabel = "Staff" }: StaffPersonalInfoProps) {
   const [editSection, setEditSection] = React.useState<EditSection>(null)
   const staffApi = useStaff()
-  const patchMutation = staffApi.updateStaff(staff.id)
+  const patchMutation = staffApi.patchStaff(staff.id)
 
   const queryClient = getQueryClient()
 
@@ -149,7 +150,7 @@ export function StaffPersonalInfo({ staff }: StaffPersonalInfoProps) {
       queryClient.invalidateQueries({
         queryKey: ["staff", staff.id_number],
       })
-      showToast.success("Staff updated", "Changes have been saved")
+      showToast.success(`${entityLabel} updated`, "Changes have been saved")
       setEditSection(null)
     } catch (error) {
       showToast.error("Update failed", getErrorMessage(error))
@@ -242,7 +243,7 @@ export function StaffPersonalInfo({ staff }: StaffPersonalInfoProps) {
           onEdit={() => setEditSection("employment")}
         >
           <DetailRow
-            label="Staff ID"
+            label={entityLabel === "Employee" ? "Employee ID" : "Staff ID"}
             value={
               <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{staff.id_number}</span>
             }
@@ -273,7 +274,7 @@ export function StaffPersonalInfo({ staff }: StaffPersonalInfoProps) {
           <DetailRow label="Manager" value={managerDisplay} />
           <DetailRow
             label="Role"
-            value={staff.is_teacher ? <Badge variant="secondary">Teacher</Badge> : "Staff"}
+            value={staff.is_teacher ? <Badge variant="secondary">Teacher</Badge> : entityLabel}
           />
         </SectionCard>
       </div>

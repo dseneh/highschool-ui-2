@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Department } from "@/lib/api2/staff/types";
+import type { EmployeeDepartmentDto } from "@/lib/api2/employee-types";
 import { DialogBox2 } from "../ui/dialog-box2";
 
 const departmentFormSchema = z.object({
@@ -22,7 +22,7 @@ interface DepartmentFormModalProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: DepartmentFormData) => Promise<void>;
   isSubmitting: boolean;
-  initialData?: Department;
+  initialData?: EmployeeDepartmentDto;
 }
 
 export function DepartmentFormModal({

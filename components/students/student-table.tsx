@@ -473,6 +473,9 @@ export function StudentTable({
         loading={loading}
         columns={columns}
         data={data}
+        noData={!loading && data.length === 0}
+        emptyStateTitle="No Students Found"
+        emptyStateDescription="There are no students to display at the moment."
         pageSize={serverPagination?.pageSize ?? 10}
         totalCount={serverPagination?.totalCount}
         currentPage={serverPagination?.currentPage ?? 1}

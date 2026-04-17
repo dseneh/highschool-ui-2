@@ -1,3 +1,4 @@
+import React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 
 /**
@@ -59,6 +60,12 @@ export interface AdvancedTableProps<TData, TValue> {
   // Export
   showExport?: boolean
   onExport?: () => void
+  // Empty state
+  noData?: boolean
+  emptyStateTitle?: string
+  emptyStateDescription?: string
+  emptyStateAction?: () => void
+  emptyStateIcon?: React.ReactNode
 }
 
 /**

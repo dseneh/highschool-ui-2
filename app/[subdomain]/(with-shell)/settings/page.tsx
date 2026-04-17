@@ -65,7 +65,7 @@ interface SectionChanges {
 type ThemeConfigPreview = {
   dark_mode?: boolean
   border_radius?: 'small' | 'medium' | 'large'
-  color_theme?: 'ocean' | 'sunset' | 'forest' | 'royal' | 'slate'
+  color_theme?: 'ocean' | 'sky' | 'navy' | 'indigo' | 'royal' | 'rose' | 'ruby' | 'sunset' | 'amber' | 'emerald' | 'forest' | 'slate'
   background_style?: 'clean' | 'paper' | 'mist' | 'graphite'
   font_family?: 'sans' | 'serif' | 'mono'
   font_size?: 'small' | 'normal' | 'large'

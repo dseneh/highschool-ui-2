@@ -10,54 +10,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreVertical, Edit2, Trash } from "lucide-react";
-import type { Department } from "@/lib/api2/staff/types";
+import type {
+  CreateEmployeeDepartmentCommand,
+  EmployeeDepartmentDto,
+} from "@/lib/api2/employee-types";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
-import { useStaffApi } from "@/lib/api2/staff/api";
-import { useApiMutation } from "@/lib/api2/utils";
 import { DepartmentFormModal } from "@/components/departments/department-form-modal";
 import { DataTable } from "@/components/shared/data-table";
+import { useEmployeeMutations } from "@/hooks/use-employee";
+import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface DepartmentsTableProps {
-  departments: Department[];
+  departments: EmployeeDepartmentDto[];
   onRefresh: () => void;
 }
 
 export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTableProps) => {
-  const api = useStaffApi();
-  const deleteDepartmentMutation = useApiMutation((departmentId: string) =>
-    api.deleteDepartmentApi(departmentId).then((res: { data: unknown }) => res.data)
-  );
-  const updateDepartmentMutation = useApiMutation(
-    ({ id, data }: { id: string; data: { name: string; code?: string; description?: string } }) =>
-      api.updateDepartmentApi(id, data).then((res: { data: unknown }) => res.data)
-  );
-  const [editingDepartment, setEditingDepartment] = React.useState<Department | null>(null);
+  const { removeDepartment, updateDepartment } = useEmployeeMutations();
+  const [editingDepartment, setEditingDepartment] = React.useState<EmployeeDepartmentDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const handleDelete = async (departmentId: string) => {
-    if (window.confirm("Are you sure you want to delete this department?")) {
-      try {
-        await deleteDepartmentMutation.mutateAsync(departmentId);
-        showToast.success("Deleted", "Department has been removed");
-        onRefresh();
-      } catch (error) {
-        showToast.error("Delete failed", getErrorMessage(error));
-      }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await removeDepartment.mutateAsync(deleteTarget);
+      showToast.success("Deleted", "Department has been removed");
+      onRefresh();
+    } catch (error) {
+      showToast.error("Delete failed", getErrorMessage(error));
     }
   };
 
-  const handleEditSubmit = async (data: {
-    name: string;
-    code?: string;
-    description?: string;
-  }) => {
+  const handleEditSubmit = async (data: CreateEmployeeDepartmentCommand) => {
     if (!editingDepartment) return;
     setIsSubmitting(true);
     try {
-      await updateDepartmentMutation.mutateAsync({
+      await updateDepartment.mutateAsync({
         id: editingDepartment.id,
-        data,
+        payload: data,
       });
       showToast.success("Updated", "Department updated successfully");
       setEditingDepartment(null);
@@ -69,7 +61,7 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
     }
   };
 
-  const columns: ColumnDef<Department>[] = [
+  const columns: ColumnDef<EmployeeDepartmentDto>[] = [
     {
       accessorKey: "name",
       header: "Department Name",
@@ -105,7 +97,7 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => handleDelete(row.original.id)}
+              onClick={() => setDeleteTarget(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash className="h-4 w-4" />
@@ -136,6 +128,16 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingDepartment ?? undefined}
+      />
+
+      <AlertDialogBox
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete Department"
+        description="Are you sure you want to delete this department? This action cannot be undone."
+        actionLabel="Delete"
+        variant="destructive"
+        onConfirm={confirmDelete}
       />
     </>
   );

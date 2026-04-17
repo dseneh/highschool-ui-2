@@ -1,164 +1,302 @@
 "use client";
 
 import * as React from "react";
+import { useEmployee } from "@/lib/api2/employee";
+import {
+  UserGroupIcon,
+  UserCircleIcon,
+  Building02Icon,
+  User02Icon,
+} from "@hugeicons/core-free-icons";
+import { StaffTable } from "@/components/employees/staff-table";
+import { useMemo, useCallback, useState } from "react";
+import { showToast } from "@/lib/toast";
+import { getErrorMessage } from "@/lib/utils";
+import type { EmployeeListItem } from "@/lib/api2/employee/types";
+import type { EmployeeListResponse } from "@/lib/api2/employee/types";
 import PageLayout from "@/components/dashboard/page-layout";
-import { SummaryCardGrid } from "@/components/dashboard/summary-card-grid";
-import { EmployeesTable } from "@/components/dashboard/employees-table";
-import type { SummaryCardData } from "@/lib/api2/queries";
-import { getIconByKey } from "@/lib/icon-map";
-import type { EmployeeDto, CreateEmployeeCommand } from "@/lib/api2/employee-types";
-import { EmployeeFormModal } from "@/components/employees/employee-form";
-import { AuthButton } from "@/components/auth/auth-button";
-import { UserAdd01Icon } from "@hugeicons/core-free-icons";
-import { useRouter } from "next/navigation";
-import { UserIcon } from "lucide-react";
-import { useEmployees, useEmployeeMutations } from "@/hooks/use-employee";
-import { Skeleton } from "@/components/ui/skeleton";
-
-/* ------------------------------------------------------------------ */
-/*  Summary helpers                                                    */
-/* ------------------------------------------------------------------ */
-
-function toSummaryCards(employees: EmployeeDto[]): SummaryCardData[] {
-  const active = employees.filter(
-    (e) => e.employmentStatus === "Active"
-  ).length;
-  const total = employees.length;
-  const terminated = employees.filter(
-    (e) => e.employmentStatus === "Terminated"
-  ).length;
-  const recentHires = employees.filter((e) => {
-    if (!e.hireDate) return false;
-    const diff = Date.now() - new Date(e.hireDate).getTime();
-    return diff < 30 * 24 * 60 * 60 * 1000;
-  }).length;
-
-  return [
-    {
-      title: "Total Headcount",
-      value: String(total),
-      subtitle: `${active} active`,
-      iconKey: "employees",
-    },
-    {
-      title: "Active Employees",
-      value: String(active),
-      subtitle: `${terminated} terminated`,
-      iconKey: "check",
-    },
-    {
-      title: "New Hires",
-      value: String(recentHires),
-      subtitle: "Joined in the last 30 days",
-      iconKey: "attendance",
-    },
-  ];
-}
-
-function toSummaryCardItems(items: SummaryCardData[]) {
-  return items.map((item) => ({
-    ...item,
-    icon: getIconByKey(item.iconKey),
-  }));
-}
-
-/* ------------------------------------------------------------------ */
-/*  Page component                                                     */
-/* ------------------------------------------------------------------ */
+import { AddStaffDropdown } from "@/components/employees/add-staff-dropdown";
+import { StaffFormModal } from "@/components/employees/staff-form-modal";
+import type { StaffFormSchema } from "@/components/employees/staff-form";
+import { StaffBulkUploadDialog } from "@/components/employees/staff-bulk-upload-dialog";
+import { StatsCards } from "@/components/shared/stats-cards";
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import type { StaffTableUrlParams } from "@/components/employees/staff-table";
 
 export default function EmployeesPage() {
-  const router = useRouter();
-  const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [statusFilter, setStatusFilter] = useQueryState(
+    "status",
+    parseAsString.withDefault("all"),
+  );
+  const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
+  const [departmentFilter, setDepartmentFilter] = useQueryState(
+    "department",
+    parseAsString.withDefault(""),
+  );
+  const [roleFilter, setRoleFilter] = useQueryState("role", parseAsString.withDefault("all"));
+  const [genderFilter, setGenderFilter] = useQueryState("gender", parseAsString.withDefault(""));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [pageSize, setPageSize] = useQueryState("page_size", parseAsInteger.withDefault(20));
 
-  const { data: employees = [], isLoading } = useEmployees();
-  const { create } = useEmployeeMutations();
+  const urlParams = useMemo<StaffTableUrlParams>(
+    () => ({
+      search,
+      status: statusFilter,
+      department: departmentFilter,
+      role: roleFilter,
+      gender: genderFilter,
+    }),
+    [search, statusFilter, departmentFilter, roleFilter, genderFilter]
+  );
 
-  async function handleCreate(
-    payload: CreateEmployeeCommand | unknown
-  ) {
-    await create.mutateAsync(payload as CreateEmployeeCommand);
-    setShowCreateModal(false);
-  }
+  const staffQuery = useMemo(
+    () => ({
+      search: search || undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      department: departmentFilter || undefined,
+      is_teacher:
+        roleFilter === "teacher"
+          ? "true"
+          : roleFilter === "staff"
+            ? "false"
+            : undefined,
+      gender: genderFilter || undefined,
+      page,
+      page_size: pageSize,
+    }),
+    [search, statusFilter, departmentFilter, roleFilter, genderFilter, page, pageSize],
+  );
 
-  const isEmpty = !isLoading && employees.length === 0;
+  const employeeApi = useEmployee();
+  const { data, isLoading, error, isFetching, refetch } = employeeApi.getEmployees(staffQuery);
+  const { data: departmentsData } = employeeApi.getEmployeeDepartments({ page_size: 500 });
+  const createMutation = employeeApi.createEmployee();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const handleCreateSubmit = async (formData: StaffFormSchema) => {
+    setIsSubmitting(true);
+    try {
+      const payload = new FormData();
+      const {
+        initialize_user_account,
+        username,
+        role,
+        ...staffData
+      } = formData;
+
+      Object.entries(staffData).forEach(([key, value]) => {
+        if (key === "photo" && value instanceof File) {
+          payload.append(key, value);
+        } else if (key === "date_of_birth" && value instanceof Date) {
+          payload.append(key, value.toISOString().split("T")[0]);
+        } else if (key === "hire_date" && value instanceof Date) {
+          payload.append(key, value.toISOString().split("T")[0]);
+        } else if (typeof value === "boolean") {
+          // Convert boolean to Python-style True/False string
+          payload.append(key, value ? "True" : "False");
+        } else if (value !== null && value !== undefined && value !== "") {
+          payload.append(key, String(value));
+        }
+      });
+
+      if (initialize_user_account) {
+        payload.append("initialize_user", "True");
+        if (username?.trim()) {
+          payload.append("username", username.trim());
+        }
+        if (role) {
+          payload.append("role", role);
+        }
+      }
+
+      await createMutation.mutateAsync(payload as any);
+      showToast.success(
+        "Employee created",
+        "The employee has been added to the system",
+      );
+      setShowCreateModal(false);
+      refetch();
+    } catch (error) {
+      showToast.error("Create failed", getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const staffList = useMemo(() => {
+    if (Array.isArray(data)) return data;
+    return data?.results || [];
+  }, [data]);
+
+  const departmentFilterOptions = useMemo(() => {
+    const departments = Array.isArray(departmentsData)
+      ? departmentsData
+      : departmentsData?.results || [];
+
+    return departments
+      .map((department: { id: string; name: string }) => ({
+        label: department.name,
+        value: department.id,
+      }))
+      .sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label));
+  }, [departmentsData]);
+
+  const serverPagination = useMemo(() => {
+    if (Array.isArray(data) || !data || typeof data.count !== "number") {
+      return undefined;
+    }
+
+    return {
+      totalCount: data.count,
+      currentPage: page,
+      pageSize,
+      onPageChange: (nextPage: number) => {
+        void setPage(nextPage);
+      },
+      onPageSizeChange: (nextPageSize: number) => {
+        void setPageSize(nextPageSize);
+        void setPage(1);
+      },
+    };
+  }, [data, page, pageSize, setPage, setPageSize]);
+
+  const setUrlParams = useCallback(
+    (params: StaffTableUrlParams & { page: number }) => {
+      void setSearch(params.search || "");
+      void setStatusFilter(params.status || "all");
+      void setDepartmentFilter(params.department || "");
+      void setRoleFilter(params.role || "all");
+      void setGenderFilter(params.gender || "");
+      void setPage(params.page || 1);
+    },
+    [setSearch, setStatusFilter, setDepartmentFilter, setRoleFilter, setGenderFilter, setPage]
+  );
+
+  // Calculate stats from staff data
+  const stats = useMemo(() => {
+    const totalStaff = data?.count || (Array.isArray(data) ? data.length : 0);
+    const activeStaff = staffList.filter(
+      (s: EmployeeListItem) => s.employment_status === "active",
+    ).length;
+    const teacherCount = staffList.filter(
+      (s: EmployeeListItem) => s.is_teacher === true,
+    ).length;
+    const departmentsSet = new Set<string>();
+    staffList.forEach((s: EmployeeListItem) => {
+      if (s.department) {
+        const deptName = typeof s.department === 'string' 
+          ? s.department 
+          : s.department.name;
+        if (deptName) departmentsSet.add(deptName);
+      }
+    });
+
+    return [
+      {
+        title: "Total Employees",
+        value: totalStaff.toString(),
+        subtitle: `${activeStaff} active`,
+        icon: UserGroupIcon,
+        subtitleIcon: UserCircleIcon,
+      },
+      {
+        title: "Teachers",
+        value: teacherCount.toString(),
+        subtitle: "Teaching staff",
+        icon: UserCircleIcon,
+      },
+      {
+        title: "Departments",
+        value: departmentsSet.size.toString(),
+        subtitle: "Active departments",
+        icon: Building02Icon,
+      },
+      {
+        title: "Non-Teaching",
+        value: (totalStaff - teacherCount).toString(),
+        subtitle: "Support staff",
+        icon: User02Icon,
+      },
+    ];
+  }, [data, staffList]);
 
   return (
     <>
       <PageLayout
-        title="Employees"
-        description="Manage your organization's workforce"
+        title="Employee Management"
+        description="Manage and view employee information"
         actions={
-          <AuthButton
-            roles="admin"
-            disable
-            iconLeft={<UserIcon />}
-            onClick={() => setShowCreateModal(true)}
-          >
-            Add Employee
-          </AuthButton>
-        }
-        loading={isLoading}
-        skeleton={
           <>
-            {/* Summary cards skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="relative p-5 rounded-xl border bg-card overflow-hidden">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex flex-col gap-3 flex-1">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-7 w-32" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <Skeleton className="size-10 rounded-md" />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Table skeleton */}
-            <div className="rounded-md border">
-              <div className="border-b px-4 py-3 flex gap-6">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="border-b px-4 py-3 flex items-center gap-6">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="size-9 rounded-full" />
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-3 w-40" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              ))}
-            </div>
+            <AddStaffDropdown
+              disabled={isLoading || isFetching}
+              onAddIndividual={() => setShowCreateModal(true)}
+              onUploadBulk={() => setShowBulkUploadModal(true)}
+            />
           </>
         }
-        noData={isEmpty}
-        emptyState={<div className="text-center text-muted-foreground py-8">No employees found</div>}
-      >
-        <SummaryCardGrid
-          items={toSummaryCardItems(toSummaryCards(employees))}
-        />
-        <EmployeesTable employees={employees} />
-      </PageLayout>
-
-      {/* Create employee modal */}
-      <EmployeeFormModal
+        fetching={isFetching}
+        refreshAction={handleRefresh}
+        // loading={isLoading}
+        error={error}
+        // noData={isEmpty}
+        skeleton={<StaffTableSkeleton />}
+        filterActions={
+           <StaffFormModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
-        onSubmit={handleCreate}
-        submitting={create.isPending}
+        onSubmit={handleCreateSubmit}
+        submitting={isSubmitting}
+      />
+        }
+        emptyStateTitle="No Employees created yet!"
+        emptyStateDescription="Start by adding employees to the system."
+        emptyStateAction={() => setShowCreateModal(true)}
+      >
+        {/* Stats Cards */}
+             <StatsCards items={stats} />
+
+          <StaffTable
+            data={data}
+            urlParams={urlParams}
+            setUrlParams={setUrlParams}
+            departmentFilterOptions={departmentFilterOptions}
+            serverPagination={serverPagination}
+            loading={isFetching}
+            onDataChanged={handleRefresh}
+          />
+
+      </PageLayout>
+
+      {/* Employee Form Modal */}
+
+      <StaffBulkUploadDialog
+        open={showBulkUploadModal}
+        onOpenChange={setShowBulkUploadModal}
+        onSuccess={() => {
+          refetch();
+        }}
       />
     </>
+  );
+}
+
+function StaffTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-48 w-full bg-muted rounded-xl animate-pulse" />
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="space-y-2">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-12 w-full bg-muted rounded-lg" />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

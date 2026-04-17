@@ -39,6 +39,7 @@ export interface SelectFieldProps extends React.ComponentProps<typeof Select> {
   className?: string;
   triggerClassName?: string;
   searchable?: boolean;
+  allowCustomValue?: boolean;
   emptyText?: string;
   checkedValues?: string[];
   defaultCheckedValues?: string[];
@@ -55,6 +56,7 @@ export function SelectField({
   className,
   triggerClassName,
   searchable = false,
+  allowCustomValue = false,
   emptyText = "No results found.",
   checkedValues,
   defaultCheckedValues,
@@ -120,8 +122,8 @@ export function SelectField({
   }, [items, query]);
 
   const selectedLabel = React.useMemo(() => {
-    return items.find((item) => item.value === currentValue)?.label ?? "";
-  }, [items, currentValue]);
+    return items.find((item) => item.value === currentValue)?.label ?? (allowCustomValue ? currentValue : "");
+  }, [allowCustomValue, items, currentValue]);
 
   React.useEffect(() => {
     if (isCheckboxMode) return;
@@ -240,7 +242,13 @@ export function SelectField({
           className={cn("w-full", triggerClassName)}
           showClear={!!currentValue}
           showTrigger
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
+            if (allowCustomValue) {
+              setValue(nextQuery);
+            }
+          }}
           value={query}
         />
         <ComboboxContent

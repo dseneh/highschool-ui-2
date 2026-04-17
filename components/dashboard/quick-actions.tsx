@@ -52,10 +52,10 @@ const actions = [
   },
   {
     id: "staff-directory",
-    label: "Staff",
-    description: "Manage teachers",
+    label: "Employees",
+    description: "Manage employees",
     icon: User02Icon,
-    href: "/staff",
+    href: "/employees",
     color: "text-pink-500",
     bgColor: "bg-pink-50 dark:bg-pink-950/30",
   },
