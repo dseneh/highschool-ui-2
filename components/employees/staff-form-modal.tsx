@@ -550,9 +550,9 @@ export function StaffFormModal({
       postal_code: form.postal_code,
       country: form.country,
       hire_date: fmtDateISO(form.hire_date),
-      status: form.status,
+      employment_status: form.status || undefined,
       position: form.position || undefined,
-      primary_department: form.department || undefined,
+      department: form.primary_department || undefined,
       is_teacher: form.is_teacher,
       photo: form.photo || undefined,
       initialize_user_account: form.initialize_user_account,
@@ -806,7 +806,7 @@ export function StaffFormModal({
                 >
                   <DepartmentSelect
                     noTitle
-                    value={form.department}
+                    value={form.primary_department}
                     onChange={(value) => update("primary_department", value || "")}
                     useUrlState={false}
                   />
@@ -1014,8 +1014,8 @@ export function StaffFormModal({
                   <ReviewRow
                     label="Department"
                     value={
-                      departmentLabelMap.get(form.department) ||
-                      form.department ||
+                      departmentLabelMap.get(form.primary_department) ||
+                      form.primary_department ||
                       "--"
                     }
                   />

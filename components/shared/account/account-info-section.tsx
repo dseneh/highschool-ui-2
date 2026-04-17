@@ -24,7 +24,7 @@ interface BasicUserAccount {
 }
 
 interface AccountInfoSectionProps {
-  entityLabel: "Student" | "Staff";
+  entityLabel: "Student" | "Staff" | "Employee";
   fullName: string;
   idNumber: string;
   accountType: "STUDENT" | "STAFF";

@@ -26,7 +26,7 @@ function renderIcon(icon: IconLike, className: string) {
     return <HugeiconsIcon icon={icon} className={className} />;
   }
 
-  const Icon = icon;
+  const Icon = icon as ComponentType<{ className?: string }>;
   return <Icon className={className} />;
 }
 

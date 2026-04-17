@@ -154,7 +154,7 @@ export function CompensationFormModal({
             <SelectField
               items={employeeOptions}
               value={employeeId}
-              onValueChange={(value) => form.setValue("employeeId", value)}
+              onValueChange={(value) => form.setValue("employeeId", value as string)}
               placeholder="Select employee"
               searchable
             />
@@ -196,7 +196,7 @@ export function CompensationFormModal({
             <SelectField
               items={PAYMENT_FREQUENCY_OPTIONS}
               value={paymentFrequency}
-              onValueChange={(value) => form.setValue("paymentFrequency", value)}
+              onValueChange={(value) => form.setValue("paymentFrequency", value as string)}
               placeholder="Select frequency"
             />
           </div>

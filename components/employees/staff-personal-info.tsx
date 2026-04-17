@@ -265,8 +265,8 @@ export function StaffPersonalInfo({ staff, entityLabel = "Staff" }: StaffPersona
           <DetailRow
             label="Status"
             value={
-              <Badge variant={statusConfig[staff.status]?.variant || "outline"}>
-                {statusConfig[staff.status]?.label || staff.status}
+              <Badge variant={statusConfig[staff.employment_status]?.variant || "outline"}>
+                {statusConfig[staff.employment_status]?.label || staff.employment_status}
               </Badge>
             }
           />

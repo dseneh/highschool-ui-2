@@ -25,7 +25,7 @@ function isTeachingPosition(staff: EmployeeListItem): boolean {
     return staff.position.toLowerCase().includes("teaching");
   }
 
-  if (staff.position.teaching_role === true) return true;
+  if (staff.position.can_teach === true) return true;
 
   const title = staff.position.title?.toLowerCase() ?? "";
   return title.includes("teaching") || title.includes("teacher");

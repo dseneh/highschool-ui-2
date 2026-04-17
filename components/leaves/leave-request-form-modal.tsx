@@ -129,7 +129,7 @@ export function LeaveRequestFormModal({
             searchable
             items={employeeOptions}
             value={employeeValue}
-            onValueChange={(value) => form.setValue("employeeId", value, { shouldValidate: true })}
+            onValueChange={(value) => form.setValue("employeeId", value as string, { shouldValidate: true })}
             placeholder="Select employee"
           />
           {form.formState.errors.employeeId && (
@@ -143,7 +143,7 @@ export function LeaveRequestFormModal({
             searchable
             items={leaveTypeOptions}
             value={leaveTypeValue}
-            onValueChange={(value) => form.setValue("leaveTypeId", value, { shouldValidate: true })}
+            onValueChange={(value) => form.setValue("leaveTypeId", value as string, { shouldValidate: true })}
             placeholder="Select leave type"
           />
           {form.formState.errors.leaveTypeId && (

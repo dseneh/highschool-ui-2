@@ -43,6 +43,7 @@ export interface EmployeeManager {
   id: string;
   id_number: string;
   full_name: string;
+  photo?: string | null;
 }
 
 /**
