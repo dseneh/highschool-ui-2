@@ -144,7 +144,7 @@ export function EmployeeAttendanceFormModal({
             <SelectField
               items={STATUS_OPTIONS}
               value={status}
-              onValueChange={(value) => form.setValue("status", value)}
+              onValueChange={(value) => form.setValue("status", value as string)}
               placeholder="Select status"
             />
           </div>

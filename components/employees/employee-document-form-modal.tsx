@@ -139,7 +139,7 @@ export function EmployeeDocumentFormModal({
           <SelectField
             items={employeeOptions}
             value={employeeId}
-            onValueChange={(value) => form.setValue("employeeId", value)}
+            onValueChange={(value) => form.setValue("employeeId", value as string)}
             placeholder="Select employee"
             searchable
           />
@@ -162,7 +162,7 @@ export function EmployeeDocumentFormModal({
             <SelectField
               items={DOCUMENT_TYPE_OPTIONS}
               value={documentType}
-              onValueChange={(value) => form.setValue("documentType", value)}
+              onValueChange={(value) => form.setValue("documentType", value as string)}
               placeholder="Select type"
             />
           </div>

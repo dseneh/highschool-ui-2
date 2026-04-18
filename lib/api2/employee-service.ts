@@ -269,7 +269,7 @@ function normalizeEmployee(employee: BackendEmployee): EmployeeDto {
     managerName: extractLookupLabel(employee.manager),
     jobTitle:
       employee.job_title ??
-      (typeof employee.position === "object" ? employee.position.title ?? null : null),
+      (typeof employee.position === "object" && employee.position ? employee.position.title ?? null : null),
     employmentType: toDisplayEmploymentType(employee.employment_type) ?? null,
     photoUrl: employee.photo_url ?? null,
     hasPhoto: Boolean(employee.has_photo),
