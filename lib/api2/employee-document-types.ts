@@ -11,7 +11,7 @@ export interface EmployeeDocumentDto {
   issuingAuthority: string | null;
   documentUrl: string | null;
   notes: string | null;
-  complianceStatus: string;
+  complianceStatus: string | null;
   daysUntilExpiry: number | null;
   active: boolean;
 }
