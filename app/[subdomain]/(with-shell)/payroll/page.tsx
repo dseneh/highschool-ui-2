@@ -8,6 +8,7 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { Plus } from "lucide-react";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { AuthButton } from "@/components/auth/auth-button";
 import PageLayout from "@/components/dashboard/page-layout";
 import EmptyStateComponent from "@/components/shared/empty-state";
@@ -19,11 +20,12 @@ import { CompensationFormModal } from "@/components/payroll/compensation-form-mo
 import { CompensationTable } from "@/components/payroll/compensation-table";
 import { PayrollComponentFormModal } from "@/components/payroll/payroll-component-form-modal";
 import { PayrollComponentsTable } from "@/components/payroll/payroll-components-table";
+import { PayrollRunDetailSheet } from "@/components/payroll/payroll-run-detail-sheet";
 import { PayrollRunFormModal } from "@/components/payroll/payroll-run-form-modal";
 import { PayrollRunsTable } from "@/components/payroll/payroll-runs-table";
 import { useEmployees } from "@/hooks/use-employee";
 import { useEmployeeCompensations, usePayrollComponents, usePayrollMutations, usePayrollRuns } from "@/hooks/use-payroll";
-import type { CreateEmployeeCompensationCommand, CreatePayrollComponentCommand, CreatePayrollRunCommand } from "@/lib/api2/payroll-types";
+import type { CreateEmployeeCompensationCommand, CreatePayrollComponentCommand, CreatePayrollRunCommand, PayrollRunDto } from "@/lib/api2/payroll-types";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -36,7 +38,7 @@ export default function PayrollPage() {
   const { data: components = [] } = usePayrollComponents();
   const { data: payrollRuns = [] } = usePayrollRuns();
   const { data: employees = [] } = useEmployees();
-  const { createComponent, createCompensation, createRun } = usePayrollMutations();
+  const { createComponent, createCompensation, createRun, updateRun, processRun, markRunPaid } = usePayrollMutations();
 
   const [showComponentModal, setShowComponentModal] = React.useState(false);
   const [showCompensationModal, setShowCompensationModal] = React.useState(false);
@@ -44,7 +46,12 @@ export default function PayrollPage() {
   const [isSubmittingComponent, setIsSubmittingComponent] = React.useState(false);
   const [isSubmittingCompensation, setIsSubmittingCompensation] = React.useState(false);
   const [isSubmittingRun, setIsSubmittingRun] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("compensation");
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(["compensation", "components", "runs"]).withDefault("compensation")
+  );
+  const [selectedRun, setSelectedRun] = React.useState<PayrollRunDto | null>(null);
+  const [editRunFromSheet, setEditRunFromSheet] = React.useState<PayrollRunDto | null>(null);
 
   const totalNetPay = compensations.reduce((sum, item) => sum + item.netPay, 0);
   const totalBasePay = compensations.reduce((sum, item) => sum + item.baseSalary, 0);
@@ -129,6 +136,21 @@ export default function PayrollPage() {
     }
   };
 
+  const handleEditRun = async (payload: CreatePayrollRunCommand) => {
+    if (!editRunFromSheet) return;
+    setIsSubmittingRun(true);
+    try {
+      await updateRun.mutateAsync({ id: editRunFromSheet.id, payload });
+      showToast.success("Updated", "Payroll run updated successfully");
+      setEditRunFromSheet(null);
+      refetch();
+    } catch (submitError) {
+      showToast.error("Update failed", getErrorMessage(submitError));
+    } finally {
+      setIsSubmittingRun(false);
+    }
+  };
+
   return (
     <PageLayout
       title="Payroll & Compensation"
@@ -166,7 +188,7 @@ export default function PayrollPage() {
       <div className="space-y-6">
         <StatsCards items={statsItems} className="xl:grid-cols-5" />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full">
           <Card>
             <CardHeader className="gap-4">
               <div className="space-y-1">
@@ -196,7 +218,11 @@ export default function PayrollPage() {
               </TabsContent>
 
               <TabsContent value="runs" className="mt-0">
-                <PayrollRunsTable payrollRuns={payrollRuns} onRefresh={refetch} />
+                <PayrollRunsTable
+                  payrollRuns={payrollRuns}
+                  onRefresh={refetch}
+                  onRowClick={(run) => setSelectedRun(run)}
+                />
               </TabsContent>
             </CardContent>
           </Card>
@@ -224,6 +250,42 @@ export default function PayrollPage() {
         onOpenChange={setShowRunModal}
         onSubmit={handleCreateRun}
         isSubmitting={isSubmittingRun}
+      />
+
+      <PayrollRunFormModal
+        open={editRunFromSheet !== null}
+        onOpenChange={(open) => { if (!open) setEditRunFromSheet(null); }}
+        onSubmit={handleEditRun}
+        isSubmitting={isSubmittingRun}
+        initialData={editRunFromSheet ?? undefined}
+      />
+
+      <PayrollRunDetailSheet
+        open={selectedRun !== null}
+        onOpenChange={(open) => { if (!open) setSelectedRun(null); }}
+        payrollRun={selectedRun}
+        onEdit={(run) => {
+          setSelectedRun(null);
+          setEditRunFromSheet(run);
+        }}
+        onProcess={async (id: string) => {
+          try {
+            await processRun.mutateAsync(id);
+            showToast.success("Processed", "Payroll run marked as completed");
+            refetch();
+          } catch (err) {
+            showToast.error("Process failed", getErrorMessage(err));
+          }
+        }}
+        onMarkPaid={async (id: string) => {
+          try {
+            await markRunPaid.mutateAsync(id);
+            showToast.success("Paid", "Payroll run marked as paid");
+            refetch();
+          } catch (err) {
+            showToast.error("Update failed", getErrorMessage(err));
+          }
+        }}
       />
     </PageLayout>
   );

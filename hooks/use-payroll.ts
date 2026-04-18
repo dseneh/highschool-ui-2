@@ -30,7 +30,8 @@ import type {
 
 const payrollKeys = {
   components: (subdomain: string) => ["payroll-components", subdomain] as const,
-  compensations: (subdomain: string) => ["employee-compensations", subdomain] as const,
+  compensations: (subdomain: string, employeeId?: string) =>
+    ["employee-compensations", subdomain, employeeId].filter(Boolean) as string[],
   runs: (subdomain: string) => ["payroll-runs", subdomain] as const,
 };
 
@@ -51,6 +52,19 @@ export function useEmployeeCompensations() {
     queryKey: payrollKeys.compensations(subdomain),
     queryFn: () => listEmployeeCompensations(),
     enabled: Boolean(subdomain),
+  });
+}
+
+export function useEmployeeCompensation(
+  employeeId: string | undefined,
+  opts?: { enabled?: boolean },
+) {
+  const subdomain = useTenantSubdomain();
+
+  return useQuery<EmployeeCompensationDto[]>({
+    queryKey: payrollKeys.compensations(subdomain, employeeId),
+    queryFn: () => listEmployeeCompensations({ employeeId }),
+    enabled: (opts?.enabled ?? true) && Boolean(subdomain) && Boolean(employeeId),
   });
 }
 

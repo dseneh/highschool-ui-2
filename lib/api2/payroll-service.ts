@@ -218,8 +218,9 @@ export async function deletePayrollComponent(id: string): Promise<void> {
   await apiClient.delete(`payroll-components/${id}`);
 }
 
-export async function listEmployeeCompensations(): Promise<EmployeeCompensationDto[]> {
-  const { data } = await apiClient.get<{ results?: BackendEmployeeCompensation[] } | BackendEmployeeCompensation[]>("employee-compensations");
+export async function listEmployeeCompensations(params?: { employeeId?: string }): Promise<EmployeeCompensationDto[]> {
+  const query = params?.employeeId ? `?employee=${params.employeeId}` : "";
+  const { data } = await apiClient.get<{ results?: BackendEmployeeCompensation[] } | BackendEmployeeCompensation[]>(`employee-compensations${query}`);
   const records = Array.isArray(data) ? data : data.results ?? [];
   return records.map(mapEmployeeCompensation);
 }

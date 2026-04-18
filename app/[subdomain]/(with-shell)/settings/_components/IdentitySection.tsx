@@ -33,25 +33,25 @@ export function IdentitySection({ tenantData }: IdentitySectionProps) {
           <HugeiconsIcon icon={Building02Icon} className="h-5 w-5" />
           Organization Identity
         </CardTitle>
-        <CardDescription>Read-only identification information</CardDescription>
+        <CardDescription>Identification information</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">ID Number</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono">
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded-lg text-sm font-mono">
               {tenantData?.id_number || 'N/A'}
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Workspace</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono">
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded-lg text-sm font-mono">
               {tenantData?.workspace || 'N/A'}
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Primary Domain</label>
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono">
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 rounded-lg text-sm font-mono">
               {tenantData?.domain || 'N/A'}
             </div>
           </div>
