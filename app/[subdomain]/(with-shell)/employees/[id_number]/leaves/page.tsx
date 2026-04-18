@@ -29,8 +29,7 @@ export default function EmployeeLeavesPage() {
     error,
     refetch,
   } = useLeaveRequests(
-    { employeeId: employee?.id ?? "" },
-    { enabled: !!employee?.id },
+    employee?.id ? { employeeId: employee.id } : undefined,
   )
 
   const { approveRequest, rejectRequest, cancelRequest } = useLeaveMutations()
