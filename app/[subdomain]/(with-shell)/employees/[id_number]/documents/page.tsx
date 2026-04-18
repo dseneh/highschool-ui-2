@@ -205,7 +205,7 @@ export default function EmployeeDocumentsPage() {
           onOpenChange={setModalOpen}
           onSubmit={handleSubmit}
           isSubmitting={create.isPending || update.isPending}
-          employeeId={employee.id}
+          employees={[employee]}
           initialData={editingDoc}
         />
       ) : null}
