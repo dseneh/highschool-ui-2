@@ -45,6 +45,7 @@ interface CompensationFormModalProps {
   employees: EmployeeDto[];
   components: PayrollComponentDto[];
   initialData?: EmployeeCompensationDto;
+  hideEmployeeSelect?: boolean;
 }
 
 export function CompensationFormModal({
@@ -55,6 +56,7 @@ export function CompensationFormModal({
   employees,
   components,
   initialData,
+  hideEmployeeSelect,
 }: CompensationFormModalProps) {
   const form = useForm<CompensationFormData>({
     resolver: zodResolver(compensationSchema),
@@ -149,6 +151,7 @@ export function CompensationFormModal({
     >
       <form id="compensation-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-2">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {!hideEmployeeSelect && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Employee</label>
             <SelectField
@@ -162,6 +165,7 @@ export function CompensationFormModal({
               <p className="text-xs text-red-500">{form.formState.errors.employeeId.message}</p>
             ) : null}
           </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Base Salary</label>
             <Input type="number" min={0} step="0.01" {...form.register("baseSalary")} />
