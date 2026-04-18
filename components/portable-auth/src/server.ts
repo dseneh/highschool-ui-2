@@ -94,6 +94,22 @@ export async function ensureFreshTokens(
 }
 
 /**
+ * Extract the real client IP from the incoming request headers.
+ */
+function getClientIp(req: Request): string | undefined {
+  // Vercel / most proxies
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  // Cloudflare
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+  // Vercel-specific
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp;
+  return undefined;
+}
+
+/**
  * Create Next.js Route Handler for /api/auth/login (POST)
  * Expects body: { workspace, credentials, user?: any }
  * - workspace: required
@@ -113,7 +129,11 @@ export function createLoginRoute(cfg: PortableAuthConfig) {
       }
 
       const tenant: TenantContext = { workspace };
-      const { tokens, user: userFromBackend } = await backendLogin(cfg.backend, tenant, credentials);
+      const clientIp = getClientIp(req);
+      const ipHeaders: Record<string, string> = clientIp
+        ? { "x-forwarded-for": clientIp, "x-real-client-ip": clientIp }
+        : {};
+      const { tokens, user: userFromBackend } = await backendLogin(cfg.backend, tenant, credentials, ipHeaders);
 
       const user = cfg.normalizeUser
         ? cfg.normalizeUser(userFromClient ?? userFromBackend ?? null, tenant)
@@ -141,7 +161,11 @@ export function createLogoutRoute(cfg: PortableAuthConfig) {
     const session = await readSession(cfg, req);
     try {
       if (session) {
-        await backendLogout(cfg.backend, session.tenant, { refreshToken: session.tokens?.refreshToken });
+        const clientIp = getClientIp(req);
+        const ipHeaders: Record<string, string> = clientIp
+          ? { "x-forwarded-for": clientIp, "x-real-client-ip": clientIp }
+          : {};
+        await backendLogout(cfg.backend, session.tenant, { refreshToken: session.tokens?.refreshToken }, ipHeaders);
       }
     } finally {
       const setCookie = await clearSessionHeader(cfg);

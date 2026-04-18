@@ -10,11 +10,13 @@ export async function backendLogin(
   cfg: BackendAuthConfig,
   tenant: TenantContext,
   credentials: Record<string, any>,
+  extraHeaders?: Record<string, string>,
 ): Promise<{ tokens: JwtPair; user: any | null }> {
   const url = joinUrl(cfg.baseUrl, cfg.loginPath);
   const headers: Record<string, string> = {
     "content-type": "application/json",
     ...(cfg.buildHeaders?.(tenant) ?? {}),
+    ...(extraHeaders ?? {}),
   };
 
   const res = await fetch(url, {
@@ -72,12 +74,14 @@ export async function backendLogout(
   cfg: BackendAuthConfig,
   tenant: TenantContext,
   tokens: { refreshToken?: string } | null,
+  extraHeaders?: Record<string, string>,
 ): Promise<void> {
   if (!cfg.logoutPath) return;
   const url = joinUrl(cfg.baseUrl, cfg.logoutPath);
   const headers: Record<string, string> = {
     "content-type": "application/json",
     ...(cfg.buildHeaders?.(tenant) ?? {}),
+    ...(extraHeaders ?? {}),
   };
   // best effort
   await fetch(url, {
