@@ -25,7 +25,7 @@ import { MoreHorizontal, Pencil, Trash2, ExternalLink } from "lucide-react";
 import type {
   CreateEmployeeDocumentCommand,
   EmployeeDocumentDto,
-} from "@/lib/api2/employee-document-types";
+} from "@/lib/api2/hr-types";
 
 const COMPLIANCE_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   valid: { label: "Valid", variant: "default" },

@@ -29,6 +29,7 @@ interface BackendDocument {
   notes?: string | null;
   compliance_status?: string | null;
   days_until_expiry?: number | null;
+  active?: boolean;
 }
 
 interface BackendPerformanceReview {
@@ -85,10 +86,12 @@ function extractName(value: BackendLookup | string | null | undefined): string {
 /* ------------------------------------------------------------------ */
 
 function mapDocument(d: BackendDocument): EmployeeDocumentDto {
+  const emp = typeof d.employee === 'object' && d.employee ? d.employee : null;
   return {
     id: d.id ?? "",
     employeeId: extractId(d.employee),
     employeeName: extractName(d.employee),
+    employeeNumber: (emp as Record<string, unknown>)?.employee_number as string ?? null,
     title: d.title ?? "Untitled",
     documentType: (toDisplay(d.document_type) || "Other") as EmployeeDocumentDto["documentType"],
     documentNumber: d.document_number ?? null,
@@ -99,6 +102,7 @@ function mapDocument(d: BackendDocument): EmployeeDocumentDto {
     notes: d.notes ?? null,
     complianceStatus: (d.compliance_status as EmployeeDocumentDto["complianceStatus"]) ?? null,
     daysUntilExpiry: d.days_until_expiry ?? null,
+    active: d.active ?? true,
   };
 }
 

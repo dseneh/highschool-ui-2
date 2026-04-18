@@ -16,6 +16,7 @@ export interface EmployeeDocumentDto {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeNumber: string | null;
   title: string;
   documentType: DocumentType;
   documentNumber: string | null;
@@ -26,6 +27,7 @@ export interface EmployeeDocumentDto {
   notes: string | null;
   complianceStatus: ComplianceStatus | null;
   daysUntilExpiry: number | null;
+  active: boolean;
 }
 
 export interface CreateEmployeeDocumentCommand {
