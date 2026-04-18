@@ -8,7 +8,11 @@ export function InitialLoaderCleanup() {
     if (loader) {
       loader.style.transition = "opacity 0.3s ease";
       loader.style.opacity = "0";
-      setTimeout(() => loader.remove(), 300);
+      // Hide instead of removing — removing a React-rendered node breaks
+      // React's DOM reconciliation and causes "removeChild" errors on navigation.
+      setTimeout(() => {
+        loader.style.display = "none";
+      }, 300);
     }
   }, []);
   return null;
