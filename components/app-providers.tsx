@@ -10,6 +10,7 @@ import { getQueryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/components/portable-auth/src/client";
 import { NavigationProvider } from "@/contexts/navigation-context";
 import { AuthStoreSync } from "@/components/auth-store-sync";
+import { InitialLoaderCleanup } from "@/components/initial-loader-cleanup";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 
@@ -34,6 +35,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
               }}
             >
               <AuthStoreSync />
+              <InitialLoaderCleanup />
               <NavigationProvider>
                 <Suspense fallback={null}>
                   <TopLoadingBar />

@@ -23,6 +23,7 @@ import { DialogBox } from "../ui/dialog-box";
 import { SelectField } from "../ui/select-field";
 import { useAuth } from "@/components/portable-auth/src/client";
 import { useHasRole } from "@/hooks/use-authorization";
+import { ALL_ROLES, ROLE_RANK } from "@/lib/constants/roles";
 
 const adminActionsSchema = z.object({
   status: z.enum(["active", "inactive", "suspended", "deleted"]),
@@ -44,29 +45,7 @@ interface AdminActionsDialogProps {
   onSuccess?: () => void;
 }
 
-const ROLE_RANK: Record<string, number> = {
-  superadmin: 100,
-  admin: 90,
-  registrar: 70,
-  accountant: 70,
-  teacher: 60,
-  data_entry: 50,
-  viewer: 40,
-  parent: 20,
-  student: 10,
-};
-
-const ROLE_OPTIONS = [
-  { value: "superadmin", label: "Superadmin" },
-  { value: "admin", label: "Admin" },
-  { value: "teacher", label: "Teacher" },
-  { value: "student", label: "Student" },
-  { value: "parent", label: "Parent" },
-  { value: "registrar", label: "Registrar" },
-  { value: "accountant", label: "Accountant" },
-  { value: "data_entry", label: "Data Entry" },
-  { value: "viewer", label: "Viewer" },
-];
+const ROLE_OPTIONS = ALL_ROLES;
 
 export function AdminActionsDialog({
   user,

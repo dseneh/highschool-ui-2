@@ -17,7 +17,6 @@ import type { CreatePayrollComponentCommand, PayrollComponentDto } from "@/lib/a
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { PayrollComponentFormModal } from "./payroll-component-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface PayrollComponentsTableProps {
   components: PayrollComponentDto[];
@@ -32,12 +31,14 @@ export function PayrollComponentsTable({ components, onRefresh }: PayrollCompone
   const { removeComponent, updateComponent } = usePayrollMutations();
   const [editingComponent, setEditingComponent] = React.useState<PayrollComponentDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this payroll component?")) {
+      return;
+    }
+
     try {
-      await removeComponent.mutateAsync(deleteTarget);
+      await removeComponent.mutateAsync(id);
       showToast.success("Deleted", "Payroll component removed successfully");
       onRefresh();
     } catch (error) {
@@ -147,7 +148,7 @@ export function PayrollComponentsTable({ components, onRefresh }: PayrollCompone
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -164,9 +165,6 @@ export function PayrollComponentsTable({ components, onRefresh }: PayrollCompone
       <AccountingAdvancedTable
         columns={columns}
         data={components}
-        noData={components.length === 0}
-        emptyStateTitle="No Payroll Components"
-        emptyStateDescription="There are no payroll components to display."
         pageSize={8}
         searchPlaceholder="Search payroll components..."
         searchPredicate={(row, normalizedSearch) =>
@@ -185,16 +183,6 @@ export function PayrollComponentsTable({ components, onRefresh }: PayrollCompone
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingComponent ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Payroll Component"
-        description="Are you sure you want to delete this payroll component? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

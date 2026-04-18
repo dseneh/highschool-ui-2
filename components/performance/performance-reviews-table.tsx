@@ -22,7 +22,6 @@ import type {
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { PerformanceReviewFormModal } from "./performance-review-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface PerformanceReviewsTableProps {
   records: EmployeePerformanceReviewDto[];
@@ -61,18 +60,6 @@ export function PerformanceReviewsTable({ records, employees, onRefresh }: Perfo
   const { remove, update } = useEmployeePerformanceReviewMutations();
   const [editingRecord, setEditingRecord] = React.useState<EmployeePerformanceReviewDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await remove.mutateAsync(deleteTarget);
-      showToast.success("Deleted", "Performance review removed successfully");
-      onRefresh();
-    } catch (error) {
-      showToast.error("Delete failed", getErrorMessage(error));
-    }
-  };
 
   const employeeFilterOptions = React.useMemo(
     () =>
@@ -81,6 +68,20 @@ export function PerformanceReviewsTable({ records, employees, onRefresh }: Perfo
       ),
     [records]
   );
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this performance review?")) {
+      return;
+    }
+
+    try {
+      await remove.mutateAsync(id);
+      showToast.success("Deleted", "Performance review removed successfully");
+      onRefresh();
+    } catch (error) {
+      showToast.error("Delete failed", getErrorMessage(error));
+    }
+  };
 
   const handleEditSubmit = async (payload: CreateEmployeePerformanceReviewCommand) => {
     if (!editingRecord) return;
@@ -200,7 +201,7 @@ export function PerformanceReviewsTable({ records, employees, onRefresh }: Perfo
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -217,9 +218,6 @@ export function PerformanceReviewsTable({ records, employees, onRefresh }: Perfo
       <AccountingAdvancedTable
         columns={columns}
         data={records}
-        noData={records.length === 0}
-        emptyStateTitle="No Performance Reviews"
-        emptyStateDescription="There are no performance reviews to display."
         pageSize={10}
         searchPlaceholder="Search performance reviews..."
         searchPredicate={(row, normalizedSearch) =>
@@ -242,16 +240,6 @@ export function PerformanceReviewsTable({ records, employees, onRefresh }: Perfo
         isSubmitting={isSubmitting}
         employees={employees}
         initialData={editingRecord ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Performance Review"
-        description="Are you sure you want to delete this performance review? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

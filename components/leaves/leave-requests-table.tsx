@@ -15,7 +15,6 @@ import { AdvancedTableColumnHeader } from "@/components/shared/advanced-table";
 import { AccountingAdvancedTable } from "@/components/accounting/accounting-advanced-table";
 import { CheckCheck, MoreVertical, XCircle, CircleOff } from "lucide-react";
 import type { LeaveRequestDto } from "@/lib/api2/leave-types";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface LeaveRequestsTableProps {
   requests: LeaveRequestDto[];
@@ -61,27 +60,6 @@ export function LeaveRequestsTable({
         .map((value) => ({ label: value, value })),
     [requests]
   );
-
-  const [confirmAction, setConfirmAction] = React.useState<{
-    id: string;
-    type: "approve" | "reject" | "cancel";
-  } | null>(null);
-
-  const handleConfirmAction = async () => {
-    if (!confirmAction) return;
-    const { id, type } = confirmAction;
-    if (type === "approve") await onApprove(id);
-    else if (type === "reject") await onReject(id);
-    else await onCancel(id);
-  };
-
-  const confirmDialogConfig = confirmAction
-    ? confirmAction.type === "approve"
-      ? { title: "Approve Leave Request", description: "Are you sure you want to approve this leave request?", actionLabel: "Approve", variant: "default" }
-      : confirmAction.type === "reject"
-      ? { title: "Reject Leave Request", description: "Are you sure you want to reject this leave request?", actionLabel: "Reject", variant: "destructive" }
-      : { title: "Cancel Leave Request", description: "Are you sure you want to cancel this leave request?", actionLabel: "Cancel", variant: "destructive" }
-    : null;
 
   const columns: ColumnDef<LeaveRequestDto>[] = [
     {
@@ -158,7 +136,9 @@ export function LeaveRequestsTable({
                 checked={false}
                 disabled={!isPending}
                 onClick={() => {
-                  if (isPending) setConfirmAction({ id: request.id, type: "approve" });
+                  if (isPending && window.confirm("Approve this leave request?")) {
+                    void onApprove(request.id);
+                  }
                 }}
                 className="flex items-center gap-2"
               >
@@ -169,7 +149,9 @@ export function LeaveRequestsTable({
                 checked={false}
                 disabled={!isPending}
                 onClick={() => {
-                  if (isPending) setConfirmAction({ id: request.id, type: "reject" });
+                  if (isPending && window.confirm("Reject this leave request?")) {
+                    void onReject(request.id);
+                  }
                 }}
                 className="flex items-center gap-2 text-red-600"
               >
@@ -180,7 +162,9 @@ export function LeaveRequestsTable({
               <DropdownMenuCheckboxItem
                 checked={false}
                 onClick={() => {
-                  setConfirmAction({ id: request.id, type: "cancel" });
+                  if (window.confirm("Cancel this leave request?")) {
+                    void onCancel(request.id);
+                  }
                 }}
                 className="flex items-center gap-2"
               >
@@ -195,32 +179,17 @@ export function LeaveRequestsTable({
   ];
 
   return (
-    <>
-      <AccountingAdvancedTable
-        columns={columns}
-        data={requests}
-        noData={requests.length === 0}
-        emptyStateTitle="No Leave Requests"
-        emptyStateDescription="There are no leave requests to display."
-        pageSize={10}
-        searchPlaceholder="Search leave requests..."
-        searchPredicate={(row, normalizedSearch) =>
-          row.employeeName.toLowerCase().includes(normalizedSearch) ||
-          (row.employeeNumber || "").toLowerCase().includes(normalizedSearch) ||
-          row.leaveTypeName.toLowerCase().includes(normalizedSearch) ||
-          row.status.toLowerCase().includes(normalizedSearch)
-        }
-      />
-
-      <AlertDialogBox
-        open={confirmAction !== null}
-        onOpenChange={(open) => { if (!open) setConfirmAction(null); }}
-        title={confirmDialogConfig?.title ?? ""}
-        description={confirmDialogConfig?.description ?? ""}
-        actionLabel={confirmDialogConfig?.actionLabel}
-        variant={confirmDialogConfig?.variant}
-        onConfirm={handleConfirmAction}
-      />
-    </>
+    <AccountingAdvancedTable
+      columns={columns}
+      data={requests}
+      pageSize={10}
+      searchPlaceholder="Search leave requests..."
+      searchPredicate={(row, normalizedSearch) =>
+        row.employeeName.toLowerCase().includes(normalizedSearch) ||
+        (row.employeeNumber || "").toLowerCase().includes(normalizedSearch) ||
+        row.leaveTypeName.toLowerCase().includes(normalizedSearch) ||
+        row.status.toLowerCase().includes(normalizedSearch)
+      }
+    />
   );
 }

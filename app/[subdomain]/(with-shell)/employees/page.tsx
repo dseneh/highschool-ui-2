@@ -237,6 +237,7 @@ export default function EmployeesPage() {
               disabled={isLoading || isFetching}
               onAddIndividual={() => setShowCreateModal(true)}
               onUploadBulk={() => setShowBulkUploadModal(true)}
+              entityLabel="Employee"
             />
           </>
         }

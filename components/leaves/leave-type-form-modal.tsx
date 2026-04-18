@@ -155,7 +155,7 @@ export function LeaveTypeFormModal({
           <SelectField
             items={ACCRUAL_FREQUENCY_OPTIONS}
             value={accrualFrequency}
-            onValueChange={(value) => form.setValue("accrualFrequency", value as string)}
+            onValueChange={(value) => form.setValue("accrualFrequency", value)}
             placeholder="Select accrual frequency"
           />
           {form.formState.errors.accrualFrequency && (

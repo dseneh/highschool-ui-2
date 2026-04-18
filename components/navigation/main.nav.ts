@@ -1,11 +1,10 @@
-import { Add01Icon, ArrowShrinkIcon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileIcon, Invoice01Icon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, ArrowShrinkIcon, BookOpen02Icon, Briefcase01Icon, Building02Icon, Calendar01Icon, Calendar03Icon, ChartIcon, Coins01Icon, CourseIcon, CreditCardIcon, DashboardSquare01Icon, FileAttachmentIcon, FileIcon, Invoice01Icon, Settings01Icon, UserGroupIcon, UserMultiple02Icon } from "@hugeicons/core-free-icons";
 import { NavSection } from "./type";
 
 // Main Navigation - Organized by functional areas
 export const primaryNavSections: NavSection[] = [
   // Dashboard
   {
-    title: "Dashboard",
     items: [
       {
         icon: DashboardSquare01Icon,
@@ -81,20 +80,20 @@ export const primaryNavSections: NavSection[] = [
             meta: "Compensation, earnings, and deductions",
             requiredRoles: "admin",
           },
-          // {
-          //   icon: ArrowShrinkIcon,
-          //   label: "Workflows",
-          //   path: "/employee-workflows",
-          //   meta: "Onboarding and offboarding checklists",
-          //   requiredRoles: "admin",
-          // },
-          // {
-          //   icon: FileIcon,
-          //   label: "Documents",
-          //   path: "/employee-documents",
-          //   meta: "Contracts, licenses, and certifications",
-          //   requiredRoles: "admin",
-          // },
+          {
+            icon: ArrowShrinkIcon,
+            label: "Workflows",
+            path: "/employee-workflows",
+            meta: "Onboarding and offboarding checklists",
+            requiredRoles: "admin",
+          },
+          {
+            icon: FileIcon,
+            label: "Documents",
+            path: "/employee-documents",
+            meta: "Contracts, licenses, and certifications",
+            requiredRoles: "admin",
+          },
           {
             icon: ChartIcon,
             label: "Performance",
@@ -359,6 +358,13 @@ export const primaryNavSections: NavSection[] = [
         label: "Users Accounts",
         path: "/users",
         meta: "User accounts and authentication",
+        requiredRoles: "admin",
+      },
+      {
+        icon: FileAttachmentIcon,
+        label: "Activity Log",
+        path: "/activity-logs",
+        meta: "System activity and audit trail",
         requiredRoles: "admin",
       },
       {

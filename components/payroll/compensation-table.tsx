@@ -22,7 +22,6 @@ import { usePayrollMutations } from "@/hooks/use-payroll";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { CompensationFormModal } from "./compensation-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface CompensationTableProps {
   compensations: EmployeeCompensationDto[];
@@ -44,12 +43,14 @@ export function CompensationTable({
   const { removeCompensation, updateCompensation } = usePayrollMutations();
   const [editingCompensation, setEditingCompensation] = React.useState<EmployeeCompensationDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this compensation package?")) {
+      return;
+    }
+
     try {
-      await removeCompensation.mutateAsync(deleteTarget);
+      await removeCompensation.mutateAsync(id);
       showToast.success("Deleted", "Compensation package removed successfully");
       onRefresh();
     } catch (error) {
@@ -140,7 +141,7 @@ export function CompensationTable({
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -157,9 +158,6 @@ export function CompensationTable({
       <AccountingAdvancedTable
         columns={columns}
         data={compensations}
-        noData={compensations.length === 0}
-        emptyStateTitle="No Compensation Packages"
-        emptyStateDescription="There are no compensation packages to display."
         pageSize={8}
         searchPlaceholder="Search compensation packages..."
         searchPredicate={(row, normalizedSearch) =>
@@ -179,16 +177,6 @@ export function CompensationTable({
         employees={employees}
         components={components}
         initialData={editingCompensation ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Compensation Package"
-        description="Are you sure you want to delete this compensation package? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

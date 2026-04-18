@@ -17,7 +17,6 @@ import { getErrorMessage } from "@/lib/utils";
 import { useLeaveMutations } from "@/hooks/use-leave";
 import type { CreateLeaveTypeCommand, LeaveTypeDto } from "@/lib/api2/leave-types";
 import { LeaveTypeFormModal } from "./leave-type-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 function formatPolicyLabel(value: string) {
   return value || "Upfront";
@@ -32,12 +31,14 @@ export function LeaveTypesTable({ leaveTypes, onRefresh }: LeaveTypesTableProps)
   const { removeType, updateType } = useLeaveMutations();
   const [editingType, setEditingType] = React.useState<LeaveTypeDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this leave type?")) {
+      return;
+    }
+
     try {
-      await removeType.mutateAsync(deleteTarget);
+      await removeType.mutateAsync(id);
       showToast.success("Deleted", "Leave type has been removed");
       onRefresh();
     } catch (error) {
@@ -157,7 +158,7 @@ export function LeaveTypesTable({ leaveTypes, onRefresh }: LeaveTypesTableProps)
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -174,9 +175,6 @@ export function LeaveTypesTable({ leaveTypes, onRefresh }: LeaveTypesTableProps)
       <AccountingAdvancedTable
         columns={columns}
         data={leaveTypes}
-        noData={leaveTypes.length === 0}
-        emptyStateTitle="No Leave Types"
-        emptyStateDescription="There are no leave types configured."
         pageSize={8}
         searchPlaceholder="Search leave types..."
         searchPredicate={(row, normalizedSearch) =>
@@ -194,16 +192,6 @@ export function LeaveTypesTable({ leaveTypes, onRefresh }: LeaveTypesTableProps)
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingType ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Leave Type"
-        description="Are you sure you want to delete this leave type? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

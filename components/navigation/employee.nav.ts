@@ -1,4 +1,4 @@
-import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, CourseIcon, Settings01Icon, UserMultiple02Icon, BookOpen02Icon, Coins01Icon, FileIcon, ChartIcon} from '@hugeicons/core-free-icons';
+import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, CourseIcon, Settings01Icon, UserMultiple02Icon, BookOpen02Icon, Coins01Icon, FileIcon, FileEditIcon, ChartIcon} from '@hugeicons/core-free-icons';
 import {NavItem} from '@/components/navigation/type';
 
 // Employee Detail Context Navigation
@@ -75,6 +75,13 @@ export function getEmployeeNavigation(employeeId: string, isTeachingStaff = fals
       label: "Performance",
       path: `/employees/${employeeId}/performance`,
       meta: "Reviews and development tracking",
+    },
+    {
+      icon: FileEditIcon,
+      label: "Activity",
+      path: `/employees/${employeeId}/activity`,
+      meta: "Audit trail",
+      requiredRoles: "admin",
     },
     {
       icon: Settings01Icon,

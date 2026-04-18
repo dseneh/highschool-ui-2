@@ -45,9 +45,20 @@ import { cn } from "@/lib/utils";
 import type { StaffFormSchema } from "@/components/employees/staff-form";
 import { useEmployee } from "@/lib/api2/employee";
 import type { EmployeeDepartment, EmployeePosition } from "@/lib/api2/employee/types";
+import { useEmployeeMutations } from "@/hooks/use-employee";
 import GenderSelect from "../shared/data-reusable/gender-select";
-import PositionSelect from "../shared/data-reusable/position-select";
-import DepartmentSelect from "../shared/data-reusable/department-select";
+import EmployeeDepartmentSelect from "../shared/data-reusable/employee-department-select";
+import RoleSelect from "../shared/data-reusable/role-select";
+import { STAFF_ROLES } from "@/lib/constants/roles";
+import type { RoleValue } from "@/lib/constants/roles";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 import { SelectField } from "../ui/select-field";
 
 const STEPS = [
@@ -139,7 +150,7 @@ const accountSchema = z
   .object({
     initialize_user_account: z.boolean().optional(),
     username: z.string().optional(),
-    role: z.enum(["admin", "teacher", "viewer"]).optional(),
+    role: z.enum(STAFF_ROLES.map((r) => r.value) as [string, ...string[]]).optional(),
     photo: z.instanceof(File).optional().nullable(),
   })
   .refine(
@@ -395,7 +406,7 @@ function buildInitialForm() {
     is_teacher: false,
     initialize_user_account: false,
     username: "",
-    role: undefined as "viewer" | "teacher" | "admin" | undefined,
+    role: undefined as RoleValue | undefined,
     photo: null as File | null,
   };
 }
@@ -409,6 +420,7 @@ export function StaffFormModal({
   const employeeApi = useEmployee();
   const { data: positionsData } = employeeApi.getEmployeePositions({});
   const { data: departmentsData } = employeeApi.getEmployeeDepartments({});
+  const { createPosition } = useEmployeeMutations();
 
   const [stepIndex, setStepIndex] = React.useState(0);
   const [direction, setDirection] = React.useState<"forward" | "backward">(
@@ -534,7 +546,17 @@ export function StaffFormModal({
     });
   }
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   async function handleSubmit() {
+    let positionId = form.position || undefined;
+
+    // If user typed a new position name (not a UUID), create it first
+    if (positionId && !UUID_RE.test(positionId)) {
+      const created = await createPosition.mutateAsync({ title: positionId });
+      positionId = created.id;
+    }
+
     const payload: StaffFormSchema = {
       first_name: form.first_name,
       last_name: form.last_name,
@@ -551,7 +573,7 @@ export function StaffFormModal({
       country: form.country,
       hire_date: fmtDateISO(form.hire_date),
       employment_status: form.status || undefined,
-      position: form.position || undefined,
+      position: positionId,
       department: form.primary_department || undefined,
       is_teacher: form.is_teacher,
       photo: form.photo || undefined,
@@ -792,19 +814,44 @@ export function StaffFormModal({
                   </Select>
                 </FormField>
                 <FormField name="position" label="Position" errors={errors}>
-                  <PositionSelect
-                    noTitle
-                    value={form.position}
-                    onChange={(value) => update("position", value || "")}
-                    useUrlState={false}
-                  />
+                  <Combobox
+                    value={form.position || null}
+                    onValueChange={(v) => update("position", v ? String(v) : "")}
+                    itemToStringLabel={(v) =>
+                      positions.find((p) => p.id === String(v))?.title ?? String(v)
+                    }
+                  >
+                    <ComboboxInput
+                      placeholder="Search or type a position..."
+                      className="w-full"
+                      showClear={!!form.position}
+                      showTrigger
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const input = (e.target as HTMLInputElement).value.trim();
+                          if (input && !positions.some((p) => p.title.toLowerCase() === input.toLowerCase())) {
+                            update("position", input);
+                          }
+                        }
+                      }}
+                    />
+                    <ComboboxContent>
+                      <ComboboxList>
+                        {positions.map((pos) => (
+                          <ComboboxItem key={pos.id} value={pos.id}>
+                            {pos.title}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
                 </FormField>
                 <FormField
                   name="primary_department"
                   label="Department"
                   errors={errors}
                 >
-                  <DepartmentSelect
+                  <EmployeeDepartmentSelect
                     noTitle
                     value={form.primary_department}
                     onChange={(value) => update("primary_department", value || "")}
@@ -906,19 +953,13 @@ export function StaffFormModal({
                       required
                       errors={errors}
                     >
-                      <Select
-                        value={form.role}
-                        onValueChange={(v) => update("role", v!)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer (Read-only)</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <RoleSelect
+                        noTitle
+                        value={form.role ?? ""}
+                        onChange={(value) => update("role", (value || undefined) as RoleValue | undefined)}
+                        useUrlState={false}
+                        placeholder="Select role"
+                      />
                     </FormField>
                   </>
                 )}

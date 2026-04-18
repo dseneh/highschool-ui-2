@@ -48,6 +48,9 @@ import type { Department, Position } from "@/lib/api2/staff/types";
 import GenderSelect from "../shared/data-reusable/gender-select";
 import PositionSelect from "../shared/data-reusable/position-select";
 import DepartmentSelect from "../shared/data-reusable/department-select";
+import RoleSelect from "../shared/data-reusable/role-select";
+import { STAFF_ROLES } from "@/lib/constants/roles";
+import type { RoleValue } from "@/lib/constants/roles";
 import { SelectField } from "../ui/select-field";
 
 const STEPS = [
@@ -139,7 +142,7 @@ const accountSchema = z
   .object({
     initialize_user_account: z.boolean().optional(),
     username: z.string().optional(),
-    role: z.enum(["admin", "teacher", "viewer"]).optional(),
+    role: z.enum(STAFF_ROLES.map((r) => r.value) as [string, ...string[]]).optional(),
     photo: z.instanceof(File).optional().nullable(),
   })
   .refine(
@@ -395,7 +398,7 @@ function buildInitialForm() {
     is_teacher: false,
     initialize_user_account: false,
     username: "",
-    role: undefined as "viewer" | "teacher" | "admin" | undefined,
+    role: undefined as RoleValue | undefined,
     photo: null as File | null,
   };
 }
@@ -909,19 +912,13 @@ export function StaffFormModal({
                       required
                       errors={errors}
                     >
-                      <Select
-                        value={form.role}
-                        onValueChange={(v) => update("role", v!)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer (Read-only)</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <RoleSelect
+                        noTitle
+                        value={form.role ?? ""}
+                        onChange={(value) => update("role", (value || undefined) as RoleValue | undefined)}
+                        useUrlState={false}
+                        placeholder="Select role"
+                      />
                     </FormField>
                   </>
                 )}

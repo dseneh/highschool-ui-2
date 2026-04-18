@@ -114,7 +114,7 @@ export function EmployeeAttendanceFormModal({
           <SelectField
             items={employeeOptions}
             value={employeeId}
-            onValueChange={(value) => form.setValue("employeeId", value as string)}
+            onValueChange={(value) => form.setValue("employeeId", value)}
             placeholder="Select employee"
             searchable
           />
@@ -144,7 +144,7 @@ export function EmployeeAttendanceFormModal({
             <SelectField
               items={STATUS_OPTIONS}
               value={status}
-              onValueChange={(value) => form.setValue("status", value as string)}
+              onValueChange={(value) => form.setValue("status", value)}
               placeholder="Select status"
             />
           </div>

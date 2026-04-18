@@ -109,7 +109,7 @@ export default function PerformancePage() {
       noData={!isLoading && records.length === 0}
     >
       <div className="space-y-6">
-        <StatsCards items={statsItems} className="xl:grid-cols-4" />
+        <StatsCards items={statsItems} className="mb-0 xl:grid-cols-4" />
 
         <Card>
           <CardHeader>

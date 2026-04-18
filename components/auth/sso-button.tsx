@@ -5,7 +5,7 @@ interface SSOButtonProps {
   className?: string;
 }
 
-export function SSOButton({ disabled, className }: SSOButtonProps) {
+export function SSOButton({ disabled = true, className }: SSOButtonProps) {
   return (
     <Button
       type="button"
@@ -29,7 +29,7 @@ export function SSOButton({ disabled, className }: SSOButtonProps) {
       </svg>
       }
     >
-      Login with SSO
+      Login another way
     </Button>
   );
 }

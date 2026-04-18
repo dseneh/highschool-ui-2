@@ -19,7 +19,6 @@ import { getErrorMessage } from "@/lib/utils";
 import { DepartmentFormModal } from "@/components/departments/department-form-modal";
 import { DataTable } from "@/components/shared/data-table";
 import { useEmployeeMutations } from "@/hooks/use-employee";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface DepartmentsTableProps {
   departments: EmployeeDepartmentDto[];
@@ -30,16 +29,16 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
   const { removeDepartment, updateDepartment } = useEmployeeMutations();
   const [editingDepartment, setEditingDepartment] = React.useState<EmployeeDepartmentDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await removeDepartment.mutateAsync(deleteTarget);
-      showToast.success("Deleted", "Department has been removed");
-      onRefresh();
-    } catch (error) {
-      showToast.error("Delete failed", getErrorMessage(error));
+  const handleDelete = async (departmentId: string) => {
+    if (window.confirm("Are you sure you want to delete this department?")) {
+      try {
+        await removeDepartment.mutateAsync(departmentId);
+        showToast.success("Deleted", "Department has been removed");
+        onRefresh();
+      } catch (error) {
+        showToast.error("Delete failed", getErrorMessage(error));
+      }
     }
   };
 
@@ -97,7 +96,7 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash className="h-4 w-4" />
@@ -128,16 +127,6 @@ export const DepartmentsTable = ({ departments, onRefresh }: DepartmentsTablePro
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingDepartment ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Department"
-        description="Are you sure you want to delete this department? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

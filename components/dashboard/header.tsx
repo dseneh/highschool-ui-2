@@ -32,6 +32,8 @@ import {
 import { BreadcrumbNav } from "@/components/navigation/breadcrumb-nav";
 import Notification from "./notification";
 import { AcademicYearIndicator } from "./academic-year-indicator";
+import UserDropDown from "./user-dropdown";
+import { useAuth } from "@/components/portable-auth";
 import { Menu } from "lucide-react";
 
 const densityLabels: Record<LayoutDensity, string> = {
@@ -55,6 +57,7 @@ export function DashboardHeader({
   backUrl: propsBackUrl,
   isAdminWorkspace = false,
 }: DashboardHeaderProps) {
+  const { logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -200,12 +203,14 @@ export function DashboardHeader({
               </>
             ) : null} */}
             <ThemeToggle />
+            <UserDropDown handleLogout={logout} />
           </div>
 
           {/* Mobile view - compact controls + dropdown menu */}
           <div className="flex sm:hidden items-center gap-1">
             <Notification />
             <ThemeToggle />
+            <UserDropDown handleLogout={logout} />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

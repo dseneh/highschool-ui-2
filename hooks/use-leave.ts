@@ -38,13 +38,13 @@ export function useLeaveTypes() {
   });
 }
 
-export function useLeaveRequests(params?: ListLeaveRequestParams, options?: { enabled?: boolean }) {
+export function useLeaveRequests(params?: ListLeaveRequestParams) {
   const subdomain = useTenantSubdomain();
 
   return useQuery<LeaveRequestDto[]>({
     queryKey: leaveKeys.requests(subdomain, params),
     queryFn: () => listLeaveRequests(params),
-    enabled: Boolean(subdomain) && (options?.enabled ?? true),
+    enabled: Boolean(subdomain),
   });
 }
 

@@ -135,7 +135,7 @@ interface StaffPersonalInfoProps {
 export function StaffPersonalInfo({ staff, entityLabel = "Staff" }: StaffPersonalInfoProps) {
   const [editSection, setEditSection] = React.useState<EditSection>(null)
   const staffApi = useStaff()
-  const patchMutation = staffApi.patchStaff(staff.id)
+  const patchMutation = staffApi.updateStaff(staff.id)
 
   const queryClient = getQueryClient()
 

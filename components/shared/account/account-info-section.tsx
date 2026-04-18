@@ -14,6 +14,7 @@ import { useUsers } from "@/lib/api2/users";
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { AuthButton } from "@/components/auth/auth-button";
+import { STAFF_ROLES } from "@/lib/constants/roles";
 
 interface BasicUserAccount {
   username?: string | null;
@@ -33,11 +34,7 @@ interface AccountInfoSectionProps {
   onAccountCreated?: () => void | Promise<void>;
 }
 
-const STAFF_ROLE_ITEMS = [
-  { value: "teacher", label: "Teacher" },
-  { value: "viewer", label: "Viewer" },
-  { value: "admin", label: "Admin" },
-];
+const STAFF_ROLE_ITEMS = STAFF_ROLES.map((r) => ({ value: r.value, label: r.label }));
 
 function normalizeDateString(dateOfBirth?: string | null): string | null {
   if (!dateOfBirth) return null;

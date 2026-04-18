@@ -173,7 +173,7 @@ export function PerformanceReviewFormModal({
             <SelectField
               items={employeeOptions}
               value={employeeId}
-              onValueChange={(value) => form.setValue("employeeId", value as string)}
+              onValueChange={(value) => form.setValue("employeeId", value)}
               placeholder="Select employee"
               searchable
             />
@@ -184,7 +184,7 @@ export function PerformanceReviewFormModal({
             <SelectField
               items={reviewerOptions}
               value={reviewerId}
-              onValueChange={(value) => form.setValue("reviewerId", value as string)}
+              onValueChange={(value) => form.setValue("reviewerId", value)}
               placeholder="Select reviewer"
               searchable
             />
@@ -248,7 +248,7 @@ export function PerformanceReviewFormModal({
             <SelectField
               items={STATUS_OPTIONS}
               value={status}
-              onValueChange={(value) => form.setValue("status", value as string)}
+              onValueChange={(value) => form.setValue("status", value)}
               placeholder="Select status"
             />
           </div>
@@ -258,7 +258,7 @@ export function PerformanceReviewFormModal({
             <SelectField
               items={RATING_OPTIONS}
               value={rating}
-              onValueChange={(value) => form.setValue("rating", value as string)}
+              onValueChange={(value) => form.setValue("rating", value)}
               placeholder="Select rating"
             />
           </div>

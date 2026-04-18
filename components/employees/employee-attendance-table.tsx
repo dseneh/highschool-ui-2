@@ -22,7 +22,6 @@ import type {
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { EmployeeAttendanceFormModal } from "./employee-attendance-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface EmployeeAttendanceTableProps {
   records: EmployeeAttendanceDto[];
@@ -58,18 +57,6 @@ export function EmployeeAttendanceTable({ records, employees, onRefresh }: Emplo
   const { remove, update } = useEmployeeAttendanceMutations();
   const [editingRecord, setEditingRecord] = React.useState<EmployeeAttendanceDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await remove.mutateAsync(deleteTarget);
-      showToast.success("Deleted", "Attendance record removed successfully");
-      onRefresh();
-    } catch (error) {
-      showToast.error("Delete failed", getErrorMessage(error));
-    }
-  };
 
   const employeeFilterOptions = React.useMemo(
     () =>
@@ -78,6 +65,20 @@ export function EmployeeAttendanceTable({ records, employees, onRefresh }: Emplo
       ),
     [records]
   );
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this attendance record?")) {
+      return;
+    }
+
+    try {
+      await remove.mutateAsync(id);
+      showToast.success("Deleted", "Attendance record removed successfully");
+      onRefresh();
+    } catch (error) {
+      showToast.error("Delete failed", getErrorMessage(error));
+    }
+  };
 
   const handleEditSubmit = async (payload: CreateEmployeeAttendanceCommand) => {
     if (!editingRecord) return;
@@ -174,7 +175,7 @@ export function EmployeeAttendanceTable({ records, employees, onRefresh }: Emplo
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -191,9 +192,6 @@ export function EmployeeAttendanceTable({ records, employees, onRefresh }: Emplo
       <AccountingAdvancedTable
         columns={columns}
         data={records}
-        noData={records.length === 0}
-        emptyStateTitle="No Attendance Records"
-        emptyStateDescription="There are no attendance records to display."
         pageSize={10}
         searchPlaceholder="Search attendance records..."
         searchPredicate={(row, normalizedSearch) =>
@@ -213,16 +211,6 @@ export function EmployeeAttendanceTable({ records, employees, onRefresh }: Emplo
         isSubmitting={isSubmitting}
         employees={employees}
         initialData={editingRecord ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Attendance Record"
-        description="Are you sure you want to delete this attendance record? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

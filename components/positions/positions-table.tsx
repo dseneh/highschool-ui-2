@@ -20,7 +20,6 @@ import { getErrorMessage } from "@/lib/utils";
 import { PositionFormModal } from "@/components/positions/position-form-modal";
 import { DataTable } from "@/components/shared/data-table";
 import { useEmployeeMutations } from "@/hooks/use-employee";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface PositionsTableProps {
   positions: EmployeePositionDto[];
@@ -31,7 +30,6 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
   const { removePosition, updatePosition } = useEmployeeMutations();
   const [editingPosition, setEditingPosition] = React.useState<EmployeePositionDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState("all");
   const [teacherFilter, setTeacherFilter] = React.useState("all");
@@ -72,10 +70,13 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
     });
   }, [positions, departmentFilter, typeFilter, teacherFilter]);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (positionId: string) => {
+    if (!window.confirm("Are you sure you want to delete this position?")) {
+      return;
+    }
+
     try {
-      await removePosition.mutateAsync(deleteTarget);
+      await removePosition.mutateAsync(positionId);
       showToast.success("Deleted", "Position has been removed");
       onRefresh();
     } catch (error) {
@@ -155,7 +156,7 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={false}
-              onClick={() => setDeleteTarget(row.original.id)}
+              onClick={() => handleDelete(row.original.id)}
               className="flex items-center gap-2 text-red-600"
             >
               <Trash className="h-4 w-4" />
@@ -278,16 +279,6 @@ export const PositionsTable = ({ positions, onRefresh }: PositionsTableProps) =>
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingPosition ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Position"
-        description="Are you sure you want to delete this position? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

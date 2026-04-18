@@ -8,8 +8,8 @@ import { AdvancedTableColumnHeader } from "@/components/shared/advanced-table";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePayrollMutations } from "@/hooks/use-payroll";
@@ -17,12 +17,10 @@ import type { CreatePayrollRunCommand, PayrollRunDto } from "@/lib/api2/payroll-
 import { showToast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/utils";
 import { PayrollRunFormModal } from "./payroll-run-form-modal";
-import AlertDialogBox from "@/components/shared/alert-dialogbox";
 
 interface PayrollRunsTableProps {
   payrollRuns: PayrollRunDto[];
   onRefresh: () => void;
-  onRowClick?: (run: PayrollRunDto) => void;
 }
 
 function formatMoney(value: number, currency: string) {
@@ -42,16 +40,18 @@ function getStatusClasses(status: string) {
   }
 }
 
-export function PayrollRunsTable({ payrollRuns, onRefresh, onRowClick }: PayrollRunsTableProps) {
+export function PayrollRunsTable({ payrollRuns, onRefresh }: PayrollRunsTableProps) {
   const { removeRun, updateRun, processRun, markRunPaid } = usePayrollMutations();
   const [editingRun, setEditingRun] = React.useState<PayrollRunDto | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this payroll run?")) {
+      return;
+    }
+
     try {
-      await removeRun.mutateAsync(deleteTarget);
+      await removeRun.mutateAsync(id);
       showToast.success("Deleted", "Payroll run removed successfully");
       onRefresh();
     } catch (error) {
@@ -151,43 +151,45 @@ export function PayrollRunsTable({ payrollRuns, onRefresh, onRowClick }: Payroll
     {
       id: "actions",
       cell: ({ row }) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" icon={<MoreVertical />} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => setEditingRun(row.original)}
-                className="flex items-center gap-2"
-              >
-                <Edit2 className="h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleProcess(row.original.id)}
-                className="flex items-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Process Run
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleMarkPaid(row.original.id)}
-                className="flex items-center gap-2"
-              >
-                <ReceiptText className="h-4 w-4" />
-                Mark Paid
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteTarget(row.original.id)}
-                className="flex items-center gap-2 text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" icon={<MoreVertical />} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={editingRun?.id === row.original.id}
+              onClick={() => setEditingRun(row.original)}
+              className="flex items-center gap-2"
+            >
+              <Edit2 className="h-4 w-4" />
+              Edit
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={false}
+              onClick={() => handleProcess(row.original.id)}
+              className="flex items-center gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Process Run
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={false}
+              onClick={() => handleMarkPaid(row.original.id)}
+              className="flex items-center gap-2"
+            >
+              <ReceiptText className="h-4 w-4" />
+              Mark Paid
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={false}
+              onClick={() => handleDelete(row.original.id)}
+              className="flex items-center gap-2 text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -197,9 +199,6 @@ export function PayrollRunsTable({ payrollRuns, onRefresh, onRowClick }: Payroll
       <AccountingAdvancedTable
         columns={columns}
         data={payrollRuns}
-        noData={payrollRuns.length === 0}
-        emptyStateTitle="No Payroll Runs"
-        emptyStateDescription="There are no payroll runs to display."
         pageSize={8}
         searchPlaceholder="Search payroll runs..."
         searchPredicate={(row, normalizedSearch) =>
@@ -207,7 +206,6 @@ export function PayrollRunsTable({ payrollRuns, onRefresh, onRowClick }: Payroll
           row.status.toLowerCase().includes(normalizedSearch) ||
           row.currency.toLowerCase().includes(normalizedSearch)
         }
-        onRowClick={onRowClick}
       />
 
       <PayrollRunFormModal
@@ -218,16 +216,6 @@ export function PayrollRunsTable({ payrollRuns, onRefresh, onRowClick }: Payroll
         onSubmit={handleEditSubmit}
         isSubmitting={isSubmitting}
         initialData={editingRun ?? undefined}
-      />
-
-      <AlertDialogBox
-        open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Payroll Run"
-        description="Are you sure you want to delete this payroll run? This action cannot be undone."
-        actionLabel="Delete"
-        variant="destructive"
-        onConfirm={confirmDelete}
       />
     </>
   );

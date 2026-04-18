@@ -26,6 +26,13 @@ export function DateRangePicker({
   className,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false)
+  // Staged selection — only committed on Apply
+  const [staged, setStaged] = React.useState<DateRange | undefined>(value)
+
+  // Sync staged state when the popover opens
+  React.useEffect(() => {
+    if (open) setStaged(value)
+  }, [open, value])
 
   const normalizedValue = React.useMemo(() => {
     if (!value?.from && !value?.to) return undefined
@@ -44,6 +51,17 @@ export function DateRangePicker({
     }
     return placeholder
   }, [placeholder, normalizedValue])
+
+  const handleApply = () => {
+    onChange(staged)
+    setOpen(false)
+  }
+
+  const handleClear = () => {
+    setStaged(undefined)
+    onChange(undefined)
+    setOpen(false)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,19 +83,27 @@ export function DateRangePicker({
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="range"
-          selected={normalizedValue}
+          selected={staged}
           onSelect={(range) => {
             if (!range?.from && !range?.to) {
-              onChange(undefined)
+              setStaged(undefined)
               return
             }
-            onChange(range)
+            setStaged(range)
           }}
           numberOfMonths={2}
           captionLayout="dropdown"
-          defaultMonth={normalizedValue?.from}
+          defaultMonth={staged?.from}
           autoFocus
         />
+        <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+          <Button variant="ghost" size="sm" onClick={handleClear}>
+            Clear
+          </Button>
+          <Button size="sm" onClick={handleApply} disabled={!staged?.from}>
+            Apply
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   )

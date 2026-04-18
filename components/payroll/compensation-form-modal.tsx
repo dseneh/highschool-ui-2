@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import AccountingCurrencySelect from "@/components/shared/data-reusable/accounting-currency-select";
-import AvatarImg from "@/components/shared/avatar-img";
 import { useAccountingCurrencies } from "@/hooks/use-accounting";
 import type { EmployeeDto } from "@/lib/api2/employee-types";
 import type {
@@ -46,8 +45,6 @@ interface CompensationFormModalProps {
   employees: EmployeeDto[];
   components: PayrollComponentDto[];
   initialData?: EmployeeCompensationDto;
-  /** When true, hides the employee select and pre-selects the first employee */
-  hideEmployeeSelect?: boolean;
 }
 
 export function CompensationFormModal({
@@ -58,12 +55,11 @@ export function CompensationFormModal({
   employees,
   components,
   initialData,
-  hideEmployeeSelect,
 }: CompensationFormModalProps) {
   const form = useForm<CompensationFormData>({
     resolver: zodResolver(compensationSchema),
     defaultValues: {
-      employeeId: initialData?.employeeId ?? (hideEmployeeSelect && employees.length > 0 ? employees[0].id : ""),
+      employeeId: initialData?.employeeId ?? "",
       baseSalary: initialData?.baseSalary ?? 0,
       currency: initialData?.currency ?? "USD",
       paymentFrequency: initialData?.paymentFrequency ?? "Monthly",
@@ -89,10 +85,8 @@ export function CompensationFormModal({
   React.useEffect(() => {
     if (!open) return;
 
-    const preSelectedEmployeeId = hideEmployeeSelect && employees.length > 0 ? employees[0].id : "";
-
     form.reset({
-      employeeId: initialData?.employeeId ?? preSelectedEmployeeId,
+      employeeId: initialData?.employeeId ?? "",
       baseSalary: initialData?.baseSalary ?? 0,
       currency: initialData?.currency ?? "USD",
       paymentFrequency: initialData?.paymentFrequency ?? "Monthly",
@@ -148,158 +142,80 @@ export function CompensationFormModal({
       onOpenChange={onOpenChange}
       title={initialData ? "Edit Compensation Package" : "Create Compensation Package"}
       description="Set the employee base salary and attach recurring earnings or deductions"
-      size="md"
+      size="lg"
       formId="compensation-form"
       submitLabel={initialData ? "Update Compensation" : "Save Compensation"}
       loading={isSubmitting}
     >
       <form id="compensation-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-2">
-        {hideEmployeeSelect ? (
-          <>
-            {employees[0] ? (
-              <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
-                <AvatarImg
-                  src={employees[0].photoUrl}
-                  name={employees[0].fullName ?? undefined}
-                  className="size-10"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{employees[0].fullName}</p>
-                  {employees[0].employeeNumber ? (
-                    <p className="truncate text-xs text-muted-foreground">{employees[0].employeeNumber}</p>
-                  ) : null}
-                </div>
-              </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Employee</label>
+            <SelectField
+              items={employeeOptions}
+              value={employeeId}
+              onValueChange={(value) => form.setValue("employeeId", value)}
+              placeholder="Select employee"
+              searchable
+            />
+            {form.formState.errors.employeeId ? (
+              <p className="text-xs text-red-500">{form.formState.errors.employeeId.message}</p>
             ) : null}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Base Salary</label>
+            <Input type="number" min={0} step="0.01" {...form.register("baseSalary")} />
+            {form.formState.errors.baseSalary ? (
+              <p className="text-xs text-red-500">{form.formState.errors.baseSalary.message}</p>
+            ) : null}
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Base Salary</label>
-                <Input type="number" min={0} step="0.01" {...form.register("baseSalary")} />
-                {form.formState.errors.baseSalary ? (
-                  <p className="text-xs text-red-500">{form.formState.errors.baseSalary.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Currency</label>
-                <AccountingCurrencySelect
-                  useUrlState={false}
-                  noTitle
-                  value={selectedCurrencyId}
-                  onChange={(currencyId) => {
-                    const selectedCurrency = currencies.find((currency) => currency.id === currencyId);
-                    form.setValue("currency", selectedCurrency?.code ?? "", {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                  placeholder="Select currency"
-                />
-                {form.formState.errors.currency ? (
-                  <p className="text-xs text-red-500">{form.formState.errors.currency.message}</p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Payment Frequency</label>
-                <SelectField
-                  items={PAYMENT_FREQUENCY_OPTIONS}
-                  value={paymentFrequency}
-                  onValueChange={(value) => form.setValue("paymentFrequency", value as string)}
-                  placeholder="Select frequency"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Effective Date</label>
-                <DatePicker
-                  value={effectiveDate ? new Date(`${effectiveDate}T00:00:00`) : undefined}
-                  onChange={(date) => {
-                    if (!date) {
-                      form.setValue("effectiveDate", "", { shouldDirty: true, shouldValidate: true });
-                      return;
-                    }
-                    const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-                    form.setValue("effectiveDate", formatted, { shouldDirty: true, shouldValidate: true });
-                  }}
-                  placeholder="MM/DD/YYYY"
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Employee</label>
-                <SelectField
-                  items={employeeOptions}
-                  value={employeeId}
-                  onValueChange={(value) => form.setValue("employeeId", value as string)}
-                  placeholder="Select employee"
-                  searchable
-                />
-                {form.formState.errors.employeeId ? (
-                  <p className="text-xs text-red-500">{form.formState.errors.employeeId.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Base Salary</label>
-                <Input type="number" min={0} step="0.01" {...form.register("baseSalary")} />
-                {form.formState.errors.baseSalary ? (
-                  <p className="text-xs text-red-500">{form.formState.errors.baseSalary.message}</p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Currency</label>
-                <AccountingCurrencySelect
-                  useUrlState={false}
-                  noTitle
-                  value={selectedCurrencyId}
-                  onChange={(currencyId) => {
-                    const selectedCurrency = currencies.find((currency) => currency.id === currencyId);
-                    form.setValue("currency", selectedCurrency?.code ?? "", {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                  placeholder="Select currency"
-                />
-                {form.formState.errors.currency ? (
-                  <p className="text-xs text-red-500">{form.formState.errors.currency.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Payment Frequency</label>
-                <SelectField
-                  items={PAYMENT_FREQUENCY_OPTIONS}
-                  value={paymentFrequency}
-                  onValueChange={(value) => form.setValue("paymentFrequency", value as string)}
-                  placeholder="Select frequency"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Effective Date</label>
-                <DatePicker
-                  value={effectiveDate ? new Date(`${effectiveDate}T00:00:00`) : undefined}
-                  onChange={(date) => {
-                    if (!date) {
-                      form.setValue("effectiveDate", "", { shouldDirty: true, shouldValidate: true });
-                      return;
-                    }
-                    const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-                    form.setValue("effectiveDate", formatted, { shouldDirty: true, shouldValidate: true });
-                  }}
-                  placeholder="MM/DD/YYYY"
-                />
-              </div>
-            </div>
-          </>
-        )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Currency</label>
+            <AccountingCurrencySelect
+              useUrlState={false}
+              noTitle
+              value={selectedCurrencyId}
+              onChange={(currencyId) => {
+                const selectedCurrency = currencies.find((currency) => currency.id === currencyId);
+                form.setValue("currency", selectedCurrency?.code ?? "", {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+              placeholder="Select currency"
+            />
+            {form.formState.errors.currency ? (
+              <p className="text-xs text-red-500">{form.formState.errors.currency.message}</p>
+            ) : null}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Payment Frequency</label>
+            <SelectField
+              items={PAYMENT_FREQUENCY_OPTIONS}
+              value={paymentFrequency}
+              onValueChange={(value) => form.setValue("paymentFrequency", value)}
+              placeholder="Select frequency"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Effective Date</label>
+            <DatePicker
+              value={effectiveDate ? new Date(`${effectiveDate}T00:00:00`) : undefined}
+              onChange={(date) => {
+                if (!date) {
+                  form.setValue("effectiveDate", "", { shouldDirty: true, shouldValidate: true });
+                  return;
+                }
+                const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                form.setValue("effectiveDate", formatted, { shouldDirty: true, shouldValidate: true });
+              }}
+              placeholder="MM/DD/YYYY"
+            />
+          </div>
+        </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium">Notes</label>

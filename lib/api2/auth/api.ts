@@ -20,7 +20,7 @@ export const useUsersApi = () => {
     }
 
     const editUserApi = async (id: string, data: any) => {
-        return put(`/auth/users/${id}/`, data)
+        return patch(`/auth/users/${id}/`, data)
     }
 
     const updateUserStatusApi = async (id: string, status: string) => {

@@ -48,7 +48,7 @@ export function StatsCards({ items, className }: StatsCardsProps) {
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/90 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/80">
                 {item.title}
               </div>
-              <div className="text-xl font-semibold tracking-tight text-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary sm:text-[28px]">
+              <div className="text-2xl font-semibold tracking-tight text-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary sm:text-[28px]">
                 {item.value}
               </div>
             </div>

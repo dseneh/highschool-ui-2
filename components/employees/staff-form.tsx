@@ -30,6 +30,8 @@ import Image from "next/image";
 import { EmployeeDto } from "@/lib/api2/employee/types";
 import { useEmployee } from "@/lib/api2/employee";
 import type { EmployeeDepartment, EmployeePosition } from "@/lib/api2/employee/types";
+import { STAFF_ROLES } from "@/lib/constants/roles";
+import RoleSelect from "@/components/shared/data-reusable/role-select";
 
 // Form validation schema
 const staffValidationSchema = z.object({
@@ -75,7 +77,7 @@ const staffValidationSchema = z.object({
   photo: z.instanceof(File).optional(),
   initialize_user_account: z.boolean().optional(),
   username: z.string().optional(),
-  role: z.enum(["admin", "teacher", "viewer"]).optional(),
+  role: z.enum(STAFF_ROLES.map((r) => r.value) as [string, ...string[]]).optional(),
 }).refine(
   (data) => {
     if (data.initialize_user_account) {
@@ -704,21 +706,13 @@ export function StaffForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>User Role</FormLabel>
-                      <Select
+                      <RoleSelect
+                        noTitle
                         value={field.value || ""}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer (Read-only)</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        onChange={field.onChange}
+                        useUrlState={false}
+                        placeholder="Select role"
+                      />
                       <FormDescription>
                         Determines system access level
                       </FormDescription>

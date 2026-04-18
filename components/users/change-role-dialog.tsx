@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/form";
 import { SelectField } from "@/components/ui/select-field";
 import { Badge } from "@/components/ui/badge";
+import { ALL_ROLES } from "@/lib/constants/roles";
 
 const changeRoleSchema = z.object({
   role: z.string().min(1, "Role is required"),
@@ -43,14 +44,7 @@ interface ChangeRoleDialogProps {
   onSuccess?: () => void;
 }
 
-const ROLE_OPTIONS = [
-  { value: "superadmin", label: "Super Admin", description: "Full system access" },
-  { value: "admin", label: "Admin", description: "Administrative access" },
-  { value: "teacher", label: "Teacher", description: "Teaching staff" },
-  { value: "student", label: "Student", description: "Student account" },
-  { value: "parent", label: "Parent", description: "Parent/Guardian" },
-  { value: "viewer", label: "Viewer", description: "Read-only access" },
-];
+const ROLE_OPTIONS = ALL_ROLES;
 
 export function ChangeRoleDialog({
   user,

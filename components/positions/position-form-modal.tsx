@@ -157,7 +157,7 @@ export function PositionFormModal({
                 searchable
                 items={EMPLOYMENT_TYPE_OPTIONS}
                 value={employmentTypeValue || ""}
-                onValueChange={(value) => form.setValue("employmentType", value as string)}
+                onValueChange={(value) => form.setValue("employmentType", value)}
                 placeholder="Select employment type"
               />
               {form.formState.errors.employmentType && (
@@ -172,7 +172,7 @@ export function PositionFormModal({
               searchable
               items={departmentOptions}
               value={departmentValue || ""}
-              onValueChange={(value) => form.setValue("departmentId", value as string)}
+              onValueChange={(value) => form.setValue("departmentId", value)}
               placeholder="Select department"
             />
           </div>

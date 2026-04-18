@@ -132,7 +132,7 @@ export function PayrollComponentFormModal({
             <SelectField
               items={COMPONENT_TYPE_OPTIONS}
               value={componentType}
-              onValueChange={(value) => form.setValue("componentType", value as string)}
+              onValueChange={(value) => form.setValue("componentType", value)}
               placeholder="Select component type"
             />
           </div>
@@ -141,7 +141,7 @@ export function PayrollComponentFormModal({
             <SelectField
               items={CALCULATION_METHOD_OPTIONS}
               value={calculationMethod}
-              onValueChange={(value) => form.setValue("calculationMethod", value as string)}
+              onValueChange={(value) => form.setValue("calculationMethod", value)}
               placeholder="Select calculation method"
             />
           </div>

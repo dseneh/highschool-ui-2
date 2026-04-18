@@ -169,7 +169,7 @@ export function PayrollRunFormModal({
             <SelectField
               items={STATUS_OPTIONS}
               value={status}
-              onValueChange={(value) => form.setValue("status", value as string, { shouldDirty: true, shouldValidate: true })}
+              onValueChange={(value) => form.setValue("status", value, { shouldDirty: true, shouldValidate: true })}
               placeholder="Select status"
             />
           </div>

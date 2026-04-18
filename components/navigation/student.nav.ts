@@ -1,4 +1,4 @@
-import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, Invoice01Icon, BookOpen02Icon, Settings01Icon, FileExportIcon, SchoolIcon, Call02Icon, UserMultiple02Icon} from '@hugeicons/core-free-icons';
+import {DashboardSquare01Icon, UserGroupIcon, Calendar01Icon, Invoice01Icon, BookOpen02Icon, Settings01Icon, FileExportIcon, FileEditIcon, SchoolIcon, Call02Icon, UserMultiple02Icon} from '@hugeicons/core-free-icons';
 import {NavItem} from '@/components/navigation/type';
 import type { StudentDto } from '@/lib/api2/student-types';
 
@@ -63,6 +63,13 @@ export function getStudentNavigation(idNumber: string, returnTo?: string): NavIt
       label: "Reports",
       path: withReturnTo(`/students/${idNumber}/reports`, returnTo),
       meta: "Report cards",
+    },
+    {
+      icon: FileEditIcon,
+      label: "Activity",
+      path: withReturnTo(`/students/${idNumber}/activity`, returnTo),
+      meta: "Audit trail",
+      requiredRoles: "admin",
     },
     {
       icon: Settings01Icon,
